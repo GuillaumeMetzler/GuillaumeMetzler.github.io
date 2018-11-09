@@ -1,0 +1,289 @@
+<!DOCTYPE HTML>
+<!--
+	Prologue by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+
+    TODO: Réécrire les sections concernant CONE ainsi que la version Cost-Sensitive.
+
+-->
+<html>
+	<head>
+		<title>Guillaume Metzler Webpage</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!--[if lte IE 8]><script src="assets/js/ie/html5shiv.js"></script><![endif]-->
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<script type="text/javascript"
+  		src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+		</script>
+		<!--[if lte IE 8]><link rel="stylesheet" href="assets/css/ie8.css" /><![endif]-->
+		<!--[if lte IE 9]><link rel="stylesheet" href="assets/css/ie9.css" /><![endif]-->
+	</head>
+	<body>
+
+		<!-- Header -->
+			<div id="header">
+
+				<div class="top">
+
+					<!-- Logo -->
+						<div id="logo">
+							<span class="image avatar48"><img src="images/guillaume.jpg" alt="Photo de Guillaume" /></span>
+							<h1 id="title">Guillaume Metzler</h1>
+							<p>PhD Candidate </p>
+							<p>Laboratoire Hubert Curien</p>
+							<p>UMR CNRS 5516</p>
+							<p>18 Rue du Professeur Benoit</p>
+							<p> Lauras, 42000 Saint-Etienne</p> 
+						</div>
+
+					<!-- Nav -->
+						<nav id="nav">
+							<!--
+
+								Prologue's nav expects links in one of two formats:
+
+								1. Hash link (scrolls to a different section within the page)
+
+								   <li><a href="#foobar" id="foobar-link" class="icon fa-whatever-icon-you-want skel-layers-ignoreHref"><span class="label">Foobar</span></a></li>
+
+								2. Standard link (sends the user to another page/site)
+
+								   <li><a href="http://foobar.tld" id="foobar-link" class="icon fa-whatever-icon-you-want"><span class="label">Foobar</span></a></li>
+
+							-->
+							<ul>
+								<li><a href="#top" id="top-link" class="skel-layers-ignoreHref"><span class="icon fa-home">Main</span></a></li>
+								<li><a href="#intern" id="intern-link" class="skel-layers-ignoreHref"><span class="icon fa-bookmark">Internship</span></a></li>
+								<li><a href="#MEE" id="MEE-link" class="skel-layers-ignoreHref"><span class="icon fa-bookmark">Maximum Excluding Ellipsoids</span></a></li>
+								<li><a href="#CONE" id="CONE-link" class="skel-layers-ignoreHref"><span class="icon fa-bookmark">CONE</span></a></li>
+								<li><a href="#CostSensitive" id="CostSensitive-link" class="skel-layers-ignoreHref"><span class="icon fa-bookmark">Cost-Sensitive Learning</span></a></li>
+							</ul>
+						</nav>
+
+				</div>
+
+				<div class="bottom">
+
+					<!-- Social Icons -->
+						<ul class="icons">
+							<li><a href="https://www.linkedin.com/in/guillaumemetzler/" class="icon fa-linkedin", target="_blank"><span class="label">Linkedin</span></a></li>
+							<li><a href="mailto:guillaume.metzler@live.fr" class="icon fa-envelope"><span class="label">Email</span></a></li>
+						</ul>
+
+				</div>
+
+			</div>
+
+		<!-- Main -->
+			<div id="main">
+
+				<!-- Intro -->
+					<section id="top" class="one dark cover">
+						<div class="container">
+
+							<header>
+								<h2 class="alt"> <strong>Guillaume METZLER</strong></h2>
+								<p>I present a part of the work conducted during my Master Thesis and my PhD. The presented works have been done with the Company, the Laboratory and/or other PhD Student. You can find more information about the authors on the main page. </p>
+
+							</header>
+
+							<footer>
+								
+								<div class="liens_interne"> <a href="index.html"> Homepage</a> • <a href="Research.html"> Research </a> • <a href="documents/CV_Guillaume_English.pdf"> CV </a> <!-- • <a href="Other.html"> Other </a></div> -->
+						
+							</footer>
+
+
+						</div>
+					</section> 
+
+				<!-- Portfolio -->
+					<section id="intern" class="two">
+						<div class="container">
+
+							<header>
+								<h2>Study of the variability of the CD8 T Immune Response</h2>
+							</header>
+
+							<p>The aim of this intership was to study the variability of the CD8 T immune response. The CD8 T cells are cells that play a key role against pathogenic agent. When these pathogenics agents are dectected, the CD8 T cells (also called Naive cells) will become Effector cells and will be able to fight against the pathogenic agent. The number of Effector cells is dramatically increasing during the immune response. When the threat disappeared, some of this CD8 T cells will become Memory cells which will play a key role in a case of a similar threat.</p>
+
+							<figure> 
+								<img src="images/schemes.png" alt="Differenciation"> 
+								<figcaption> Scheme of differenciation of CD8 T cells, The curved arrow means that the Effector cells are able to proliferate. </figcaption>
+							</figure>
+							<figure> 
+								<img src="images/diagplus.png" alt="Immune Response" /> 
+								<figcaption> Evolution of the number of Actived cells (Effecor + Memory cells) during the first and second infection by the same pathogenic agent.</figcaption>
+							</figure>
+
+							<p> To study the variability, we had a collection of data among three populations of mice  It consists of the number of "actived" cells (effector + memory) along time with the following scheme of relation between the pathogenic agent and the CD8 T cells. </p>
+
+							<figure> 
+								<img src="images/datas.png" alt="Data"> 
+								<figcaption> Evolution of the numer of Actived cells along time for three population of mice: C57Bl6 (blue), BalbC (red) and OF1 (green). </figcaption>
+							</figure>
+							<figure> 
+								<img src="images/Mod5.png" alt="Scheme" /> 
+								<figcaption> Illustration of the used model of immune response. This complete scheme can be translated into a set of non linear differential equations.</figcaption>
+							</figure>
+
+							<p>The evolution of each population of cells is described by a non linear system of differential equations.</p>
+
+							<p> \[ \begin{array}{rclcrcl}
+								\dfrac{dN}{dt} & =& -(\mu_{N}+\delta_{NE}P)N,  &  &N(0)&=&N_0, \\ 
+								\\
+								\dfrac{dE}{dt} & = & \delta_{NE}PN+E(\rho_{E}P-\mu_{EE}E-\mu_{EL}L-\delta_{EM}-\delta_{EL}),  & &E(0)&=&0,\\
+								\\
+								\dfrac{dL}{dt}&  = &  \delta_{EL}E-L(\mu_{LL}L+\mu_{LE}E+\delta_{LM}),&& L(0)&=&0, \\
+								\\
+								\dfrac{dM}{dt}&  = & \delta_{LM}L-\mu_{M}M+\delta_{EM}E, && M(0)&=&0, \\
+								\\
+								\dfrac{dP}{dt} & = & (\rho_{P}P-\mu_{PE}E-\mu_{PL}L-\mu_{P}^{0})P,& & P(0)&=&1. \\
+								\end{array}  \] </p>
+
+							<p> Our aim was then to estimate the value of each parameter of the above system for each mouse of each population. We have used "Mixed Effect Model" and the software Monolix for this purpose. We were able to emphasize the parameters that explain the observed differences in the immune response between each populations. Extended experiments, using the Sensivity Analysis, have shown the key parameters in the immune reponse. These last results can be used to simplify our system of equation.</p>
+
+							<p>This work has been conducted in the team <a href="http://dracula.univ-lyon1.fr"> Dracula </a> at INRIA Rhône-Alpes and the <a href="http://ciri.inserm.fr/les-equipes/toutes-nos-equipes/immunite-et-lymphocytes-cytotoxiques/themes-de-recherches/"> CIRI </a> team of Jacquelines Marvel at INSERM. More Informations are available in my <a href="documents/MasterThesis.pdf" alt="lien vers mémoire de Master">Master Thesis </a> and on the <a href="documents/OralMaster.pdf" alt="link slides master thesis"> slides </a>. </p>
+
+
+						</div>
+					</section>
+
+				<!-- About Me -->
+					<section id="MEE" class="three">
+						<div class="container">
+
+							<header>
+								<h2> MEE: Metric Learning and Classification </h2>
+							</header>
+
+							<!-- <a href="#" class="image featured"><img src="images/pic08.jpg" alt="" /></a> -->
+
+							<p> When we are dealing with frauds or unbalanced data, we have only few informations or few examples from the minority class (i.e. the fraud), so it is important to take into accont all of the informations we can extract from the examples of the minority class.</p>
+
+							<p> The idea of the presented method comes from the Minimum Including Ball problem, i.e. finding the smallest circle and its center such that all the data lie in the ball.</p>
+
+							<figure> 
+								<img src="images/MIB.001.png" alt="exempleMIB"> 
+								<figcaption> The Minimum Including Ball problem.</figcaption>
+							</figure>
+
+							<p> Using the assumption that two frauds can be closed to each other, we have transformed the Minimum Including Ball Problem into a Maximum Excluding Ball Problem. In other words, we are learning, around each examples of the minority class, a ball which excludes the example of the majority class.</p>
+
+							<figure> 
+								<img src="images/metriclearning.001.png" alt="exempleML"> 
+								<figcaption> Learning the largest excluding area around each examples of the minority class (in red) without (top) and with (bottom) learning a metric.</figcaption>
+							</figure>
+
+							<p> We also learn a metric \(\mathbf{M}\) in order to learn ellipsoids rather than balls in the original space. By doing so, we are able to control both size and shape of our ellipsoids. \[ \Vert \mathbf{x}-\mathbf{c} \Vert_{\mathbf{M}}^2=(\mathbf{x}-\mathbf{c})^T \mathbf{M} (\mathbf{x}-\mathbf{c}).\]</p>
+
+							<p>Note the algorithm is close to a Decision Tree algorithm, the difference lies in the learned areas around each positive 
+							examples. Furthermore, there is "pruning" phase in the algorithm. We can write the minimization problem as follows: \[ \underset{R,\mathbf{M}}{min} \; \dfrac{1}{n}\sum_{i=1}^n \xi_i + \mu(B-R)^2 + \lambda \Vert \mathbf{M}-\mathbf{I} \Vert_F^2, \]
+							 \[s.t. \; \Vert \mathbf{x}_i-\mathbf{c} \Vert_{\mathbf{M}}^2 \ge R-\xi_i, \; \forall i=1,...,n,\] 
+							 \[\xi_i \ge 0, \; \forall i=1,...,n, \]
+							 \[0\le R \le B,\] where \(R\) denotes the radius of the ellipsoid centered at \(\mathbf{c}\), \(\xi_i\) denotes the slack variable and \(\mathbf{M}\) the metric to learn. The problem is also composed of three hyper-parameters: \(B\), \(\mu\) and \(\lambda\) which control both size and shape of the ellipsoid.</p>
+
+							 <p> We have compared this algorithm on several imbalanced dataset to other machine learning algorithms as Decision Trees combined with sampling methods and SVM algorithms. We have shown that this algorithm performed at least as well as the state of the art algorithms. </p>
+
+							 <figure> 
+								<img src="images/Rank7Corr.png" alt="Résultats_Comparaison_MEE"> 
+								<figcaption> Average Rank of all algorithms over the seven used datasets for the experiments. </figcaption>
+							</figure>
+
+							 <p> Theoretical guarantees about this algorithm have been derived which ensure that, in test phase, the ellipsoid will contain only few examples of the majority class.</p>
+
+
+
+
+
+
+						</div>
+					</section>
+
+				<!-- Contact -->
+
+				<section id="CONE" class="two">
+						<div class="container">
+
+							<header>
+								<h2>Cone: Cost Sensitive Learning and F-Measure Maximization</h2>
+								<h6>This work has been done in collaboration with Kevin Bascol, PhD Student in Saint-Etienne. </h6>
+							</header>
+
+							<p>  Based on a article from <em>Parambath et al.</em> entitled <em>Optimizing F_Measures by Cost-Sensitive Classification</em>, we derived an iterative algorithm entitled CONE to optimize the F-Measure using a cost-sensitive approach. </p>
+
+							<p>Using the weighting function proposed in <em>Parambath et al.</em> and their main theoretical results, we propose CONE, a new way to assign iteratively the cost of missclassification on each class and a tighter bound on the highest and reachable F-Measure.</p>
+
+							<figure> 
+								<img src="images/illustrate-algo-epsilon.png" alt="illsutratetheory"> 
+								<figcaption> Geometric interpretation of the main results of <em>Parambath et al.</em> (made by Rémi Emonet).</figcaption>
+							</figure>
+
+							<p> Further works on the link between F-Measure and the costs assign to each classes have been conducted to improve our algorithm. We propose a theoretically founded way to prune the space of research of costs in order to increase the speed of convergence of the algorithm. </p>
+
+							<figure> 
+								<img src="images/illustrate-algo.png" alt="CONEbound"> 
+								<figcaption> An example of the possible cones obtained by CONE with search space pruning (made by Rémi Emonet).</figcaption>
+							</figure>
+
+							<p>CONE has been shown to more efficient than a simple grid search method and reach the maximum F-Measure in few iteratinons only. Furthermore, the new derive bound has been shown to be more useful from both practical and theoretical point of view.</p>	
+
+							<figure> 
+								<img src="images/YeastCone.png" alt="illusCone"> <img src="images/YeastSpeed.png" alt="illusConebis"> 
+								<figcaption> On the left, an illustration of CONE where both cones and pruned areas are represented for several iterations of the algorithm. On the right, we represent how the F-Measure and our bound evolve during the training phase compared to the one obtained by <em>Parambath et al</em>.  (made by Kevin Bascol).</figcaption>
+							</figure>
+
+
+
+						</div>
+					</section>
+
+					<section id="CostSensitive" class="three">
+						<div class="container">
+
+							<header>
+								<h2> Tree-based Cost Sensitive Methods </hs2>
+							</header>
+
+							<p>  In order to improve the profits of the retailers, we propose a cost-sensitive approach to classify the payments of the customers (genuire vs fraudulent). In fact, acceting a false check will not lead to the same consequences as refusing a genuine one. Moreover, a good classification will also have a different consequence on the profit if the check is false or not. </p>
+
+							<p> Based on the company experiments, we have a conducted a first serie of experiments. We propose three versions of a random forest algorithm which aim to maximize the profit of the retailers. We have studided how to combine the prediction of each decision trees and if it is better to use the predicted label or the probability of being genuine. </p>
+
+							<p> Finally, a gradient boosting model has been proposed to maximize the margin of the retailer. The loss function (which translate the profit of the retailers) is rewritten in order to be directly optimized by such algorithm. We show how to rewrite properly such loss functions in order to plug it in the algorithm. </p>
+
+							<p> Both methods have been shown to be particularly relevant in the context of imbalanced data. Experiments on a proprietary dataset of bank fraud detection (used by the BLITZ company) in retail transactions show that our cost sensitive algorithms allow to increase the retailer's benefits by 1,43% compared to non cost-sensitive ones (as the one currently used by the company) and that the gradient boosting approach outperforms all its competitors. </p>
+
+
+						</div>
+					</section>
+					
+
+			</div>
+
+		<!-- Footer -->
+			<div id="footer">
+
+				<!-- Copyright -->
+					<ul class="copyright">
+						<li> <span class="image ujm"><img src="images/ioptique.svg" alt="Logo ujm"/></span></li>
+						<li> <span class="image ujm"><img src="images/ujm-udl.svg" alt="Logo ujm"/></span></li>
+						<li> <span class="image blitz"> <img src="images/Blitz.jpg" alt="Logo Blitz"/> </span></li>
+						<li> <span class="image lhc"> <img src="images/hcurien.svg" alt="Logo LHC"/> </span></li>
+						<li> <span class="image ujm"><img src="images/cnrs.svg" alt="Logo ujm"/></span></li>
+					</ul>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/jquery.scrollzer.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>

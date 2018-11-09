@@ -1,0 +1,81 @@
+% Exemple de CV utilisant la classe moderncv
+% Style classic en bleu
+% Article complet : http://blog.madrzejewski.com/creer-cv-elegant-latex-moderncv/
+
+\documentclass[11pt,a4paper]{moderncv}
+\moderncvtheme[orange]{classic}           
+\usepackage[utf8]{inputenc}
+\usepackage[top=1.1cm, bottom=1.1cm, left=2cm, right=2cm]{geometry}
+% Largeur de la colonne pour les dates
+\setlength{\hintscolumnwidth}{2.5 cm}
+
+\firstname{Guillaume}
+\familyname{\textbf{Metzler}}
+\title{PhD Student, Data Scientist }          
+\address{5 Rue Antoine Barbier}{69006 LYON}    
+\email{guillaume.metzler@live.fr}                      
+\mobile{06 99 20 44 22} 
+\extrainfo{07 Janvier 1992 - Haguenau\\ 26 ans \\ Permis B \\ Website : \href{https://gmetzler69.github.io/WebPagePro/}{\textcolor{orange}{Click here}}
+}
+\begin{document}
+\includegraphics[scale=0.03]{FullSizeRender.jpg}
+\maketitle
+
+\section{Experiences}
+
+\cventry{January 2016 -\\ January 2019 }{R\&D Engineer - Data Scientist, Blitz Business Service Company, Villefontaine}{}{}{}{\textit{Company working on check Fraud detection, their main costumers are the supermarket distribution. Main tasks :\\
+• Implement the current system using a free software (\textbf{\textsf{R}}),\\
+• Working with graphs and loyalty cards to improve the fraud detection,\\
+• Include the notion of profits of a supermarket in the fraud detection model.\\
+• Working with Linear Discriminant Analysis  and Random Forest to improve the current model with sampling methods,\\
+• Working with: SVM, Logistic Regression, Decision Trees, Random Forests, ...\\
+• Development of a new model using a Metric Learning approach }. }
+\cventry{2015 \\October - December}{R\&D Engineer, Blitz Business Service Company, Villefontaine}{}{}{}{\textit{Fixed-term employee before starting my PhD. Knowledge around the notion of Fraud and Anomaly detection. Working on False checks and implement some strategies using Boosting Methods combine with SVM and basics optimization algorithms, muldi-dimensional scaling. }}
+\cventry{2015 \\ March-September}{Internship at INRIA Villeurbanne (Team Dracula)}{}{
+Supervisors: Fabien Crauste et Olivier Gandrillon}{}{\textit{Study the variability of Immune Response in a population of mice using Mixed Effect Model. Building a model of Ordinary Differential Equations and use the Data to fit the parameters of the model using an SAEM algorithm (Implemented in Monolix).} (6 months)}
+\cventry{2014 \\ June - July}{Internship at  ICPEES (CNRS Strasbourg)}{}{Supervisor : Guy Schlatter}{}{\textit{Modeling using finite element of the Eletrospinning process} (6 weeks).}
+
+\section{Education }
+\cventry{January 2016-\\ June 2019}{PhD Student: Machine Learning}{University of Jean-Monnet - Saint-Etienne, }{PhD on the topic of Fraud and Anomaly Detection}{}{}
+\cventry{2012 -- 2015}{ Magistere: Mathematics}{University of Strasbourg}{Fundamental and Applied Mathematics with honors}{rank: 4/12 during the first year, rank: 5/12 during the second year}{}
+\cventry{2014 -- 2015}{Master 2: Applied Mathematics}{University of Claude Bernard Lyon 1}{Mathematics applied to Biology and Medicine with distinction}{}{}
+\cventry{2013 -- 2014}{Master 1: Fundamental Mathematics}{University of Strasbourg}{Fundamental and Applied Mathematics with distinction}{rank: 8/28}{}
+\cventry{2012 -- 2013}{Bachelor: Fundamental Mathematics }{University of Strasbourg}{Fundamental and Applied Mathematics with honors}{rank: 7/65}{}
+\cventry{2010 -- 2012}{"Classe Préparatoire aux Grandes Ecoles (CPGE)"}{MPSI-MP}{Lycée Kléber}{Strasbourg}{}
+\cventry{2010}{Baccalauréat Scientifique}{Alphonse Heinrich High School - Haguenau}{Option Mathematics}{With Honors}{}{}
+
+%\section{Projects}
+%
+%\cventry{2015}{Project of Research}{}{Study of Principal Component Analysis with L1 norm: theoretical study and implementation using \textbf{\textsf{R}}}{}{}{}
+%\cventry{2014}{Project in Statistics}{}{IRM Segmentation using an Expectation Maximization Algorithm with and without using a Markov field of order 1. Implemention using \textbf{\textsf{R}}}{}{}{}
+%\cventry{2013}{Bachelor Thesis of first year of Magistere}{}{Study of Julia Sets under the Supervision of Jean Dit Teyssier Loïc}{}{}
+%\cventry{2013}{Project of Scientific Computation}{}{Study of Fisher-KPP Equation using finite elements modeling under Scilab}{}{}
+
+\section{Teaching Assistance}
+\cventry{2017-2018 \\
+University of Jean Monnet\\}{Master 1: Optimization \& Operational Research}{Convex Sets and Functions, Linear Algebra, Gradient Descent Algorithm and its variants, Application to Logistic Regression, Condition Number, Practical Session using \textbf{\textsf{R}}}{(18 hours)}{}{}
+\cventry{}{Master 1: Introduction in Machine Learning}{Generalization, Cross-Validation, k-NN algorithm, Bayesian Approaches}{(6 hours)}{}{}
+\cventry{2016-2017 \\
+University of Jean Monnet\\}{Master 1: Optimization \& Operational Research}{Convex Sets and Functions, Linear Algebra, Gradient Descent Algorithm and its variants, Practical Session using \textbf{\textsf{R}}}{(10 hours)}{}{}
+
+\section{Publications}
+\cventry{\raisebox{-1.2cm}{ \includegraphics[width=1.2cm]{PRL.jpg}}}{Learning maximum excluding ellipsoids from imbalanced data with theoretical guarantees}{G. Metzler, X.Badiche, B.Belkasmi, E. Fromont, A. Habrard and M. Sebban}{Pattern Recognition Letter}{2018}{}
+\cventry{\raisebox{-1.2cm}{ \includegraphics[width=1.4cm]{IDA2018.png}}}{Tree-based Cost Sensitive Methods for Fraud Detection in Imbalanced Data}{ G. Metzler, X.Badiche, B.Belkasmi, E. Fromont, A. Habrard and M. Sebban}{ International Symposium on Intelligent Data Analysis (IDA)}{Netherlands, 2018}{}
+\cventry{\raisebox{-0.8cm}{ \includegraphics[width=1.2cm]{Cap.png}}}{\textbf{CONE} : Un algorithme d’optimisation de la F-Mesure par pondération des erreurs de classification}{K. Bascol, R. Emonet, E. Fromont, A. Habrard, G. Metzler and M. Sebban}{Conférence sur l'Apprentissage Automatique (CAp)}{Rouen, 2018}{}
+\cventry{\raisebox{-0.6cm}{\includegraphics[width=1.2cm]{CAp.png}}}{Apprentissage de sphères maximales d’exclusion avec garanties théoriques}{G. Metzler, X.Badiche, B.Belkasmi, S. Canu, E. Fromont, A. Habrard and M. Sebban}{Conférence sur l'Apprentissage Automatique (CAp)}{Grenoble, 2017}{}
+
+
+\section{Computer Skills}
+\cvitem{}{\textbf{\textsf{R}}, Scilab, Maple, Monolix, Feel ++, \LaTeX}
+
+
+\section{Languages}
+
+\cvlanguage{English}{University level }{10 years of study -- TOEIC : 710 / 990}
+\cvlanguage{German}{CPGE level}{ 9 years of study}
+
+\section{Other Activites }
+\cvitem{Sport}{Running, Cycling, Fitness}
+\cvitem{Jobs 2010 -- 2014}{Working as Logistician during the summer (SCHAEFLLER France) 4x8, 2x8}
+
+\end{document}
