@@ -1,0 +1,297 @@
+---
+title: "Statistique Inférentielle, M1 Info Lyon 2, 2021, TD2"
+author: "Guillaume Metzler"
+output: pdf_document
+---
+
+# Exercice 1 : Biostatistiques
+
+On commence par charger le package nécessaire à l'import et à la lecture des données.
+
+```{r setup, eval=FALSE}
+install.packages("data.table")
+library(data.table)
+```
+
+Nous pouvons maintenant charger les données de l'étude et regarder de quoi il s'agit.
+L'option "header=TRUE" signifie que notre fichier comprend des noms pour les variables et que ces derniers seront utilisés comme nom de colonnes de votre jeu de données.
+
+```{r}
+tryptone = read.table("Tryptone.dat.txt", header=TRUE)
+head(tryptone)
+```
+Ce jeu de données comporte 9 variables, la première est une sorte d'identifiant d'une expérience raélisée dans certaines conditions de "Températures" et de "concentrations" d'une certaine espèce chimique ou biologique. Les mesures sont également effectuées à des temps différents. Les variables "Count" vont compter le nombre de bactéries présentes pour les 5 souches de bactéries.
+
+```{r}
+tryptone=rbind(data.frame(Souche=rep("Souche1",30),tryptone[,7:9],Count=tryptone[,2]),
+               data.frame(Souche=rep("Souche2",30),tryptone[,7:9],Count=tryptone[,3]),
+               data.frame(Souche=rep("Souche3",30),tryptone[,7:9],Count=tryptone[,4]),
+               data.frame(Souche=rep("Souche4",30),tryptone[,7:9],Count=tryptone[,5]),
+               data.frame(Souche=rep("Souche5",30),tryptone[,7:9],Count=tryptone[,6]))
+```
+ 
+Nous aurions également pu utiliser la fonction \textit{stack} de R
+ 
+```{r,eval = FALSE}
+tryptone = read.table("Tryptone.dat.txt",header=TRUE) 
+tryptone=cbind(stack(tryptone[,2:6]),rep(tryptone$Time,5),rep(tryptone$Temp,5),rep(tryptone$Conc,5)) 
+names(tryptone)=c('Count','Souche','Time','Temp','Conc')
+levels(tryptone$Souche) = c("Souche1","Souche2","Souche3","Souche4","Souche5")
+```
+ 
+ Lorsque l'on manipule des données à l'aide de R, il est souvent plus commode dans les mettre dans un format que l'on appelle data.frame et qui présente de nombreux avantages pour des études "graphiques" et "statistiques.
+ 
+ On pourra par exemple regarder, d'un point de vue graphique, si le nombre de bactéries varie d'une souche d'une souche à l'autre, dépend de la température, du temps de mesure ou encore de la concentration.
+ 
+```{r}
+par(mfrow=c(2,2)) 
+boxplot(Count~Souche, data = tryptone, main = 'Souche')
+boxplot(Count~Temp, data = tryptone, main = 'Temp')
+boxplot(Count~Time, data = tryptone, main = 'Time')
+boxplot(Count~Conc, data = tryptone, main = 'Conc')
+```
+ 
+ Pour les trois derniers graphes, l'étude d'un éventuel lien entre les facteurs "Time", "Conc" et "Temp" est faite sur le nombre total de bactéries, c'est-à-dire que l'on ne tient pas compte de la souche.\\
+ 
+ Une première observation montre que le nombre de bactéries ne semble pas varier de façon signficative d'une souche à une autre. 
+ En revanche, les trois autrers facteurs semblent avoir un impact sur la numération du nombre de bactéries. 
+ Il nous faut employer des outils statistiques et notamment des tests afin de vérifier que l'impact de ces facteurs est réellement signicatif. 
+ 
+ ## Influence du temps
+ 
+ On observe que le nombre de bactéries est plus faible à $t=24$ qu'à $t=48$, vérifions cela à l'aide d'un test statistique. \\
+ Comme il s'agit d'étudier s'il y a une relation entre une variable quantitative et une variable qualitative, on va donc procéder à un test de Student où les hypothèses sont 
+ 
+ \[H_0 : \text{le nombre de cellules est indépendant du temps}\]
+ \centerline{v.s.}
+ \[H_1 : \text{le nombre de cellules est plus petit à t=24}.\]
+ 
+ On indique cela avec l'alternative "less" car la modalité $t=24$ est la première qui apparaît pour la variable "Time". On se rappelle que ce test est valable car nous avons des échantillons de tailles importantes (>30). Si cela n'avait pas été le cas, nous aurions dû vérifier que notre échantillon est bien gaussien à l'aide d'un test de Shapiro.\\
+ 
+```{r}
+t.test(Count~Time,data=tryptone,alternative="less")
+```
+On note que l'on effectue un test de Welch, ce qui signifie que l'on a fait les hypothèses que la variance de nos deux échantillons sont différentes. 
+Nous aurions pu procéder, en amont, à un test Fisher afin de tester l'égalité des variances.
+ 
+ On observe que le nombre de bactéries semble plus important après 48 heures comme le confirme le test qui retourne une p-value de $2e^{-16}$. \\
+ 
+Dans le cadre de cours, nous serons toujours amenés à rejeter l'hypothèse nulle dans lorsque la $p-$value retournée par le test est inférieure à $0.05$.\\
+
+\paragraph{Remarque :} nous aurions également pu effectuer un test sur un seul échantillon en considérant l'échantillon "différence" entre la numération des cellules à $t=24$ avec la numération des cellules à $t=48$.
+
+```{r}
+t.test(tryptone[tryptone$Time==24,"Count"]-tryptone[tryptone$Time==48,"Count"],alternative="less")
+```
+ 
+Le résultat reste inchangé. 
+ 
+ ## Influence de la température
+ 
+ On doit à nouveau tester la dépendance entre une variable quantitative et une variable qualitative, cepndant, la variable qualitivative comporte cette fois-ci 3 modalités, on ne pourra donc plus effectuer un test de student, mais plutôt une analyse de variance (ANOVA). On va donc tester effectuer le test suivant 
+ 
+ \[H_0 : \text{les deux variables sont indépendantes}\]
+ \centerline{vs}
+\[H_1 : \text{la température a une incidence sur le nombre de cellules}\] 
+
+```{r}
+res = aov(Count~Temp,data=tryptone)
+summary(res)
+```
+ 
+La $p-$value est ici plus petite que $0.05$, on en déduit que le facteur \textit{Température} a bien une influence sur la numération du nombre de bactéries.\\\  
+ 
+Si on souhaite vérifier que ce test est valide, il faudrait à nouveau vérifier que nos échantillons sont gaussiens, ou, à défaut, que l'échantillon soit de taille suffisamment importante.
+En outre, il faudraitégalement vérifier que nos variances sont égales d'une population à une autre (test de Bartlett) et que nos résidus sont bien normalement distribués (test de shapiro)
+ 
+ ## Influence de la concentration
+ 
+```{r}
+res = aov(Count~Conc,data=tryptone)
+summary(res)
+```
+
+On doit à nouveau effectuer une ANOVA car la variable concentration prend un nombre restreint de valeurs (5 modalités), donc bien que continue d'un point de vue "physique", on va la considérer comme une variable catégorielle.\\
+
+La $p-$value de $1.4e^{-7}$ nous indique bien que le facteur "concentration" a une infleunce sur la numération des bactéries
+
+ ## Influence de l'origine de la souche
+ 
+ On peut faire de même pour les souches
+ 
+```{r}
+res = aov(Count~Souche,data=tryptone)
+summary(res)
+```
+ 
+ Cette fois-ci, comme nous avons pu l'observer graphique, le facteur "souche" n'a aucune influence sur la numération.
+ 
+ \paragraph{Remarque :} ici, nous avons simplement effectuer une analyse de variance à un seul facteur, mais nous aurions très bien pu faire de même avec 2 facteurs, en prenant en compte les intéractions (par exemple souche et concentration).
+ Nous traiterons ces cas là dans les prochaines séances.
+ 
+# Exercice 2 : Statistiques pour le marketing
+
+```{r}
+visa = read.table("VisaPremier.txt", header=TRUE, na.strings = ".")
+head(visa)
+```
+
+## Pré-traitements
+
+La première chose à faire lorsque l'on dispose d'un jeu de données est de vérifier que ce dernier soit "propre" afin que l'on puisse effectuer un traitement statistiques, \textit{i.e.} il faudra par exemple vérifier que ce dernier ne contient pas de valeurs manquantes.
+
+```{r}
+# Le jeu de données contient-il des valeurs manquantes ?
+sum(is.na(visa))
+```
+
+A priori le jeu de données contient beaucoup de valeurs manquantes. La façon dont on va remplacer les valeurs manquantes va dépendre de la nature des variables :
+
+\begin{itemize}
+\item[•] \textbf{Quantitatives :} on remplace habituellement les valeurs manquantes par une valeur neutre comme la moyenne. Nous pourrions aussi utiliser un modèle de régression basé sur les autres variables pour traiter ces valeurs manquantes. 
+\item[•] \textbf{Qualitatives/Catégorielles :} on remplace généralement ces valeurs manquantes par le mode.
+\end{itemize}
+
+Il existe même des algorithmes dédiés spécialement au traitement des valeurs manquantes (fonction "mice" sous R), mais ce n'est pas le but ici. 
+On commence par, identifier les variables catégorielles de notre jeu de données ainsi que les variables quantitatives.
+On va donc traiter deux data frame différentes pour cette phase de pré-traitements.
+
+```{r}
+index_categ_features <- c(1,2,3,4,6,8,9,45,46,47)
+visa_categ <- visa[,index_categ_features]
+visa_quanti <- visa[,-index_categ_features]
+```
+
+On peut maintenant examiner les différentes variables. En commençant par les variables catégorielles
+
+```{r}
+for (j in c(1:dim(visa_categ)[2])){
+        
+        nom_variable <- names(visa_categ)[j]
+        if(sum(is.na(visa_categ[,j]))>0){
+                print(paste(sprintf("La variable %s présente des valeurs manquantes",nom_variable)))
+        }
+}
+```
+
+Donc deux features présentent des valeurs manquantes, les features "departem" et "codeqlt". On va remplacer ces valeurs manquantes par le mode. On va le faire  en complétant la fonction qui précède.
+
+```{r}
+for (j in c(1:dim(visa_categ)[2])){
+        if(sum(is.na(visa_categ[,j]))>0){
+                
+                mode <- names(sort(table(visa_categ[,j]),decreasing=TRUE))[1]
+                visa_categ[which(is.na(visa_categ[,j])),j] = mode
+                visa_categ[,j] <- factor(visa_categ[,j])
+        }
+}
+```
+
+On peut appliquer la petite boucle qui précède pour vérifier que l'on n'a plus de valeurs manquantes ou avec :
+
+```{r}
+summary(visa_categ)
+```
+
+On remarque que la variable "ptvente" est considérée comme une variable numérique par R, il faut donc remédier à cela en précisant que les valeurs numériques font références à des catégories.
+
+```{r}
+visa_categ$ptvente <- factor(visa_categ$ptvente)
+```
+
+Enfin, on peut remarquer que les variables "sexer", "cartevpr" ne sont que des copies de "sexe" et "cartevp", on peut donc les supprimer. Le matricule étant un identifiant, il n'est pas nécessaire à l'étude
+
+```{r}
+visa_categ$matricul <- NULL
+visa_categ$sexer <- NULL
+visa_categ$cartevpr <- NULL
+```
+
+Traitons maintenant le cas des variables quantitatives, en remplacant les valeurs manquantes par la valeur moyenne.
+
+```{r}
+for (j in c(1:dim(visa_quanti)[2])){
+        if(sum(is.na(visa_quanti[,j]))>0){
+              
+                index <- which(is.na(visa_quanti[,j]))
+                moy <- mean(visa_quanti[-index,j])
+                visa_quanti[index,j] = moy
+        }
+}
+```
+
+On vérifie rapidement que le process ait bien fonctionné et on va en même temmps voir s'il n'y a pas d'autres variables que l'on pourrait exclure de l'étude.
+
+```{r}
+summary(visa_quanti)
+```
+
+On remarque que la variable "nbimpaye" est constante, on peut donc la supprimer de notre étude
+
+```{r}
+visa_quanti$nbimpaye <- NULL
+```
+
+Maintenant que les données sont prêtes, nous pouvons à nouveau regrouper notre base de données et démarrer notre analyse
+
+```{r}
+visa <- cbind(visa_categ,visa_quanti)
+```
+
+## Analyse des données : étude de la corrélation
+
+on va focaliser notre analyse sur les variables "avtscpte" et "nbpaiecb" et on va d'abord voire comment sont distribuées les valeurs de ces deux variables
+
+```{r}
+hist(visa$avtscpte)
+```
+L'histogramme ne montre pas grand chose, si ce n'est que les valeurs des avoirs sont très étalées sur la droite. Peut-être qu'une transformation des données permettrait d'identifier plus facilement la distribution. Regardons ce qu'il se passe si on considère le log de nos données.
+
+```{r}
+hist(log(visa$avtscpte))
+```
+
+Nous pouvons maintenant essayer de voir s'il y a un lien éventuel entre le fait de posséder la carte Visa Premier et cette feature "avtscpte".
+Comme on veut étudier le lien entre une variable quanti et quali, on va donc utiliser un boxplot. Attention, étant donnée l'observation précédente, on va surtout considérer le log de la variable avtscpte
+
+```{r}
+boxplot(log(avtscpte)~cartevp, data = visa)
+```
+A priori, il semblerait que les détenteurs d'une carte Visa Premier possèdent plus d'avoirs que les autres. On va donc procéder à un test statistique pour confirmer cette observation. Comme on veut étudier l'imapct d'une variable quali à deux modalités sur une variable quanti, on va procéder à un test de Student.
+On fera un test unilatéral inférieur, c'est-à-dire que l'on va préciser alternative = "less" dans les options du test.
+
+```{r}
+t.test(avtscpte~cartevp, data = visa, alternative = "less")
+```
+
+La $p-$value du test étant plus petite que $0.05$, on peut donc rejeter l'hypothèse d'indépendance et dire que les deux variables sont liées. On peut même dire que le fait de posséder la carte Visa Premier implique des un montant d'avoirs supérieur à ceux ne possédant pas cette carte.\\
+
+Procédons de la même façon avec la variable "nbpaiecb". Nous pourrions refaire un histogramme des valeurs, mais on va de suite passer à l'analsye de corrélations
+
+```{r}
+boxplot(nbpaiecb~cartevp, data = visa)
+```
+
+La réponse est un peu évidente en regardant ces deux boxplots. On peut voir que les médianes sont identiques, en revanche les distributions sont des différentes d'une modalité à une autre donc on peut espérer que la variable "cartevp" ait une influence sur la variable "nbpaiecb".
+
+```{r}
+t.test(nbpaiecb~cartevp, data = visa)
+```
+
+Ce test confirme bien que les deux variables sont liées. \\
+
+On finit cette étude en regardant si les variables "sexe" et "cartevp" sont éventuellement liées. 
+Il s'agit de deux variables qualitatives cette fois-ci, on va donc représenter cela sous la forme d'un graphe un peu différent mais pas par un boxplot.
+
+```{r}
+plot(table(visa$cartevp, visa$sexe))
+```
+
+Le graphique suggère effectivement que la proportion de femme ayant une carte vp n'est pas identique à la proportion de femme ne possédant pas de carte vp. 
+On va confirmer cela à l'aide d'un test du Khi-deux (pour rappel, ce test est valable si le nombre d'individus dans chaque croisement est supérieur à 5)
+
+```{r}
+chisq.test(visa$sexe,visa$cartevp)
+```
+
+A nouveau le sexe a bien une influence sur le fait d'être détenteur de la carte Visa Premier.
