@@ -2640,7 +2640,7 @@ input, select, textarea {
 
 		#header .image.avatar {
 			margin: 0 0 1em 0;
-			width: 18em;
+			width: 15em;
 		}
 
 /* Footer */
@@ -3119,7 +3119,7 @@ input, select, textarea {
 /* Small */
 
 	@media screen and (max-width: 736px) {
-
+  
 		/* Basic */
 
 			h1 {

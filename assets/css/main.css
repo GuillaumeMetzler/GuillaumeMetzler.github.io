@@ -2373,6 +2373,8 @@ input, select, textarea {
 	@media screen and (max-width: 736px) {
 
 		/* Basic */
+		
+		
 
 			body, input, select, textarea {
 				line-height: 1.75em;
@@ -2395,10 +2397,6 @@ input, select, textarea {
 			}
 
 		/* Image */
-
-			.image.left {
-				width: 25%;
-			}
 
 		/* Button */
 
