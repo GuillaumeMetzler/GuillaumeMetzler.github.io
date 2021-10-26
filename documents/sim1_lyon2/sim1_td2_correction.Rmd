@@ -143,7 +143,7 @@ Nous sommes dans un cas où nous disposons de grands échantillons, donc on, sel
 
 
 \begin{itemize}
-\item quali - quanti : ANOVA
+\item quali - quanti :Student car la variable cible n'a que deux modalités
 \item quali - quali : Khi-deux
 \end{itemize}
 
@@ -169,9 +169,9 @@ test_quali_quali <- function(i,data){
 test_quali_quanti <- function(i,data){
   
   # On a simplement à effectuer le test
-  test_aov <- aov(X21~data[,i], data=data)
+  test_stud <- t.test(data[,i]~X21, data=data)
   # On extrait la p-value que l'on pourra comparer au risque d'erreur alpha
-  p_value <- summary(test_aov)[[1]][["Pr(>F)"]][1]
+  p_value <- test_stud$p.value
   return(p_value)
   
 }
@@ -203,7 +203,7 @@ for (i in 1:(dim(data)[2]-1)){
   
   if (nature_variable == "double"){
     
-    nature_test <- "ANOVA"
+    nature_test <- "Student"
     p_value <- test_quali_quanti(i,data)
     
   }
@@ -233,6 +233,16 @@ print(paste("X",list_uncorr,sep=""))
 ```
 
 
+La correction est incomplète ici.
+En effet, pour effectuer le test de Student, il faudrait vérifier que les conditions soient réunies :
+
+\begin{itemize}
+\item[•] taille des différents groupes $\ge 30$ ou gaussiens (test de shapiro)
+\item[•] vérfier, à l'aide d'un test de Fisher, si les variances sont égales ou non
+\end{itemize}
+
+De la même façon, pour le test du Chi-deux, il faudrait vérifier que les effectifs de nos différentes tables de contigence soient au minimum égaux à $5$. 
+C'est le cas pour la variable référencée dans la quatrième colonne de notre jeu de données où il est nécessaire de regrouper trois colonnes ensembles afin de vérifier cette condition.
 
 
 
