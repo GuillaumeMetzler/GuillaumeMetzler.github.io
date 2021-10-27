@@ -100,6 +100,7 @@ t.test(av-ap~sexe,data=cholesterol,alternative="greater")
 
 
 
+
 ## Exercice 2
 
 Nous sommes en présence de deux variables catégorielles. Commençons par créer le tableau de contigence :

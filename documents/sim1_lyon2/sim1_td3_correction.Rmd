@@ -36,7 +36,8 @@ lines(density(norm_sample), col = "red", lwd = 3)
 
 x=seq(min(norm_sample)-1,max(norm_sample)+1,0.1)
 lines(x,dnorm(x,mu,ect), col= "black", lwd = 2)
-legend(max(norm_sample)-5, 0.13, legend = c("density_emp", "density_th"), col = c("red","black"), lwd = 2)
+legend(max(norm_sample)-5, 0.13, legend = c("density_emp", "density_th"), 
+       col = c("red","black"), lwd = 2)
 
 
 
@@ -68,7 +69,8 @@ lines(density(norm_sample), col = "red", lwd = 3)
 
 x=seq(min(norm_sample)-1,max(norm_sample)+1,0.1)
 lines(x,dnorm(x,mean_emp,sd_emp), col= "black", lwd = 2)
-legend(max(norm_sample)-5, 0.13, legend = c("density_emp", "density_th"), col = c("red","black"), lwd = 2)
+legend(max(norm_sample)-5, 0.13, legend = c("density_emp", "density_th"), 
+       col = c("red","black"), lwd = 2)
 
 
 
@@ -128,6 +130,67 @@ shapiro.test(exp_sample_1000)
 
 Sans surprise, les tests de shapiro conduisent bien au rejet de l'hypothèse nulle, i.e. au rejet de l'hypothèse de normalité des données. 
 Le rejet est d'autant plus important ou sûr que la taille de l'échantillon augmente. 
+
+## Parenthèse sur la transformation de Boxcox
+
+### Présentation
+
+Il s'agit d'une transformation proposée par Box et Cox dans les années 60 et qui consiste à transformer un échantillon prenant des valeurs positives de façon à ce que l'échantillon se rapproche d'une loi normale.
+
+La transformation employée est une application $\varphi_{\lambda} : \mathbb{R}_+^\star \rightarrow \mathbb{R}$, pour tout $\lambda\in \mathbb{R}$ définie par
+
+\[\varphi_{\lambda}(x) = \begin{cases}
+\dfrac{x^\lambda - 1}{\lambda} & \text{si}\quad  \lambda \neq 0 \\
+\log(x) & \text{si}\quad  \lambda = 0 \\
+\end{cases}\]
+
+Dans le cas où $\lambda = 0$, il s'agit d'une transformation logarithmique des données. Lorsque $\lambda = 1$, on ne transforme pas réellement les données mais on se contente d'effectuer une translation de $1$ de ces dernières.\
+Notons que comme la fonction est strictement monotone et croissante, alors l'ordre des valeurs de $x$ est conservé après transformation des données.\
+
+La question est maintenant de savoir comment déterminer la valeur de $\lambda$. 
+On passe les aspects théoriques (vraisemblance) et on va directement se concentrer sur la pratique en utilisant la fonction "boxcox" de R.
+
+
+### Mise en application
+
+On va commencer par reprendre notre échantillon tiré selon la loi exponentielle de taille $n=1000$ et on va regarder qu'elle est la bonne transformation à appliquer pour obtenir une loi normale
+
+```{r}
+# Histogramme
+hist(exp_sample_1000, breaks=10, prob = TRUE, 
+     col = "#456ABF", border= "black", ylim = c(0,0.08), xlim =c(0, max(exp_sample_1000)))
+lines(density(exp_sample_1000), col = "red", lwd = 3)
+
+x=seq(0,max(exp_sample_1000)+1,0.1)
+lines(x,dexp(x,lambda), col= "black", lwd = 2)
+legend(max(exp_sample_1000)-60, 0.08, legend = c("density_emp", "density_th"), 
+       col = c("red","black"), lwd = 2)
+
+```
+On détermine la bonne valeur de $\gamma$ pour la transformation de boxcox de nos données. 
+C'est celui qui va maximiser notre log-vraisemblance
+
+```{r}
+# Calcul du gamma optimal 
+library(MASS)
+
+res_box <- boxcox(exp_sample_1000~1, lambda = seq(0,4,0.01))
+gamma_opt <- res_box$x[which.max(res_box$y)]
+
+# Transformation des données et représentation des données
+
+exp_boxcox <- (exp_sample_1000^(gamma_opt)-1)/gamma_opt
+
+hist(exp_boxcox, breaks=10, prob = TRUE, 
+     col = "#456ABF", border= "black", ylim = c(0,0.20), xlim =c(min(exp_boxcox)-1, max(exp_boxcox)+1))
+lines(density(exp_boxcox), col = "red", lwd = 3)
+
+# On peut ensuite tester la normalité
+
+shapiro.test(exp_boxcox)
+
+```
+
 
 ## Données réelles
 
