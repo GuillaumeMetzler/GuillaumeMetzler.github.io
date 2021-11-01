@@ -315,6 +315,10 @@ input, select, textarea {
 		.row > .imp {
 			order: -1;
 		}
+		
+		.row > .col-tot{
+		  width: 100%;
+		}
 
 		.row > .col-1 {
 			width: 8.33333%;
