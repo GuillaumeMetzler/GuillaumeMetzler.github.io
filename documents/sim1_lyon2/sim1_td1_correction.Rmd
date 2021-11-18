@@ -295,3 +295,24 @@ chisq.test(visa$sexe,visa$cartevp)
 ```
 
 A nouveau le sexe a bien une influence sur le fait d'être détenteur de la carte Visa Premier.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
