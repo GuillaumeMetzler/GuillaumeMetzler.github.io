@@ -129,6 +129,7 @@ Les périodes $B$ et $C$ sont significativement différentes alors que $A$ et $C
 On se propose de travailler à nouveau sur le fichier GermanCredit afin de répondre à plusieurs questions. Cet exercice est très proche de ce qui vous attendra à l'examen. 
 
 ```{r}
+library(readr)
 data <- read_table2("http://eric.univ-lyon2.fr/~jjacques/Download/DataSet/GermanCredit.data", 
     col_names = FALSE)
 ```
@@ -157,6 +158,14 @@ data=data.frame(data,sexe=as.factor(sexe))
 
 boxplot(X5~sexe,data)
 ```
+On va regarder la taille des échantillons pour voir s'il est nécessaire de faire ou non de vérifier le caractère gaussien des données des différents groupes
+
+```{r}
+table(sexe)
+```
+
+Nos échantillons sont suffisamment grands pour que cette vérification ne soit pas nécessaire. \
+
 Le boxplot suggère que les femmes empruntent moins que les hommes en moyenne. On va donc faire le test de Student suivant après avoir vérifier l'homogénéité des variances
 
 ```{r}
@@ -306,15 +315,27 @@ qqnorm(modele$residuals)
 qqline(modele$residuals)
 ```
 
-Inutile de faire un test de Shapiro pour voir que les réisdus ne sont pas gaussiens. 
-Regardons à nouveau avec le log des données 
+Inutile de faire un test de Shapiro pour voir que les résidus ne sont pas gaussiens. 
+Regardons à nouveau avec le log des données pour voir si cela change les choses.
 
 ```{r}
 modele=aov(log(data$X5)~data$X4)
 qqnorm(modele$residuals)
 qqline(modele$residuals)
+
+shapiro.test(modele$residuals)
 ```
 
+Nos résidus sont gaussiens visuellement même si un test de shapiro semble dire de la contraire (on se rappelle que ce modèle est très robuste ainsi si quelques données dévient un peu de la normalité, cette hypothèse sera automatiquement rejetée).\
+
+Malheureusement nos échantillons ne sont pas gaussiens, nous n'avons pas d'autres choix que de faire une alternative non paramétrique de l'ANOVA, i.e. un test de Kruskall-Wallis.
+
+```{r}
+modele=kruskal.test(data$X5~data$X4)
+modele
+```
+
+Ce test conduit au rejet de l'hypothèse d'indépendance entre les deux variables.
 
 
 ### Question 5
@@ -326,28 +347,63 @@ On cherche à savoir si le montant emprunté est différent selon notre situatio
 \item[•] $H_1 :$ le montant emprunté dépend de notre situation personnelle
 \end{itemize}
 
-La variable qualitative prenant plus que deux modalités, nous devrons faire une Analyse de Variance, on vérifiera les hypothèses de l'ANOVA a posteriori 
+La variable qualitative prenant plus que deux modalités, nous devrons faire une Analyse de Variance ou son alternative non paramétrique si les conditions de l'ANOVA ne sont pas vérifées. 
+
+Commençons par illuster graphique les données à l'aide d'un boxplot et remarquons que le facteur étudié a un bien impact sur le montant emprunté.
 
 ```{r}
-modele = aov(X2~X17,data)
-```
-
-```{r}
-qqnorm(modele$residuals)
-qqline(modele$residuals)
-shapiro.test(modele$residuals) # taille ech
+boxplot(X2~X17,data)
 ```
 
 
+Commençons par regarder l'homogénéité des variances à l'aide d'un test de Bartlett
 
+```{r}
+bartlett.test(X2~X17,data)
+```
+On remarque que l'hypothèse d'homoscédasticité n'est pas vérifiée ici. Mais on ne soucit pas réellement de cette hypothèse là en pratique surtout quand nos effectifs sont grands et semblables. \
+
+On peut maintenant regarder si nos échantillons sont gaussiens ou non.
+
+```{r}
+table(data$X17)
+```
+
+Il nous faut donc vérifier si le montant de l'emprunt des individus du groupe "A171" sont normalement distribués. 
+
+```{r}
+shapiro.test(data$X2[data$X17=="A171"])
+```
+Ce qui n'est pas le cas, nous n'avons donc pas d'autre choix que de faire un test non paramétrique de Kruskal Wallis pour vérifier si les variables étudiantes sont indépendantes ou non.
+
+```{r}
+modele = kruskal.test(X2~X17,data)
+modele
+```
+On remarque que nos variables sont à nouveau liées, i.e. on peut dire que le facteur situation personnelle en terme de logement à un impact sur le montant emprunté. 
 
 ### Question 6
 
 Enfin, on souhaite savoir si le montant du crédit est lié à la durée de ce dernier. On formule alors les hypothèses suivantes :
 
 \begin{itemize}
-\item[•] $H_0 :$ 
-\item[•] $H_1 :$ 
+\item[•] $H_0 :$ le montant du crédit est lié à la durée du crédit, il y a une dépendance linéaire entre les deux facteurs
+\item[•] $H_1 :$ le montant du crédit n'est pas lié à la durée du crédit. Il n'y a pas de dépendance linéaire entre les deux variables. 
 \end{itemize}
 
+On va commencer par observer si cette dépendance linéaire existe ou non.
 
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=X5, y=X2)) +
+geom_point() +
+geom_smooth(method=lm,se=FALSE) 
+```
+
+Est-ce que cette relation est significative ou non ? On va faire un test de corrélation pour vérifier cela.
+
+```{r}
+cor.test(data$X5,data$X2)
+```
+
+La relation linéaire entre les deux variables est significative.
