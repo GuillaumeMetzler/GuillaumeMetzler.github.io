@@ -46,9 +46,9 @@ Dans notre cas, on considérera donc la statistique
     \frac{S_2^2}{S_1^2} & \sim F_{n_2-1,n_1-1}.
 \end{align*}
 
-Le quantile associé au risque $1-\alpha$ dans la table de la loi de Fisher avec degrés $n_2-1=60$ et $n_1-1=40$ est $f_{60,40,.95}=1.64$.On calcule maintenant le rapport des variances corrigées. On a $s_1^2=41/40 \cdot 0.08=0.082$ et $s_2^2=61/60 \cdot 0.09=0.0915$. Le rapport est 
+Le quantile associé au risque $1-\alpha$ dans la table de la loi de Fisher avec degrés $n_2-1=60$ et $n_1-1=40$ est $f_{60,40,.95}=1.64$.On calcule maintenant le rapport des variances corrigées. On a $s_1^2=41/40 \cdot 0.08^2=0.00656$ et $s_2^2=61/60 \cdot 0.09$2=0.008235$. Le rapport est 
 \begin{align*}
-    \frac{s_2^2}{s_1^2} & = 1.12.
+    \frac{s_2^2}{s_1^2} & = 1.26.
 \end{align*}
 
 Comme la statistique de test ne dépasse pas ce quantile, on ne peut pas rejeter $H_0$. Il est raisonnable de supposer les variances égales (même si toutefois le risque de se tromper, le risque de second espèce, n'est pas connu).
@@ -175,7 +175,7 @@ sans <- c(68,64,68,82,58,80,72,65,84,73,65,59,78,67,65)/100
 avec <- c(73,62,76,92,68,87,77,70,88,79,72,80,78,86,78)/100
 
 # Test de Wilcoxon
-wilcox.test(avec,sans,alternative = "greater")
+wilcox.test(avec,sans,alternative = "greater", correct=FALSE)
 ```
 
 Remarque : les valeurs de la statistique de test sont différentes de celles calculées, nous sommes entrain de regarder pourquoi ...
