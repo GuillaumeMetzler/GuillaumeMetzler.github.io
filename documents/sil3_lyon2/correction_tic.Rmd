@@ -5,7 +5,7 @@ date: "11/24/2021"
 output: pdf_document
 ---
 
-# Fiche de TD numéro 3
+# Fiche de TD numéro 3 
 
 
 ## Exercice 1 : Etude de deux populations indépendantes
@@ -40,15 +40,15 @@ Maintenant, sous $H_0$, on a $\sigma_1^2=\sigma_2^2$, et on obtient
     \frac{S_1^2}{S_2^2} & \sim F_{n_1-1,n_2-1}.
 \end{align*}
 
-Par principe, nous respecterons ce que vous avez vu en cours et on mettra au numérateur la plus grande des deux variance, et ainsi on sera amener à faire un test unilatéral (car la statistique sera forcément plus grande que 1).
+Par principe, nous respecterons ce que vous avez vu en cours et on mettra au numérateur la plus grande des deux variance, et ainsi on sera amené à faire un test unilatéral (car la statistique sera forcément plus grande que 1).
 Dans notre cas, on considérera donc la statistique 
 \begin{align*}
     \frac{S_2^2}{S_1^2} & \sim F_{n_2-1,n_1-1}.
 \end{align*}
 
-Le quantile associé au risque $1-\alpha$ dans la table de la loi de Fisher avec degrés $n_2-1=60$ et $n_1-1=40$ est $f_{60,40,.95}=1.64$.On calcule maintenant le rapport des variances corrigées. On a $s_1^2=41/40 \cdot 0.08^2=0.00656$ et $s_2^2=61/60 \cdot 0.09$2=0.008235$. Le rapport est 
+Le quantile associé au risque $1-\alpha$ dans la table de la loi de Fisher avec degrés $n_2-1=60$ et $n_1-1=40$ est $f_{60,40,.95}=1.64$.On calcule maintenant le rapport des variances corrigées. On a $s_1^2=41/40 \cdot 0.08^2=0.00656$ et $s_2^2=61/60 \cdot 0.09^2=0.008235$. Le rapport est 
 \begin{align*}
-    \frac{s_2^2}{s_1^2} & = 1.26.
+    \frac{s_2^2}{s_1^2} & \simeq 1.255.
 \end{align*}
 
 Comme la statistique de test ne dépasse pas ce quantile, on ne peut pas rejeter $H_0$. Il est raisonnable de supposer les variances égales (même si toutefois le risque de se tromper, le risque de second espèce, n'est pas connu).
@@ -60,19 +60,19 @@ On se tourne maintenant vers la comparaison des espérances. On a
 \begin{align*}
     \bar X_1-\bar X_2 & \sim \mathcal N\left(\mu_1-\mu_2,\frac{\sigma_1^2}{n_1}+\frac{\sigma_2^2}{n2}\right).
 \end{align*}
-Sous l'hypothèse que les variances sont \'egales, c'est à dire que $\sigma_1=\sigma_2=:\sigma^2$, on obtient 
+Sous l'hypothèse que les variances sont égales, c'est à dire que $\sigma_1=\sigma_2=:\sigma^2$, on obtient 
 \begin{align*}
-    \bar X_1-\bar X_2 & \sim \mathcal N\left(\mu_1-\mu_2,\sigma^2\left(\frac{1}{n_1}+\frac{1}{n2}\right)\right).
+    \bar X_1-\bar X_2 & \sim \mathcal N\left(\mu_1-\mu_2,\sigma^2\left(\frac{1}{n_1}+\frac{1}{n_2}\right)\right).
 \end{align*}
 En remplaçant les variances par les valeurs empiriques, on estime $\sigma^2$ traditionnellement par 
 \begin{align*}
-    S^2 & = \frac{(n_1-1)S_1^2+(n_2-1)S_2^2}{n_1+n_2-2} \quad \text{numériquement} \quad S^2 = \frac{(41-1) \times 0.082 + (61-1) \times 0.0915 }{41 + 61 -2} = 0.0877
+    S^2 & = \frac{(n_1-1)S_1^2+(n_2-1)S_2^2}{n_1+n_2-2} \quad \text{numériquement} \quad S^2 = \frac{(41-1) \times 0.00656 + (61-1) \times 0.006235 }{41 + 61 -2} = 0.007565
 \end{align*}
-et on a le résultat suivant: la variable $T$ donnée par 
+et on a le résultat suivant :  
 \begin{align*}
-    T & = \frac{\bar X_1-\mu_1-(\bar X_2-\mu_2)}{\sqrt{S^2 \left(\frac1{n_1}+\frac1{n_2}\right)}}
+    T & = \frac{\bar X_1-\mu_1-(\bar X_2-\mu_2)}{\sqrt{S^2 \left(\frac1{n_1}+\frac1{n_2}\right)}}.
 \end{align*}
-suit une loi de Student à $n_1+n_2-2$ degrés de liberté. Pour faire le test de savoir si les deux espérances sont égales, on définit les deux hypothèses complémentaires: 
+La variable $T$ ainsi définie suit une loi de Student à $n_1+n_2-2$ degrés de liberté. Pour faire le test de savoir si les deux espérances sont égales, on définit les deux hypothèses complémentaires: 
 \begin{itemize}
     \item $H_0$: les espérances $\mu_1$ et $\mu_2$ sont égales. 
     \item $H_1$: les espérances $\mu_1$ et $\mu_2$ sont différentes. 
@@ -83,19 +83,19 @@ On suppose alors que $H_0$ est vraie et sous $H_0$, on a :
 \begin{align*}
     T & =  \frac{\bar X_1- \bar X_2}{\sqrt{S^2 \left(\frac1{n_1}+\frac1{n_2}\right)}}. 
 \end{align*}
-On calcule alors les quantiles de Student aux niveau $0.025$ et $0.975$, c'est a dire $t_{n_1+n_2-2,.025}=-1.98$ et $t_{n_1+n_2-2,.975}=1.98$ on obtient l'intervalle de décision
+On calcule alors les quantiles de Student aux niveau $0.025$ et $0.975$, c'est a dire $t_{n_1+n_2-2,.025}=-1.98$ et $t_{n_1+n_2-2,.975}=1.98$ on obtient l'intervalle de confiance de niveau $1-\alpha$
 \begin{align*}
-    I_\alpha  = [-1.98,1.98] \; \text{(bilatéral)} \quad \text{ou} \quad   I_\alpha  = [-\infty,1.66] \; \text{(unilatéral).}
+    I_{1-\alpha}  = [-1.98,1.98] \; \text{(bilatéral)} \quad \text{ou} \quad   I_{1-\alpha}  = [-\infty,1.66] \; \text{(unilatéral supérieur).}
 \end{align*}
 On calcule alors la valeur réalisée par $T$ sur nos données et on obtient 
 \begin{align*}
-    \mathsf{t} & = \frac{1.07- 1.03}{\sqrt{0.0877\cdot (\frac{1}{41}+\frac{1}{61})}}= 0.502.
+    \mathsf{t} & = \frac{1.07- 1.03}{\sqrt{0.007565\cdot (\frac{1}{41}+\frac{1}{61})}}= 2.28.
 \end{align*}
-Comme $\mathsf{t} \in I_\alpha$, on en déduit que la taille moyenne entre les filles et les garçons n'est pas significativement différente.
+Comme $\mathsf{t} \notin I_{1-\alpha}$, on en déduit que la taille moyenne entre les filles et les garçons est significativement différente.
 
-On nous demandait si la taille moyenne des garçons était supérieure à celle des filles. Nous aurions donc du effectuer un test unilatéral et notre intervalle de confiance aurait donc était de la forme 
-\[I_{\alpha} = \left[-\infty, t_{100,0.95}\right] = [-\infty, 1.66 ].\]
-Donc on ne rejette toujours pas l'hypothèse $H_0$. 
+On nous demandait si la taille moyenne des garçons est supérieure à celle des filles. Nous aurions donc du effectuer un test unilatéral et notre intervalle de confiance est donc de la forme 
+\[I_{1-\alpha} = \left[-\infty, t_{100,0.95}\right] = [-\infty, 1.66 ].\]
+A nouveau, nous rejetons $H_0$. 
 
 Remarques :
 \begin{itemize}
@@ -103,7 +103,7 @@ Remarques :
 \item[•] Un test unilatéral inférieur correspond à une zone de rejet "à gauche", i.e. de la forme $[-\infty , u_{1-\alpha}]$
 \end{itemize}
 
-Nous aurions également pu calculer la p-value, ce que l'on se propose de faire avec R, à l'aide de la fonction "pt".
+Nous aurions également pu calculer la p-value, ce que l'on se propose de faire avec R, à l'aide de la fonction "pt".\
 
 ```{r}
 # Calcul de la pvalue pour le test bilatéral
