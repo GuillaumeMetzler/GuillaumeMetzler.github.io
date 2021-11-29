@@ -82,7 +82,7 @@ input, select, textarea {
 .tentative{
 				display: flex !important;
 				flex-wrap: wrap;
-				justify-content: center;
+				justify-content: space-around;
 			}
 
 	html {
