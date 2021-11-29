@@ -131,8 +131,8 @@ Commençons d'abord par montrer que $\hat{a}$ est un estimateur sans biais de $a
 \end{itemize}
 
 \begin{align*}
-\mathbb{E}[\hat{a}] = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})\mathbb{E}[Y_i-\bar{Y}]}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
- = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})(\mathbb{E}[Y_i]-\mathbb{E}[\bar{Y}])}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
+\mathbb{E}[\hat{a}] = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})\mathbb{E}[y_i-\bar{y}]}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
+ = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})(\mathbb{E}[y_i]-\mathbb{E}[\bar{y}])}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
  = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})(ax_i + b -a\bar{x} - b}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
   = & \; a \dfrac{\sum_{i=1}^n(x_i-\bar{x})(x_i -\bar{x}}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
   = & \; a.
@@ -140,32 +140,52 @@ Commençons d'abord par montrer que $\hat{a}$ est un estimateur sans biais de $a
 
 On peut maintenant faire de même avec la variance de l'estimateur afin de déterminer son écart-type, ce qui nous servira à tester la significativité de la pente, mais aussi à constuire l'intervalle de confiance sur l'estimation du paramètre.\
 
-Pour cela on utilisera le fait que l'on peut écrire 
+Pour cela on utilisera le fait que l'on peut écrire : \
 
 \[\hat{a} = a + \dfrac{\sum_{i=1}^n (x_i-\bar{x})\varepsilon_i}{\sum_{i=1}^n(x_i-\bar{x})^2} = a + \sum_{i=1}^n \omega_ix_i.\]
 
-Cette relation découle des hypothèses du modèle de linéaire. Ce qui nous donne
+Cette relation découle des hypothèses du modèle de linéaire. Ce qui nous donne :\
 
 \begin{align*}
-Var[\hat{a}] = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})\mathbb{E}[Y_i-\bar{Y}]}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
- = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})(\mathbb{E}[Y_i]-\mathbb{E}[\bar{Y}])}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
- = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})(ax_i + b -a\bar{x} - b}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
-  = & \; a \dfrac{\sum_{i=1}^n(x_i-\bar{x})(x_i -\bar{x}}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
-  = & \; a.
+Var[\hat{a}] = & \; \mathbb{E}\left[(\hat{a}-\mathbb{E}[\hat{a}])^2\right], \\
+= & \; \mathbb{E}\left[(a + \sum_{i=1}^n \omega_ix_i - a)^2\right], \\
+= & \; \mathbb{E}\left[ \left(\sum_{i=1}^n \omega_ix_i\right)^2\right], \\
+= & \; \mathbb{E}\left[ \sum_{i=1}^n \left(\omega_ix_i\right)^2 +2  \sum_{i<i'}^n \omega_i\omega_{i'}x_ix_{i'}\right], \\
+= & \;  \sum_{i=1}^n \underbrace{\mathbb{E}\left[\omega_i^2\right]}_{= Var[\varepsilon_i] = \sigma^2}x_i^2 +2  \sum_{i<i'}^n \underbrace{\mathbb{E}\left[\omega_i\omega_{i'}\right]}_{=0}x_ix_{i'},\\
+= & \; \dfrac{\sigma^2}{\sum_{i=1}^n(x_i-\bar{x})^2}.
 \end{align*}
 
+La deuxième somme est nulle, c'est l'hypothèse d'indépendance entre les bruits pour les différentes données.\
+
+Dans cette expression $\sigma^2$ reste inconnue, mais ce n'est pas grave, car on est en mesure de l'estimer ! En effet, on se rappelle qu'une estimation de $\sigma^2$, notée $\hat{\sigma}^2$ est très proche de la variance de nos résidus. Plus précisément :
+
+\[\hat{\sigma}^2 =\dfrac{1}{n-2} \sum_{i=1}^n \varepsilon_i ^2 =\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2. \]
+
+Au final notre variance de l'estimateur $\hat{a}$ est alors donnée par : 
+
+\[\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}\]
+
+
+On peut alors définir notre statistique de test $t$ par la relation habituelle "estimateur moins son espérance, le tout diviser par son écart-type", i.e. \
+
+\[t = \dfrac{\hat{a} - a}{\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}} \underset{\text{sous}\; H_0}{=} \dfrac{\hat{a}}{\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}}. \]
+
+Cette dernière peut également s'écrire
+
+Cette statistique de test suit une loi de Student à $n-2$ degrés de liberté. Pourquoi $n-2$ ? Cela correspond tout simplement à la taille de l'échantillon moins le nombre de paramètres à estimer dans le modèle.
 
 
 
+### Question f)
 
 
+La définition de l'intervalle de confiance découle directement de la définition de la statistique de test précédente. Ainsi un intervalle de confiance de niveau $1-\alpha$ pour l'estimation du paramètre $a$ de la régression est donnée par :\
 
-
-
-### Question g)
-
+\[ \left[ \hat{a}-t_{1-\alpha/2, n-2}\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}, \hat{a} + t_{1-\alpha/2, n-2}\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}\right].\]
 
 
 ### Question h)
+
+Bien que la corrélation entre les deux variables soit relativement faible, elle reste significative, comme le montre le calcul de la $p$-value.
 
 On 
