@@ -17,7 +17,7 @@ colnames(data)= c("poids","age")
 On va d'abord regarder ce que donne nos données, en faisant une représentation graphique sur laquelle le poids du nouveau-né est donné en fonction de l'âge de la mère le jour de l'accouchement.
 
 ```{r}
-plot(data, main = "Représentation graphique des données", pch = 8, col = "#7e83f7")
+plot(data$age,data$poids, main = "Représentation graphique des données", pch = 8, col = "#7e83f7")
 ```
 
 
@@ -134,7 +134,7 @@ Commençons d'abord par montrer que $\hat{a}$ est un estimateur sans biais de $a
 \mathbb{E}[\hat{a}] = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})\mathbb{E}[y_i-\bar{y}]}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
  = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})(\mathbb{E}[y_i]-\mathbb{E}[\bar{y}])}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
  = & \; \dfrac{\sum_{i=1}^n(x_i-\bar{x})(ax_i + b -a\bar{x} - b}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
-  = & \; a \dfrac{\sum_{i=1}^n(x_i-\bar{x})(x_i -\bar{x}}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
+  = & \; a \dfrac{\sum_{i=1}^n(x_i-\bar{x})(x_i -\bar{x})}{\sum_{i=1}^n(x_i-\bar{x})^2}, \\
   = & \; a.
 \end{align*}
 
@@ -159,20 +159,49 @@ La deuxième somme est nulle, c'est l'hypothèse d'indépendance entre les bruit
 
 Dans cette expression $\sigma^2$ reste inconnue, mais ce n'est pas grave, car on est en mesure de l'estimer ! En effet, on se rappelle qu'une estimation de $\sigma^2$, notée $\hat{\sigma}^2$ est très proche de la variance de nos résidus. Plus précisément :
 
-\[\hat{\sigma}^2 =\dfrac{1}{n-2} \sum_{i=1}^n \varepsilon_i ^2 =\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2. \]
+\[\hat{\sigma}^2 =\dfrac{1}{n-2} \sum_{i=1}^n \varepsilon_i ^2 =\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \hat{y}_i\right)^2. \]
 
 Au final notre variance de l'estimateur $\hat{a}$ est alors donnée par : 
 
-\[\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}\]
+\[\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \hat{y}_i\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}\]
 
 
 On peut alors définir notre statistique de test $t$ par la relation habituelle "estimateur moins son espérance, le tout diviser par son écart-type", i.e. \
 
-\[t = \dfrac{\hat{a} - a}{\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}} \underset{\text{sous}\; H_0}{=} \dfrac{\hat{a}}{\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}}. \]
+\[t = \dfrac{\hat{a} - a}{\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \hat{y}_i\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}} \underset{\text{sous}\; H_0}{=} \dfrac{\hat{a}}{\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \hat{y}_i\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}}. \]
 
 Cette dernière peut également s'écrire
 
-Cette statistique de test suit une loi de Student à $n-2$ degrés de liberté. Pourquoi $n-2$ ? Cela correspond tout simplement à la taille de l'échantillon moins le nombre de paramètres à estimer dans le modèle.
+\[t = \dfrac{\rho}{\sqrt{\dfrac{1-\rho^2}{n-2}}}. \]
+
+
+Cette statistique de test suit une loi de Student à $n-2$ degrés de liberté. Pourquoi $n-2$ ? Cela correspond tout simplement à la taille de l'échantillon moins le nombre de paramètres à estimer dans le modèle.\
+
+On va maintenant regarder si notre modèle est significatif, au risque de première espèce $\alpha = 5\%$, on va donc rejeter l'hypothèse $H_0$ si $\vert t \vert \ge t_{1-\alpha/2}$.
+
+```{r}
+# Calcul de la statistique de test
+n = length(data$poids)
+t <- rho/sqrt((1-rho^2)/(n-2))
+
+# Calcul de la valeur critique
+
+t_crit <- qt(0.975,40)
+abs(t) > t_crit
+
+# On rejette donc l'hypothèse selon laquelle notre coefficient directeur
+# n'est pas significativement différent de zéro.
+
+# Calcul de la p-value éventuellement
+
+2*(1-pt(abs(t),40))
+
+# La p-value est bien inférieure à 0.05, on rejette donc l'hypothèse nulle.
+# Notre modèle est donc ben significatif. 
+
+```
+
+
 
 
 
@@ -181,11 +210,28 @@ Cette statistique de test suit une loi de Student à $n-2$ degrés de liberté. 
 
 La définition de l'intervalle de confiance découle directement de la définition de la statistique de test précédente. Ainsi un intervalle de confiance de niveau $1-\alpha$ pour l'estimation du paramètre $a$ de la régression est donnée par :\
 
-\[ \left[ \hat{a}-t_{1-\alpha/2, n-2}\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}, \hat{a} + t_{1-\alpha/2, n-2}\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \bar{y}\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}\right].\]
+\[ \left[ \hat{a}-t_{1-\alpha/2, n-2}\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \hat{y}_i\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}, \hat{a} + t_{1-\alpha/2, n-2}\sqrt{\dfrac{\dfrac{1}{n-2}\sum_{i=1}^n \left(y_i - \hat{y}_i\right)^2}{\sum_{i=1}^n(x_i-\bar{x})^2}}\right].\]
+
+```{r}
+# Calcul de l'écart-type associé à l'estimateur de a
+
+a_hat <- coeff[2]
+sigma_a = sqrt((1/(n-2))*sum(my_lm$residuals^2)/((n-1)*var(data$age)))
+
+# Borne inférieure
+print("La borne inférieure de notre intervalle est donnée par")
+borne_inf <- a_hat - qt(0.975,40)*sigma_a
+borne_inf
+
+# Borne supérieure
+print("La borne supérieure de notre intervalle est donnée par")
+borne_sup <- a_hat + qt(0.975,40)*sigma_a
+borne_sup
+```
+
 
 
 ### Question h)
 
 Bien que la corrélation entre les deux variables soit relativement faible, elle reste significative, comme le montre le calcul de la $p$-value.
 
-On 
