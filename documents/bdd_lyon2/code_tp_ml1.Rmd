@@ -96,11 +96,12 @@ k_tested <- seq(1,11,by=2)
 res <- rep(0,length(k_tested))
 
 X_test <- cbind(x1 = runif(300,-2,2),x2 = runif(300,-2,2) )
+dist <- X_test[,1]^2+ X_test[,2]^2
 Y_test <- ifelse(  (1.5<dist)&(dist<3), 1, -1)
 
 
 for (i in 1:length(k_tested)){
-  # On applique la focntion qui calcule le label
+  # On applique la fonction qui calcule le label
   predicted_label = my_knn(k=k_tested[i], X, X_test, Y)
   # On regarde le taux d'erreur
   res[i] = my_metric(Y_test, predicted_label)
