@@ -142,16 +142,18 @@ On peut maintenant faire de même avec la variance de l'estimateur afin de déte
 
 Pour cela on utilisera le fait que l'on peut écrire : \
 
-\[\hat{a} = a + \dfrac{\sum_{i=1}^n (x_i-\bar{x})\varepsilon_i}{\sum_{i=1}^n(x_i-\bar{x})^2} = a + \sum_{i=1}^n \omega_ix_i.\]
+\[\hat{a} = a + \dfrac{\sum_{i=1}^n (x_i-\bar{x})\varepsilon_i}{\sum_{i=1}^n(x_i-\bar{x})^2} = a + \sum_{i=1}^n \omega_i\varepsilon_i,\]
+
+où $\omega_i = \dfrac{x_i-\bar{x}}{\sum_{i=1}^n (x_i-\bar{x})^2}.$\
 
 Cette relation découle des hypothèses du modèle de linéaire. Ce qui nous donne :\
 
 \begin{align*}
 Var[\hat{a}] = & \; \mathbb{E}\left[(\hat{a}-\mathbb{E}[\hat{a}])^2\right], \\
-= & \; \mathbb{E}\left[(a + \sum_{i=1}^n \omega_ix_i - a)^2\right], \\
-= & \; \mathbb{E}\left[ \left(\sum_{i=1}^n \omega_ix_i\right)^2\right], \\
-= & \; \mathbb{E}\left[ \sum_{i=1}^n \left(\omega_ix_i\right)^2 +2  \sum_{i<i'}^n \omega_i\omega_{i'}x_ix_{i'}\right], \\
-= & \;  \sum_{i=1}^n \underbrace{\mathbb{E}\left[\omega_i^2\right]}_{= Var[\varepsilon_i] = \sigma^2}x_i^2 +2  \sum_{i<i'}^n \underbrace{\mathbb{E}\left[\omega_i\omega_{i'}\right]}_{=0}x_ix_{i'},\\
+= & \; \mathbb{E}\left[(a + \sum_{i=1}^n \omega_i\varepsilon_i - a)^2\right], \\
+= & \; \mathbb{E}\left[ \left(\sum_{i=1}^n \omega_i\varepsilon_i\right)^2\right], \\
+= & \; \mathbb{E}\left[ \sum_{i=1}^n \left(\omega_i\varepsilon\right)^2 +2  \sum_{i<i'}^n \omega_i\omega_{i'}\varepsilon_i\varepsilon_{i'}\right], \\
+= & \;  \sum_{i=1}^n \underbrace{\mathbb{E}\left[\varepsilon_i^2\right]}_{= Var[\varepsilon_i] = \sigma^2}x_i^2 +2  \sum_{i<i'}^n \underbrace{\mathbb{E}\left[\varepsilon_i\varepsilon_{i'}\right]}_{=0}\omega_i\omega_{i'},\\
 = & \; \dfrac{\sigma^2}{\sum_{i=1}^n(x_i-\bar{x})^2}.
 \end{align*}
 
