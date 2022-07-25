@@ -28,7 +28,7 @@ Nous commençerons par regarder comment implémenter son propre algroithme des p
 \end{itemize}
 
 
-```{r setup, include=FALSE}
+```{r}
 X <- cbind(x1 = runif(600,-2,2),x2 = runif(600,-2,2) )
 dist <- X[,1]^2+ X[,2]^2
 Y <- ifelse(  (1.5<dist)&(dist<3), 1, -1)
@@ -36,7 +36,7 @@ data <- data.frame(cbind(X,Y))
 ```
 
 
-```{r, echo = FALSE, fig.height = 3.5, fig.width = 3.5, fig.align = "center"}
+```{r, fig.height = 3.5, fig.width = 3.5, fig.align = "center"}
 plot(X, col = ifelse(Y == 1, "#DF7D72","#6B9DF8"), main = "Dataset", 
      xlab = "x1", ylab = "x2", xlim = c(-2,2), ylim = c(-2,2)
      )
