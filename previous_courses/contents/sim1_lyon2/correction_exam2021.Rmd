@@ -1,0 +1,345 @@
+---
+title: "Correction Examen 2021"
+author: "Guillaume Metzler"
+date: "11/30/2021"
+output: pdf_document
+---
+
+Pour chaque question, nous procéderons toujours de la même façon :\
+
+\begin{itemize}
+\item[•] on illustrera graphiquement le problème
+\item[•] on précisera le cadre du test statistiques ainsi que les hypothèses nulle et alternative
+\item[•] on effectuera le test statistique
+\item[•] on conclut en répondant à la question posée
+\end{itemize}
+
+Commençons par charger les données 
+
+```{r}
+library(readxl)
+data = read_excel("Data_Company.xlsx")
+
+# On convertit les variables qualitatives en facteur.
+data$Ville=as.factor(data$Ville)
+data$Sexe=as.factor(data$Sexe)
+data$Profession=as.factor(data$Profession)
+
+# On transforme notre jeu de données afin de faire apparaître l'année
+# comme étant uen nouvelle variable
+newdata=rbind(data[,1:3],data[,1:3])
+Revenus=c(data$Revenus_2019,data$Revenus_2020)
+Annee=as.factor(rep(c(2019,2020),each=nrow(data)))
+newdata=cbind(newdata,Revenus,Annee)
+```
+
+
+## Question 1 : La répartition des professions est-elle la même dans chaque ville ?
+
+On s'intéresse au lien entre deux variables qualitatives. Commençons par représenter les données.
+
+```{r}
+plot(table(data$Ville,data$Profession))
+```
+
+On va chercher à étudier si la proportion d'ouvrier et de technicien est la même selon les différentes villes.\
+
+\begin{itemize}
+\item[•] $H_0 :$ La proportion d'ouvrier-technicien est la même quelque soit la ville
+\item[•] $H_1 :$ Cette même proportion varie selon la ville. 
+\end{itemize}
+
+On va donc effectuer un test du Khi-deux on vérifie les conditions sur les effectifs de la table de contingence puis on effectue notre test.
+
+```{r}
+table(data$Ville,data$Profession)
+```
+
+Tous les effectifs sont supérieurs ou égaux à 5.
+
+```{r}
+chisq.test(table(data$Ville,data$Profession))
+```
+
+La p-value n'est pas significative, on ne peut donc pas affirmer que la région ait un impact sur la proportion d'ouvrier/technicien dans cette entreprise.
+
+## Question 2 : Y a-t'il un lien entre genre et profession
+
+On étudie à nouveau deux variables qualitatives. On va donc procéder comme à la question précédente.
+A nouveau, on commence par regarder nos données.\
+
+```{r}
+plot(table(data$Profession,data$Sexe))
+```
+
+
+\begin{itemize}
+\item[•] $H_0 :$ La proportion homme/femme est la même quelque soit la profession
+\item[•] $H_1 :$ La profession a un impact sur la proportion homme/femme
+\end{itemize}
+
+On regarde nos effectifs afin de vérifier que l'on peut faire notre test du Khi-deux.
+
+```{r}
+table(data$Sexe,data$Profession)
+```
+
+Nos effectifs sont supérieurs à 5, on peut donc effectuer notre test du Khi-deux.
+
+```{r}
+chisq.test(data$Sexe,data$Profession)
+```
+
+A nouveau, on ne peut pas dire que le sexe ait un impact sur la profession exercée.
+
+
+## Question 3 : Les revenus ont-ils augmenté entre 2019 et 2020 ?
+
+On représente nos données à l'aide d'un boxplot.
+
+```{r}
+boxplot(data$Revenus_2019,data$Revenus_2020)
+```
+
+On va maintenant étudier si la différence observée sur le graphe est significative ou non. On doit donc comparer des moyennes. 
+
+\begin{itemize}
+\item[•] $H_0 :$ Les revenus restent stables
+\item[•] $H_1 :$ Les revenus ont augmenté entre 2019 et 2020
+\end{itemize}
+
+Regardons d'abord nos données
+
+```{r}
+# Taille des échantillons
+
+dim(data)[1]
+```
+
+Nous avons deux échantillons de taille supérieure à 30, on va donc effectuer un test de Student en prenant soin de préciser que les échantillons sont appariés.
+
+```{r}
+t.test(data$Revenus_2019,data$Revenus_2020,alternative='less',paired=TRUE)
+```
+
+La p-value est inférieure à $0.05$, on peut donc affirmer que le salaire a bien augmenté entre les années 2019 et 2020.
+
+## Question 4 : Les revenus des techniciens ont-ils augmenté entre 2019 et 2020 ?
+
+Regardons graphiquement l'évolution des revenus
+
+```{r}
+# Préparation des données
+
+tech19=data$Revenus_2019[data$Profession=="technicien"]
+tech20=data$Revenus_2020[data$Profession=="technicien"]
+
+# Représentation graphique
+
+boxplot(tech19,tech20)
+```
+On va procéder au test suivant :
+
+\begin{itemize}
+\item[•] $H_0 :$ Les revenus des techniciens restent stables
+\item[•] $H_1 :$ Les revenus des techniciens ont augmenté entre 2019 et 2020
+\end{itemize}
+
+On va regarder notre échantillon différence et commencer par voir si ce dernier est gaussien.
+
+```{r}
+table(data$Profession)
+```
+
+En effet, notre échantillon n'est que de taille 18, il va donc falloir faire un test de Shapiro. On va directement s'intéresser à l'échantillon différence.
+
+```{r}
+shapiro.test(tech19-tech20)
+```
+
+Notre échantillon est gaussien, on va donc pouvoir procéder à un test de Student en prenant soin de préciser que les données sont appariées
+
+```{r}
+t.test(tech19,tech20,alternative='less',paired=TRUE)
+# On aurait aussi pu écrire
+# t.test(tech19-tech20,alternative='less')
+```
+
+Le salaire des techniciens a significativement augmenté entre les années 2019 et 2020.
+
+## Question 5 : La ville influe-t-elle sur le salaire, toutes années confondue ?
+
+Regardons la distribution des salaires en fonction de la ville étudiée
+
+```{r}
+boxplot(Revenus~Ville,data=newdata)
+```
+
+La variable qualitative prenant plus que 2 modalités, on doit donc procéder à une Analyse de Variance.
+
+\begin{itemize}
+\item[•] $H_0 :$ Le salaire ne dépend pas de la ville étudiée
+\item[•] $H_1 :$ Le salaire dépend de la ville étudiée
+\end{itemize}
+
+On va effectuer notre analyse de variance et on va regarder la normalité des résidus.
+
+```{r}
+res <- aov(Revenus~Ville,data=newdata)
+summary(res)
+```
+
+Nous avons 30 exemples dans chaque groupe, il n'est donc pas nécessaire de vérifier le caractère gaussien des différents échantillons. On va vérifier l'homogénéité des variances avec un test de Bartlett.
+
+```{r}
+bartlett.test(Revenus~Ville,data=newdata)
+```
+
+Les variances entre les différents groupes ne sont donc pas homogènes. Mais l'ANOVA reste robuste même si cette hypothèse n'est pas vérifiée, du moment que les effectifs entre les différents groupes sont semblables.\
+Etudions nos résidus
+
+```{r}
+qqnorm(res$residuals)
+qqline(res$residuals)
+shapiro.test(res$residuals)
+```
+
+Les résidus sont normaux, on peut donc conclure que la facteur ville a bien un impact sur la moyenne des salaires observée.
+
+## Question 6 : Les salaires en 2019 étaient-ils similaires quelque soit la ville ?
+
+La question se traite de la même façon que la question précédente, on fera cependant attention que, cette fois-ci, nos échantillons sont deux fois plus petits. Il faudrait docn vérifier que ces derniers soient gaussiens pour normalement pouvoir faire l'ANOVA.
+
+
+```{r}
+boxplot(Revenus~Ville,data=newdata[newdata$Annee=="2019",])
+```
+
+\begin{itemize} 
+\item[•] $H_0 :$ Les revenus de 2019 sont indépendants de la ville considérée
+\item[•] $H_1 :$ Les revenus de 2019 varient selon la ville étudiée
+\end{itemize}
+
+```{r}
+res=aov(Revenus~Ville,data=newdata[newdata$Annee=="2019",])
+summary(res)
+```
+
+On commence par regarder si l'hypothèse d'homoscédasticité est vérifiée.
+
+```{r}
+bartlett.test(Revenus~Ville,data=newdata[newdata$Annee=="2019",])
+```
+
+C'est bien le cas comme l'indique la p-value de notre test de Bartlett. Regardons le caractère gaussien de nos échantillons puis de nos résidus.
+
+```{r}
+
+shapiro.test(newdata[(newdata$Annee=="2019")&(newdata$Ville=="Marseille"),"Revenus"])
+shapiro.test(newdata[(newdata$Annee=="2019")&(newdata$Ville=="Nice"),"Revenus"])
+shapiro.test(newdata[(newdata$Annee=="2019")&(newdata$Ville=="Bordeaux"),"Revenus"])
+```
+
+
+Les échantillons étudiés sont gaussiens, il ne nous reste plus qu'à vérifier le caractère gaussien des résidus.
+
+```{r}
+qqnorm(res$residuals)
+qqline(res$residuals)
+shapiro.test(res$residuals)
+```
+
+On peut donc prendre en compte les résultats de notre ANOVA qui indiquent que la ville n'a pas d'impact sur les revenus observés en 2019.
+
+## Question 7 : En 2019, le salaire dépendait-il de la profession et de la ville ?
+
+On nous demande à nouveau d'étudier les revenus des salariés mais en fonction de deux facteurs cette fois-ci : profession et ville.
+Représentons d'abord nos données
+
+```{r}
+boxplot(Revenus~Ville*Profession,data=newdata[newdata$Annee=="2019",])
+```
+
+\begin{itemize}
+\item[•] $H_0 :$ Les revenus de 2019 ne dépendent pas des deux facteurs étudiés
+\item[•] $H_1 :$ Les revenus en 2019 dépendent d'au moins un de ces deux facteurs
+\end{itemize}
+
+On va donc procéder à une ANOVA à deux facteurs, il ne faudra pas oublier de prendre en compte l'intéraction entre les deux facteurs Ville:Profession.
+
+```{r}
+res=aov(Revenus~Ville*Profession,data=newdata[newdata$Annee=="2019",])
+summary(res)
+```
+
+On procède aux mêmes vérifications que lors de la question précédente, en commençant par l'homogénéité des variances.
+
+```{r}
+bartlett.test(Revenus~Ville,data=newdata[newdata$Annee=="2019",])
+bartlett.test(Revenus~Profession,data=newdata[newdata$Annee=="2019",])
+```
+
+Les variances entre les deux groupes étudiés sont bien homogènes. Il faudra aussi tester la normalité des donnés, mais c'est ici ridicule vu la taille des différents échantillons, notre test de Shapiro n'est pas assez puissant avec de si petits échantillons. On va donc se contenter de vérifier la normalité des résidus afin de savoir si nous validons ou non les résultats de notre ANOVA.
+
+```{r}
+qqnorm(res$residuals)
+qqline(res$residuals)
+shapiro.test(res$residuals)
+```
+
+Nos résidus sont bien normalement distribués. On peut donc conclure que les facteurs villes et profession n'ont pas d'impact sur les revenus observés en 2019.
+
+
+## Question 8 : La profession et l'année influent-ils sur le salaire ?
+
+Ici, nous procédons de la même façon qu'à la question précédente, on modifie simplement les facteurs étudiés.
+Commençons par notre représentation graphique.
+
+```{r}
+boxplot(Revenus~Profession*Annee,data=newdata)
+```
+
+\begin{itemize}
+\item[•] $H_0 :$ Les revenus sont indépendants de l'année ou encore de la profession
+\item[•] $H_1 :$ Les revenus dépendent d'au moins l'un des deux facteurs
+\end{itemize}
+
+La question se traitant comme la précédente, on ne détaille pas les étapes.
+
+```{r}
+res=aov(Revenus~Profession*Annee,data=newdata)
+summary(res)
+```
+
+```{r}
+bartlett.test(Revenus~Profession,data=newdata)
+bartlett.test(Revenus~Annee,data=newdata)
+```
+
+On va rajouter la vérification du carctère gaussien des différents échantillons étudiés.
+
+```{r}
+shapiro.test(newdata[(newdata$Annee=="2019")&(newdata$Profession=="ouvrier"),"Revenus"])
+shapiro.test(newdata[(newdata$Annee=="2019")&(newdata$Profession=="technicien"),"Revenus"])
+shapiro.test(newdata[(newdata$Annee=="2020")&(newdata$Profession=="ouvrier"),"Revenus"])
+shapiro.test(newdata[(newdata$Annee=="2020")&(newdata$Profession=="technicien"),"Revenus"])
+```
+
+
+```{r}
+qqnorm(res$residuals)
+qqline(res$residuals)
+shapiro.test(res$residuals)
+```
+
+Ici seule l'année semble avoir un impact sur les revenus.
+
+
+
+
+
+
+
+
+
+

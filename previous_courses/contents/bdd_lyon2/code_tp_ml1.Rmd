@@ -1,0 +1,340 @@
+---
+title: "Introduction au Machine Learning : Apprentissage supervisé"
+author: "Guillaume Metzler"
+date: "2021-2022"
+output: pdf_document
+---
+
+\begin{abstract}
+Ce premier TP a pour but de vous faire coder quelques algorithmes simples par vous même avant de vous introduire les fonctions implémentées sous R qui vous permettront de résoudre diverses tâches d'apprentissage supervisé. Nous commencerons par :
+\begin{itemize}
+\item[•] Travailler sur l'algorithme du plus proche voisin en écrivant soit même le processus
+\item[•] Nous verrons ensuite comme faire de la validation à l'aide du logiciel R pour tuner la valeur de $k$ de l'algorithme
+\item[•] Nous aborderons ensuite le problème de classification des SVM linéaires et non linéaires (se référer aux slides) avec R et nous tunerons les paramètres pour faire de la validation-croisée des hyper-paramètres.
+\end{itemize}
+\end{abstract}
+
+## Algorithme des plus proches voisins
+
+### Une implémentation brute et la version R
+
+Nous commençerons par regarder comment implémenter son propre algroithme des plus proches voisins. Pour cela on va simuler notre propre jeu de données sur lequel nous allons travailler.
+
+
+\begin{itemize}
+\item Générer un jeu de données $X$ en 2D dans l'espace $[-2,2]^2$ selon une loi uniforme, on prendra $n=600$
+\item Calculer la distance des points à l'origine et attribuer l'étiquette $Y =1$ si la distance à l'origine est comprise entre $1.5$ et $3$ et $-1$ sinon
+\item Représenter votre jeu de données, il devrait ressembler à la figure ci-dessous
+\end{itemize}
+
+
+```{r}
+X <- cbind(x1 = runif(600,-2,2),x2 = runif(600,-2,2) )
+dist <- X[,1]^2+ X[,2]^2
+Y <- ifelse(  (1.5<dist)&(dist<3), 1, -1)
+data <- data.frame(cbind(X,Y))
+```
+
+
+```{r, fig.height = 3.5, fig.width = 3.5, fig.align = "center"}
+plot(X, col = ifelse(Y == 1, "#DF7D72","#6B9DF8"), main = "Dataset", 
+     xlab = "x1", ylab = "x2", xlim = c(-2,2), ylim = c(-2,2)
+     )
+```
+
+On va maintenant implémenter la fonction nous permettant de créer notre propre algorithme du plus proche voisin "my_knn", il prendra au total quatre arguments : la valeur de $k$, votre jeu d'entraînement $X_{\text{train}}$ ainsi que les étiquettes $Y$ et les données que vous souhaitez classer $X_{\text{test}}$. Vous êtes libres sur la façon dont vous implémenter votre algorithme (boucle ou autres process) mais vous devrez faire figurer les étapes suivantes
+
+
+\begin{itemize}
+\item[•] Calculer la distance entre les objets de $X_{\text{test}}$ aux objets $X_{\text{train}}$.
+\item[•] Pour chaque exemple, on ordonnera les distances dans l'ordre croissant à l'aide de la fonction "sort" ---> on s'intéresse surtout aux indices des exemples pour récupérer les étiquettes associées !
+\item[•] On attribue ensuite les étiquettes aux données tests en fonction des $k$ plus proches voisins.
+\end{itemize}
+
+
+```{r, include = FALSE}
+
+my_knn = function(k =3, xtrain, xtest, Y){
+  # Calcul de la distance et stockage des résultats
+  dist <- matrix(0, nrow = nrow(xtest), ncol = nrow(xtrain))
+  for (i in 1:nrow(xtest)){
+    for (j in 1:nrow(xtrain)){
+      dist[i,j] <- sum((xtest[i,] - xtrain[j,])^2)
+    }
+  }
+  
+  # On ordonne maintenant les distances par ordre croissant, mais ce qui va nous intéresser, 
+  #ce sont les indices pour récupérer les labels
+  nearest_neighbor <- t(apply (dist ,1, function(x) {sort(x,index.return = TRUE)$ix}))
+  label_neighbor <- t(apply (nearest_neighbor ,1, function(x) {Y[x]}))
+  
+  # On a récupérer une matrice avec les labels des plus proches voisins par distances croissantes.
+  # il reste à faire la classification, à 'aide de la valeur de $k$
+  predicted_label <- apply(label_neighbor, 1, function(x) {sign(sum(x[1:k]))})
+  return(predicted_label)
+}
+```
+On va maintenant regarder les performances de l'algorithme, on va donc créer une fonction qui va prendre comme paramètres les données labels de nos données d'entraînement et les labels des données tests pour calculer le taux d'erreur. Ecrire une telle fonction.
+
+```{r, include = FALSE}
+my_metric <- function(true_label, predicted_label){
+  # Calcul du taux d'erreur
+  error_rate <- sum(true_label != predicted_label) / length(true_label)
+  return(error_rate)
+}
+```
+
+Une fois que la fonction est écrite :
+\begin{itemize}
+\item[•] générez un jeu de données tests, de taille $n=300$, de la même façon que votre jeu d'entraînement
+\item[•] testez votre modèle pour différentes valeurs de $k$, par exemple pour $k=1,3,5,7,9$ et $k=11$ et représentez graphiquement les résultats afin d'obtenir un graphe qui ressemble à celui présenté ci-dessous :
+\end{itemize}
+ 
+
+```{r, include = FALSE}
+k_tested <- seq(1,11,by=2)
+res <- rep(0,length(k_tested))
+
+X_test <- cbind(x1 = runif(300,-2,2),x2 = runif(300,-2,2) )
+dist <- X_test[,1]^2+ X_test[,2]^2
+Y_test <- ifelse(  (1.5<dist)&(dist<3), 1, -1)
+
+
+for (i in 1:length(k_tested)){
+  # On applique la fonction qui calcule le label
+  predicted_label = my_knn(k=k_tested[i], X, X_test, Y)
+  # On regarde le taux d'erreur
+  res[i] = my_metric(Y_test, predicted_label)
+}
+```
+
+
+```{r, echo = FALSE, fig.height = 4, fig.width = 4, fig.align = "center"}
+plot(k_tested, res, type ='l', lwd= 3, col =  "#DF7D72", main = "Résultats en fonction de k")
+```
+
+
+\begin{itemize}
+\item[•] Comparez vos résultats avec la fonction $k$-NN de la librarie "class" R, en utilisant les instructions ci-dessous (on s'assurera de retrouver la même chose en terme de résultats)
+\end{itemize}
+
+```{r, fig.height = 4, fig.width = 6, fig.align = "center"}
+library(class)
+
+res_test = NULL
+i=1
+
+for (j in seq(1,11,2)){
+  pred <- knn(X,X_test,Y,k=j)
+  res_test[i] = mean(pred != Y_test)
+  i=i+1
+}
+
+par(mfrow=c(1,2))
+plot(k_tested, res, type ='l', lwd= 3, col =  "#DF7D72", main = "Résultats en fonction de k")
+plot(k_tested, res_test, type ='l', lwd= 3, col =  "#6B9DF8", main = "Résultats k-nn avec R")
+```
+
+
+Cette première étape a permis de se familiariser avec la manipulation d'un ensemble d'apprentissage et de test avec une fonction implémentée soit même et une fonction prête à l'emploi sous R. On va maintenant se concentrer uniquement sur l'usage de fonctions disponibles avec R et aborder le problème d'un point de vue Machine Learning.
+
+### Un vrai apprentissage de modèles : validation croisée
+
+Pour le moment, nous avons simplement tester différentes valeurs de $k$, mais dans la pratique, il faut que l'algorithme se serve de l'ensemble d'apprentissage pour qu'ils apprennent de lui-même quelle est la valeur de $k$ la plus intéressante. Cela peut se faire à l'aide d'un ensemble de validation par validation croisée.
+
+Pour cela, utilisera le package "caret" disponible sous R ainsi qu'un jeu de données "Smarket" disponible par le biais de la librairie "ISLR".
+Avec ce jeu de données, on cherche à prédire si un produit est rentable ("Direction") à l'aide d'un ensemble de descripteur
+
+```{r}
+library(ISLR)
+library(caret)
+
+data(Smarket)
+Var = c("Lag1" ,"Lag2", "Lag3", "Lag4", "Lag5", "Volume", "Today","Direction")
+```
+
+Pour cette étude on écartera la variable "Year", elle ne sera pas prise en compte pour l'étude du modèle.
+
+\begin{itemize}
+\item[•] Etudiez le range de valeurs des différentes variables et, si nécessaire, normalisez les données par la méthode de votre choix.
+\item[•] A l'aide de la fonction "createDataPartition", séparez votre jeu de données en deux : $75\%$ des données pour l'entraînement et $25\%$ pour le test
+\item[•] Etudiez le fonctionnement de la fonction "trainControl" afin de définir une "10 fold cross-validation"
+\item[•] A l'aide de la fonction "expand.grid" définir la grille de recherche des valeurs de $k$ pour l'algorithme, on prendra les valeurs impaires de $1$ à $19$
+\end{itemize}
+
+```{r, include = FALSE}
+# Partition du jeu de données
+index_train <- createDataPartition(y=Smarket$Direction, p = 0.75, list=FALSE)
+train <- Smarket[index_train,Var]
+test <- Smarket[-index_train,Var]
+
+# Préparation de la validation croisée
+train_control <- trainControl(method="cv", number=10)
+mygrid <- expand.grid(k=seq(1,19,2))
+```
+
+\begin{itemize}
+\item[•] Le modèle s'apprend à l'aide de la fonction "train" comme illustré ci-dessous. On peut ensuite regarder ce que donne le modèle à l'aide de la fonction "plot". Quelle remarque pouvez-vous faire concernant la valeur de $k$ ?
+\end{itemize}
+
+```{r}
+# Apprentissage du modèle
+model <- train( Direction~ . ,data=train, 
+                trControl=train_control, 
+                method="knn", 
+                tuneGrid = mygrid
+                )
+
+plot(model)
+```
+
+On peut avoir le détail des résultats de la cross-validation à l'aide de la fonction summary. Par défaut, le modèle optimal retenu en phase de test sera celui maximisant l'accuracy en validation croisée.
+
+\begin{itemize}
+\item[•] Evaluer votre modèle sur votre jeu de données test en calculant l'accuracy à l'aide de la fonction "predict"
+\item[•] Donner la matrice de confusion
+\end{itemize}
+
+```{r, include = FALSE}
+
+# Prediction sur l'ensemble test et calcul de l'accuracy
+knn_prediction <- predict(model,newdata = test)
+mean(knn_prediction == test$Direction)
+
+# Si on souhaite tracer la table de confusion
+confusionMatrix(knn_prediction, test$Direction )
+```
+
+\begin{itemize}
+\item[•] Comparez l'erreur en cross-validation et l'erreur en test pour les différentes valeurs de $k$ de votre algorithme. Est-ce que la valeur retenue par le processus de cross-validation vous semble pertinente ?
+\end{itemize}
+
+
+```{r, include = TRUE, fig.height = 4, fig.width = 6, fig.align = "center"}
+### Vérification en test
+table_test = NULL
+i=1
+
+for (j in seq(1,19,2)){
+  res <- knn(train[,-which(colnames(test)=="Direction")],
+             test[,-which(colnames(test)=="Direction")],
+             train[,"Direction"],
+             k=j)
+  table_test[i] = mean(res == test[,"Direction"])
+  i=i+1
+}
+
+par(mfrow = c(1,2))
+
+plot(model, main = "Cross-validation Accuracy")
+plot(seq(1,19,2), table_test, xlab = "Number of neighbors" , ylab="Accuracy", pch=16, 
+     col =  "#DF7D72", type='o', main = "Test Accuracy" )
+```
+
+
+
+## Autour des SVM linéaires et non linéaires
+
+### Un premier modèle simple pour appréhender les modèles
+
+Le code ci-dessous vous permettra de générer des graphiques vous permettant de visualiser les résultats de votre algorithmes. Compléter ce code à l'aide des informations données ci-dessous :
+
+\begin{itemize}
+\item[•] créer un jeu de données en deux dimensions de taille de 100, distribuées selon une loi normale centrée réduite (notée $x$)
+\item[•] à l'aide d'un vecteur $y$ attribuer le label $1$ à la moitié des données et le label $-1$ à l'autre moitié
+\item[•] Augmenter de $4$ la valeur de chaque composante des données dont le label est $+1$
+\end{itemize}
+
+
+```{r, eval=FALSE}
+# On fixe la graîne, cela vous permettra d'avoir des résultats identiques
+set.seed(10111)
+
+# librairie
+library(e1071)
+
+# Grille pour graphe
+make.grid = function(x, n = 200) {
+  grange = apply(x, 2, range)
+  x1 = seq(from = grange[1,1], to = grange[2,1], length = n)
+  x2 = seq(from = grange[1,2], to = grange[2,2], length = n)
+  expand.grid(X1 = x1, X2 = x2)
+}
+
+#Jeu de données
+n_ech = 100
+x = cbind(rnorm(100), rnorm(100))
+y = (2*rbinom(100,1,0.5)-1)
+x[y == 1,] = x[y == 1,] + 4
+
+# Génération de la grille adaptée à la taille des donneés
+xgrid = make.grid(x)
+```
+
+On va maintenant s'attaquer à l'apprentissage du modèle. Pour cela regarder comment fonctionne la fonction "svm" et apprenait un modèle de SVM linéaire qui va chercher à prédire $y$ en fonction de $x$ avec un paramètre $C$ (cost) que vous fixerez à $1$ dans un premier temps et répondez aux questions suivantes :
+
+\begin{itemize}
+\item[•] Faites variez $C$ (cost) dans l'intervalle $[0,10]$ par exemple.
+\item[•] Qu'observez-vous ? Quelle est l'influence de ce paramètre ?
+\item[•] Vous avez abservé que certains points sont encadrés, que peut-on dire la position de ces points par rapport au séparateur (ligne noire) ? Que représentent ces points ?
+\end{itemize}
+
+```{r, eval=FALSE}
+# Apprentissage du modèle et évaluation des labels
+dat = data.frame(x, y = as.factor(y))
+svmfit = svm(y~., data = dat, cost = 10, scale = FALSE, kernel = "linear"  )
+print(svmfit)
+plot(svmfit,dat)
+ygrid = predict(svmfit, xgrid)
+
+# Représentation graphique
+beta = drop(t(svmfit$coefs)%*%x[svmfit$index,])
+beta0 = svmfit$rho
+
+plot(xgrid, col = ifelse( (as.numeric(ygrid)-1)==1 ,"#DF7D72","#6B9DF8"), pch = 20, cex = .2,
+     main = "Un SVM linéaire")
+points(x, col = ifelse( y==1 ,"#DF7D72","#6B9DF8"), pch = 19)
+points(x[svmfit$index,], pch = 5, cex = 2)
+abline(beta0 / beta[2], -beta[1] / beta[2])
+abline((beta0 - 1) / beta[2], -beta[1] / beta[2], lty = 2)
+abline((beta0 + 1) / beta[2], -beta[1] / beta[2], lty = 2)
+```
+
+Ce cas là est presque trop simple dans le sens où nos données sont parfaitement séparables. Reprendez le bout de code permettant de générer les données de façon à ce que le jeu de données ne soit pas linéairement séparable et refaite quelques tests sur la valeur du paramètre C (cost) en affichant aussi la matrice de contingence des résultats de classification.
+
+### Vers une modèle non linéaire
+
+En repartant du code précédant et en modifiant le jeu de données comme indiqué ci-dessous, que pouvez vous dire concernant ce type de modèle ?
+
+```{r, eval=FALSE}
+# Génération des données
+n_ech = 400
+x = matrix(rnorm(n_ech), n_ech/2, 2)
+y = ifelse(x[,1]^2+x[,2]^2<1, 1, -1)
+```
+
+En fait les modèles linéaires ne sont que très rarement utiles en pratiques lorsqu'ils sont employsés seuls (en les combinant on peut créer des modèles non linéaires puissants ! Mais cela sort du cadre de ce TP). Une autre approche consiste à utiliser des méthodes à noyaux, cela permet de potentiellement projeter ses données dans un espace de dimension infinie dans lequel un séparateur linéaire est capable de correctement séparer les données.
+
+\begin{itemize}
+\item[•] Regardez les options de la fonction "svm" afin de créer un modèle gaussien.
+\item[•] Combien d'hyper-paramètres devons-nous renseigner pour ce type de modèle ? Essayez d'expliquer l'influence de ces paramètres.
+\item[•] Jouez avec le paramètre spécifique au noyau gaussien pour observer son effet.
+\end{itemize}
+
+On pourra également comparer les différences de résultats sur le jeu de données "cats" disponible dans la librairie "MASS". 
+
+
+### Apprentissage d'un modèle
+
+On se propose maintenant d'apprendre le meilleur modèle non linéaire gaussien qui permet de maximiser les performances en classification et les comparer à un potentiel meilleur modèle linéaire. Pour cela, on utilisera un jeu de données "ESL.mixture.rda" disponible dans les ressources de ce TP. On se passera cette fois-ci d'une représentation graphique, sauf si vous souhaitez en faire une. On rappelle les différentes étapes
+
+\begin{itemize}
+\item[•] Commencez par séparer votre jeu de données en un ensemble train/test avec $75\%/25\%$ des données.
+\item[•] Effectuez une 4-CV pour apprendre le meilleur SVM linéaire en tunant l'hyper-paramètres associé
+\item[•] Faite de même avec un SVM non linéaire
+\item[•] Testez les deux modèles sur votre jeu de données test et comparez les résultats.
+\end{itemize}
+
+
+
+

@@ -1,0 +1,409 @@
+---
+title: "SI-M1-TD4"
+author: "Guillaume Metzler"
+date: "10/25/2021"
+output: pdf_document
+---
+
+## Exercice 1
+
+Commençons par charger les données 
+
+```{r}
+load('~/Desktop/tempsTV.Rdata')
+data$sexe[data$sexe==1]="homme" 
+data$sexe[data$sexe==2]="femme"
+```
+
+Dans ce premier exercice, on se demande si les variables "periode" et "sexe" qui sont deux variables qualitatives ont une influence sur la variable "temps" (variable quantitative).
+
+On va donc poser les hypothèses suivantes :
+
+\begin{itemize}
+\item[•] $H_0$ : la variable "temps" est indépendante des deux autres facteurs v.s.
+\item[•] $H_1$ : la variable "temps" est dépendante d'au moins un des autres facteurs.
+\end{itemize}
+
+La formulation gagnerait à être plus précise car la variable temps peu dépendre d'un seul des deux facteurs ou encore des deux facteurs.\
+
+Dans tous les cas, etant donné que nous devons étudier l'influence de deux facteurs sur une variable quantitative, nous devons effectuer une Analyse de Variance (ANOVA).\
+
+Regardons graphiquement si le sexe a une influence sur la variable temps
+
+```{r}
+par(mfrow=c(1,2)) 
+boxplot(temps~sexe,data=data) 
+boxplot(temps~periode,data=data)
+```
+
+Graphiquement, il semblerait que seule la variable "periode" ait une infleucne sur la variable temps. Il faudra donc vérifier cela à l'aide de notre ANOVA.\
+
+\paragraph{Remarque} L'Analyse de Variance consiste à une étude de la variance de notre jeu de données afin de déterminer la part de la variance expliquée par les différents facteurs. Par exemple, pour une ANOVA à un facteur, la variance totale de notre jeu de données $V_T$ peut s'exprimer à partir de la variance expliquée par le facteur $A, V_A$ et une variance résiduelle $V_R$, {\it i.e.} non expliquée par le facteur $A$ :
+
+\[V_T = V_A + V_R\]
+
+Pour une ANOVA à deux facteurs (disons $A$ et $B$) il faut donc regarder la part de variance expliquée par le facteur $A$ et la part de variance expliquée par le facteur $B$. Si on reprend notre formule précédente, nous pouvons alors décomposer notre variance résiduelle $V_R$ en $V_R = V_B + \tilde{V_R}$. Dit autrement, une part de la variance non expliquée précédemment l'est en fait par le facteur $B$.
+
+\[V_T = V_A + V_B + \tilde{V_R}.\]
+
+Or l'importance d'un facteur est estimée en fonction du rapport entre la variance expliquée par ce facteur et la variance résiduelle du modèle. Cela suggère bien qu'il est important d'effectuer une ANOVA à deux facteurs et non deux ANOVA à un facteur.
+
+Regardons cela avec notre test 
+
+```{r}
+res=aov(temps~sexe+periode,data=data) 
+print(anova(res))
+```
+
+La variable "periode" a donc une importance significative sur la variable "temps" mais ce n'est pas le cas de la variable "sexe".\
+
+Regardons maintenant ce qui se passe chez les hommes et chez les femmes 
+
+```{r}
+par(mfrow=c(1,2)) 
+datah=data[data$sexe=="homme",] 
+boxplot(temps~periode,data=datah,main='homme') 
+dataf=data[data$sexe=="femme",] 
+boxplot(temps~periode,data=dataf,main='femme')
+```
+
+
+
+
+Remarquons que le comportement n'est pas du tout le même chez les hommes et chez les femmes. Le genre semble donc avoir un effet sur le lien entre les variables "temps" et "période". C'est ce que l'on appelle un {\bf effet d'intéraction entre les deux facteurs} de notre ANOVA. Ainsi, dans une ANOVA à plusieurs facteurs, il est donc important de prendre en compte les effets d'intéractions entre les différents facteurs. Ce que l'on fait de la façon suivante : 
+
+
+
+```{r}
+res=aov(temps~sexe+periode+sexe*periode,data=data) 
+print(anova(res))
+```
+
+On constate que cette interaction est en effet significative.
+
+Il reste tout de même une chose à vérifier ... avons-nous le droit de faire cette ANOVA ? Est-ce que toutes les conditions sont réunies ?\
+
+\begin{itemize}
+\item[•] Ici, en ANOVA à deux facteurs, les échantillons doivent être gaussiens pour chque croisement des deux facteurs. Si on regarde la taille de notre échantillon, on remarque que ces derniers seront trop petits pour que l'on puisse utiliser un test de Shapiro qui ne sera alors pas suffisamment puissant. On se contentera donc, pour une ANOVA à deux facteurs, de vérifier uniquement la normalité des résidus.
+\item[•] des variances homogènes pour chaque facteur.
+\end{itemize}
+
+Commençons par regarder la normalité des résidus.
+
+```{r}
+qqnorm(res$residuals)
+qqline(res$residuals)
+shapiro.test(res$residuals)
+```
+
+On peut accepter cette hypothèse de normalité des données car la p-value est supérieure au rsique de première espèce $\alpha=0.05$
+Pour ce qui est de l'homogénéité des variances, on va la tester avec un test de Bartlett pour chacun des deux facteurs.
+
+```{r}
+bartlett.test(temps~periode,data=data)
+bartlett.test(temps~sexe,data=data)
+```
+
+L'homogénéité des variances n'est pas respectée ici. En effet, la p-value est ici bien inférieure à $0.05$ pour les deux facteurs.
+Néanmoins, on considérera que l'ANOVA reste valable car elle est suffisamment robuste à la non homogénéité des variances lorsque les effectifs diffèrent peu d'une modalité à une autre, ce qui est le cas ici.\
+En outre, il n'existe pas d'alternative non paramétrique à l'ANOVA à deux facteurs.
+
+
+On peut regarder le graphique ci-dessous qui nous montre comment évolue les différentes moyennes en fonction des différents facteurs.
+
+```{r}
+interaction.plot(data$sexe,data$periode,data$temps)
+```
+
+
+On peut aussi plus en détails en faisait des tests deux à deux entre les modalitésn au niveau des périodes. Pour palier aux problématiques de multiplicité des tests, on utilise des corrections comme la correction de Bonferronni
+
+```{r}
+pairwise.t.test(data$temps,data$periode,p.adjust.method = "bonferroni")
+```
+
+Les périodes $B$ et $C$ sont significativement différentes alors que $A$ et $C$ ne le sont pas.
+
+## Exercice 2 
+
+On se propose de travailler à nouveau sur le fichier GermanCredit afin de répondre à plusieurs questions. Cet exercice est très proche de ce qui vous attendra à l'examen. 
+
+```{r}
+library(readr)
+data <- read_table2("http://eric.univ-lyon2.fr/~jjacques/Download/DataSet/GermanCredit.data", 
+    col_names = FALSE)
+```
+
+
+### Question 1
+
+On cherche à savoir si le sexe (variable quali) à une influence sur le montant emprunté (variable quanti) et plus précisément si les femmes empruntent un montant plus important que les hommes. On formule alors les hypothèses suivantes :
+
+\begin{itemize}
+\item[•] $H_0 :$ le sexe n'a pas d'influence sur le montant emprunté : $\mu_F = \mu_H$
+\item[•] $H_1 :$ le sexe a une influence sur le montant emprunté et les femmes empruntent plus que les hommes : $\mu_F > \mu_H$
+\end{itemize}
+
+L'hypothèse alternative suggère de faire un test unilatéral, on verra selon l'ordre d'appararition des modalités, si c'est un test unilatéral supérieur ou inférieur. Commençons d'abord par une représentation graphique
+
+```{r}
+# On recode la variable
+
+sexe = as.vector(data$X9)
+sexe[ sexe=="A92" | sexe=="A95" ]='F'
+sexe[ sexe!="F" ]='M'
+data=data.frame(data,sexe=as.factor(sexe))
+
+# On fait nos graphes 
+
+boxplot(X5~sexe,data)
+```
+On va regarder la taille des échantillons pour voir s'il est nécessaire de faire ou non de vérifier le caractère gaussien des données des différents groupes
+
+```{r}
+table(sexe)
+```
+
+Nos échantillons sont suffisamment grands pour que cette vérification ne soit pas nécessaire. \
+
+Le boxplot suggère que les femmes empruntent moins que les hommes en moyenne. On va donc faire le test de Student suivant après avoir vérifier l'homogénéité des variances
+
+```{r}
+var.test(X5~sexe,data)
+```
+
+Les variances sont significativement différentes
+
+```{r}
+t.test(X5~sexe,data,var.equal=FALSE, alternative = "less")
+```
+
+On peut donc bien affirmer que les femmes, en moyenne, empruntent un montant bien inférieur à celui des hommes. 
+
+
+### Question 2
+
+On cherche à savoir si l'emploi (variable quali) et le sexe (variable quali) ont une influence sur la durée de l'emprunt (variable quanti). On formule alors les hypothèses suivantes :
+
+\begin{itemize}
+\item[•] $H_0 :$ les deux facteurs n'ont pas d'influence sur la durée de l'emprunt v.s.
+\item[•] $H_1 :$ les facteurs ont une infleunce sur la durée de l'emprunt
+\end{itemize}
+
+On va à nouveau réaliser une ANOVA à deux facteur dans ce cas là.
+Mais regardons d'abord nos graphiques
+
+```{r}
+par(mfrow=c(1,2))
+boxplot(X2~X17,data)
+boxplot(X2~sexe,data)
+boxplot(X2~sexe+X17,data)
+```
+
+Faisons maintenant notre test 
+
+```{r}
+modele=aov(X2~sexe*X17,data=data)
+summary(modele)
+```
+
+On peut donc affirmer que le sexe et l'emploi ont une influence sur la durée de l'emprunt mais pas l'intéraction de ces deux facteurs. 
+Il nous faut maintenant regarder si les conditions d'application sont réunies. Nous avons dit que dans le cas d'une ANOVA à deux facteurs, on va uniquement étudier la normalité des résidus.
+
+```{r}
+qqnorm(modele$residuals)
+qqline(modele$residuals)
+```
+A priori, les résidus sont loins de se retrouver sur la droite de Henry ... on va essayer de regarder ce qui se pase si l'on fait une ANOVA sur le log de la durée.
+
+```{r}
+modele=aov(log(X2)~sexe*X17,data=data)
+summary(modele)
+
+qqnorm(modele$residuals)
+qqline(modele$residuals)
+
+shapiro.test((modele$residuals))
+```
+
+Nos résidus ne sont toujours pas gaussiens dans ce cas là ... enfin d'après le test de Shapiro, or ce dernier est un test extrêmement puissant ! Il notamment très strict en présence de très grands échantillons, ce qui est le cas ici. On va donc supposer que nos résidus sont gaussiens.
+Il faudrait encore tester l'homogénéité des variances avec un test de Bartlett sur chacun des facteurs. (on ne le fera pas ici)
+
+On pourrait aussi regarder l'effet de chaque variable seul (qui sera atténué vu que la variance résiduelle sera plus importante). 
+On effectuera un test de Student pour l'effet du genre car les effectifs sont grands
+
+```{r}
+table(data$sexe)
+t.test(X2~sexe,data)
+```
+
+Ce test confirme que le sexe a bien une influence sur la durée de l'emprunt. On peut maintenant faire un test de Kruskall-Wallis pour regarder si le facteur "emploi" a une influence sur la durée (en effet les conditions de l'ANOVA ne sont pas réunies)
+
+```{r}
+kruskal.test(X2~X17,data)
+```
+
+La situation professionnelle a donc bien une influence significative sur la durée de l'emprunt.
+
+### Question 3
+
+On se propose ensuite d'étudier si les variables "montant du crédit" (variable quanti) et "durée de l'emprunt" (variable quanti) sont des variables gaussiennes. On formule alors les hypothèses suivantes :
+
+\begin{itemize}
+\item[•] $H_0 :$ le montant du crédit (resp. la durée de l'emprunt) suit une distribution gaussienne v.s.
+\item[•] $H_1 :$ le montant du crédit (resp. la durée de l'emprunt) ne suit pas une distribution gaussienne
+\end{itemize}
+
+On peut commencer par faire un histogramme de ces deux variables
+
+```{r}
+par(mfrow=c(1,2))
+hist(data$X2)
+shapiro.test(data$X2)
+hist(data$X5)
+shapiro.test(data$X5)
+```
+
+Les graphiques ainsi que les tests efectués montrent que clairement que les distributions de ces deux variables ne sont pas gaussiennes !
+Regardons ce qu'il se passe si on considère le log de ces deux deux variables, comme nous l'avons fait plus tôt.
+
+```{r}
+par(mfrow=c(1,2))
+hist(log(data$X2))
+shapiro.test(log(data$X2))
+hist(log(data$X5))
+shapiro.test(log(data$X5))
+```
+
+Les histoigrammes sont d'avantage symétriques, mais le test conduit à nouveau au rejet de l'hypothèse nulle. Comme précédemment rappellons que le test de Shapiro est très strict en présence de grands échantillons, les résultats peuvent donc être nuancés et une étude graphique plus poussée pourrait nous permettre de trancher. 
+
+### Question 4
+
+On cherche à savoir si le montant du crédit (variable quanti) est lié au but du crédit (variable quali). On formule alors les hypothèses suivantes :
+
+\begin{itemize}
+\item[•] $H_0 :$ le facteur "but du crédit" n'a pas d'influence sur le "montant du crédit" (les moyennes des différents groupes sont égales)
+\item[•] $H_1 :$ le facteur "but du crédit" a une influence sur le "montant du crédit" (au moins une moyenne est différente des autres)
+\end{itemize}
+
+Petite représentation graphique du problème 
+
+```{r}
+boxplot(data$X5~data$X4)
+modele=aov(data$X5~data$X4)
+```
+
+A prior le facteur "but du crédit" aura bien une infleunce sur le montant emprunté. Confirmons cela à l'aide d'une analyse de variance (le but prenant plus que deux modalités)
+
+Regardons nos échantillons de plus près :
+
+```{r}
+table (data$X4)
+```
+
+Certains échantilllons sontr très petits ce qui peut fortement nuir à l'hypothèse de normalité des échantillons. Regardons les résidus dans ce cas.
+
+```{r}
+modele = aov(X5~X4,data)
+summary(modele)
+```
+
+Le facteur but du crédit semble avoir une influence, mais est-ce bien le cas, regardons si le modèle est valide en regardant les résidus. 
+
+```{r}
+qqnorm(modele$residuals)
+qqline(modele$residuals)
+```
+
+Inutile de faire un test de Shapiro pour voir que les résidus ne sont pas gaussiens. 
+Regardons à nouveau avec le log des données pour voir si cela change les choses.
+
+```{r}
+modele=aov(log(data$X5)~data$X4)
+qqnorm(modele$residuals)
+qqline(modele$residuals)
+
+shapiro.test(modele$residuals)
+```
+
+Nos résidus sont gaussiens visuellement même si un test de shapiro semble dire de la contraire (on se rappelle que ce modèle est très robuste ainsi si quelques données dévient un peu de la normalité, cette hypothèse sera automatiquement rejetée).\
+
+Malheureusement nos échantillons ne sont pas gaussiens, nous n'avons pas d'autres choix que de faire une alternative non paramétrique de l'ANOVA, i.e. un test de Kruskall-Wallis.
+
+```{r}
+modele=kruskal.test(data$X5~data$X4)
+modele
+```
+
+Ce test conduit au rejet de l'hypothèse d'indépendance entre les deux variables.
+
+
+### Question 5
+
+On cherche à savoir si le montant emprunté est différent selon notre situation personnelle en terme de logement (propriétaire, locataire, ...). On formule alors les hypothèses suivantes :
+
+\begin{itemize}
+\item[•] $H_0 :$ le montant emprunté ne dépend pas de notre situation personnelle 
+\item[•] $H_1 :$ le montant emprunté dépend de notre situation personnelle
+\end{itemize}
+
+La variable qualitative prenant plus que deux modalités, nous devrons faire une Analyse de Variance ou son alternative non paramétrique si les conditions de l'ANOVA ne sont pas vérifées. 
+
+Commençons par illuster graphique les données à l'aide d'un boxplot et remarquons que le facteur étudié a un bien impact sur le montant emprunté.
+
+```{r}
+boxplot(X2~X17,data)
+```
+
+
+Commençons par regarder l'homogénéité des variances à l'aide d'un test de Bartlett
+
+```{r}
+bartlett.test(X2~X17,data)
+```
+On remarque que l'hypothèse d'homoscédasticité n'est pas vérifiée ici. Mais on ne soucit pas réellement de cette hypothèse là en pratique surtout quand nos effectifs sont grands et semblables. \
+
+On peut maintenant regarder si nos échantillons sont gaussiens ou non.
+
+```{r}
+table(data$X17)
+```
+
+Il nous faut donc vérifier si le montant de l'emprunt des individus du groupe "A171" sont normalement distribués. 
+
+```{r}
+shapiro.test(data$X2[data$X17=="A171"])
+```
+Ce qui n'est pas le cas, nous n'avons donc pas d'autre choix que de faire un test non paramétrique de Kruskal Wallis pour vérifier si les variables étudiantes sont indépendantes ou non.
+
+```{r}
+modele = kruskal.test(X2~X17,data)
+modele
+```
+On remarque que nos variables sont à nouveau liées, i.e. on peut dire que le facteur situation personnelle en terme de logement à un impact sur le montant emprunté. 
+
+### Question 6
+
+Enfin, on souhaite savoir si le montant du crédit est lié à la durée de ce dernier. On formule alors les hypothèses suivantes :
+
+\begin{itemize}
+\item[•] $H_0 :$ le montant du crédit est lié à la durée du crédit, il y a une dépendance linéaire entre les deux facteurs
+\item[•] $H_1 :$ le montant du crédit n'est pas lié à la durée du crédit. Il n'y a pas de dépendance linéaire entre les deux variables. 
+\end{itemize}
+
+On va commencer par observer si cette dépendance linéaire existe ou non.
+
+```{r}
+library(ggplot2)
+ggplot(data, aes(x=X5, y=X2)) +
+geom_point() +
+geom_smooth(method=lm,se=FALSE) 
+```
+
+Est-ce que cette relation est significative ou non ? On va faire un test de corrélation pour vérifier cela.
+
+```{r}
+cor.test(data$X5,data$X2)
+```
+
+La relation linéaire entre les deux variables est significative.

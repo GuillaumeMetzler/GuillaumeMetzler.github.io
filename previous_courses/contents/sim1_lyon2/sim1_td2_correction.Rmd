@@ -1,0 +1,251 @@
+---
+title: "Statistique Inférentielle, M1 Info Lyon 2, 2021, TD2"
+author: "Guillaume Metzler"
+output: pdf_document
+---
+
+## Exercice 1
+
+Commençons par charger les données
+```{r}
+cholesterol <- read.csv2("~/Desktop/A exporter/Cours/Lyon2/Statistiques_Master/cholesterol.csv")
+```
+
+On va mettre en forme le data.frame de sorte à avoir une colonne par variable, qui sont: le taux de cholesterol, le temps auquel il est mesuré, le sexe de la personne.
+
+```{r}
+data=cbind(rep(cholesterol$id,2),stack(cholesterol[,2:3]),rep(cholesterol$sexe,2))
+colnames(data)=c('id','chol','temps','genre')
+```
+
+On peut commencer par représenter les données:
+```{r}
+boxplot(chol~temps,data=data)
+```
+
+Il semble que le taux de cholesterol soit plus faible après le traitement. La question est: est-ce significatif ou dû au hasard ?
+Pour répondre à cette question, nous allons réaliser un test statistique de comparaison de deux grands échantillons ($n\geq 20$) : un test de Student.
+
+**Mais attention**, les données sont **appariées** : ce sont les mêmes individus qui sont mesurés avant et après le traitement. 
+On a vu qu'il y a de grandes différences entre les individus :
+```{r}
+boxplot(chol~id,data=data)
+```
+
+Ces grandes différences peuvent éventuellement masquer l'effet du médicament.
+Prenons un exemple pour illustrer ceci : créons artificiellement des taux de cholesterol après prise du médicament, de sorte que chaque individus ait un taux qui ait diminué de 0.1 :
+```{r}
+avant=cholesterol$av
+après=avant-0.1
+boxplot(avant,après)
+t.test(avant,après)
+```
+Le test de Student n'est pas significatif, alors que tous les patients ont un taux qui a diminué de 0.1 : c'est parceque les variabilités inter-individus masquent les variabilité intra-individu.
+
+Il est donc primordial de prendre en compte le fait que ce soit des mesures répétées, et techniquement ont fait cela en travaillant sur la différence avant-après.
+
+Revenons à nos vraies données, avec une alternative greater pour montrer que le médicament diminue le taux de cholesterol :
+```{r}
+t.test(chol~temps,data=data,paired=TRUE,alternative="greater")
+```
+On obtient une pvalue de 0.0507, on est pile à la limite du risque qui nous permet généralement de rejetter $H_0$ (on rejette si la p-value est <0.05), et donc de conclure à l'effet du médicament: on ne peut donc pas conclure ici...
+Il faudrait plus d'individus dans l'étude pour faire infléchir dans un sens ou dans l'autre la p-value.
+
+## L'efficacité diffère-t-elle selon le genre ?
+
+Cherchons à représenter graphiquement ceci:
+```{r}
+boxplot(av-ap~sexe,data=cholesterol)
+```
+Visuellement, on *dirait* que l'efficacité est un peu plus grande chez les femmes. Mais est-ce significatif ?
+
+Ici, on ne peut pas utiliser le test de Student car on n'a moins de 30 hommes et 30 femmes : quand on veut comparer 2 échantillons, ici les hommes et les femmes, il faut pour utiliser le test de Student que chacun des échantillons soit gaussien, ou qu'ils soient grands (plus de 30 ind). Quand ce n'est pas le cas, on utilise une alternative non paramétrique, à savoir le **test de wilcoxon**
+```{r}
+wilcox.test(av-ap~sexe,data=cholesterol,alternative="greater")
+```
+La p-value de 0.1842 n'est pas significative... On ne peut pas conclure à une différence homme femme (soit il n'y en a pas, soit on n'a pas assez de données pour le montrer).
+
+Le test de Student étant plus puissant (risque de seconde espèce plus faible pour un $\alpha$ fixé), on peut chercher à l'utiliser néanmoins en vérifiant si les distributions des données peuvent être considérées comme gaussiennes. On peut faire pour cela un test de Shapiro, qui lui même demandera d'avoir au moins une dizaine d'observations (sinon sa puissance sera trop faible).
+
+```{r}
+summary(cholesterol$sexe)
+```
+On a 12 femmes et 18 hommes, on peut faire un test de Shapiro par échantillons. Attention, on veut tester la normalité de la différence avant - arpès :
+
+```{r}
+hist(cholesterol$av[cholesterol$sexe=="h"]-cholesterol$ap[cholesterol$sexe=="h"], breaks=4)
+qqnorm(cholesterol$av[cholesterol$sexe=="h"]-cholesterol$ap[cholesterol$sexe=="h"])
+shapiro.test(cholesterol$av[cholesterol$sexe=="h"]-cholesterol$ap[cholesterol$sexe=="h"])
+```
+La p-value est grande, le qqnorm proche d'une droite, l'échantillon peut être considéré comme gaussien.
+
+```{r}
+hist(cholesterol$av[cholesterol$sexe=="f"]-cholesterol$ap[cholesterol$sexe=="f"])
+qqnorm(cholesterol$av[cholesterol$sexe=="f"]-cholesterol$ap[cholesterol$sexe=="f"])
+shapiro.test(cholesterol$av[cholesterol$sexe=="f"]-cholesterol$ap[cholesterol$sexe=="f"])
+```
+Idem pour les femmes.
+
+On peut donc réaliser un test de Student, mais dont la conclusion est la même que pour le test de Wilcoxon: pas de différence significative entre hommes et femmes
+```{r}
+t.test(av-ap~sexe,data=cholesterol,alternative="greater")
+```
+
+
+
+
+
+
+
+
+
+
+
+## Exercice 2
+
+Nous sommes en présence de deux variables catégorielles. Commençons par créer le tableau de contigence :
+
+```{r}
+tab=rbind(c(128213,647,359,42),c(65963,4000,2642,303))
+colnames(tab)=c('aucune','minimale','legere','grave')
+rownames(tab)=c('oui','non')
+```
+
+On peut le représenter en utilisant la fonction plot spécifique pour les tableaux de contingences. Il faut alors définir que la matrice que l'on vient de créer est un tableau de contigence :
+```{r}
+data=as.table(tab)
+plot(data)
+```
+
+Afin de tester un lien entre ces deux variables catégorielles, on va utiliser un test du chi2 :
+```{r}
+chisq.test(tab)
+```
+La p-value est très significative, le port de la ceinture a clairement une influence sur la gravité des blessures...
+
+
+## Exercice 3
+
+L'étude porte sur l'utilisation du fichier GermanCredit.data qui est disponible sur la page de votre enseignant. Commençons donc par charger les données.
+
+
+```{r}
+library(readr)
+GermanCredit <- read_table2("http://eric.univ-lyon2.fr/~jjacques/Download/DataSet/GermanCredit.data", 
+    col_names = FALSE)
+```
+
+Parmi ces 21 variables, la 21ème indique la qualité du client.
+Quelles sont, parmis les 20 autres variables, celles sont qui sont liées à la qualité du client ?
+
+On va donc créer une fonction qui va parcourir l'ensemble des variables et qui va, selon la nature de la variable testée, effectuer le test statistiques correspondant.
+
+Nous sommes dans un cas où nous disposons de grands échantillons, donc on, selon la nature de la variable, effectuera une analyse de corrélations de type
+
+
+\begin{itemize}
+\item quali - quanti :Student car la variable cible n'a que deux modalités
+\item quali - quali : Khi-deux
+\end{itemize}
+
+Remarque : la variable 'X21' ne prenant que deux valeurs, nous pourrions effectuer, au choix, un test de Student ou une ANOVA, les résultats seront identiques.
+
+
+```{r}
+# Conversion des données pour nous permettre de récupérer le type des variables.
+data <- data.frame(GermanCredit)
+
+# Quelques tests
+
+test_quali_quali <- function(i,data){
+  
+  # On commence par créer notre table de contingence à l'aide de la fonction test
+  # On effectue le test
+  test_khi <- chisq.test(table(as.factor(data[,21]),data[,i]))
+  p_value <- test_khi$p.value
+  return(p_value)
+ 
+}
+
+test_quali_quanti <- function(i,data){
+  
+  # On a simplement à effectuer le test
+  test_stud <- t.test(data[,i]~X21, data=data)
+  # On extrait la p-value que l'on pourra comparer au risque d'erreur alpha
+  p_value <- test_stud$p.value
+  return(p_value)
+  
+}
+
+```
+
+On va ensuite boucler sur l'ensemble des variables afin de regarder, quelles sont les variables qui
+sont donc corrélées à notre variable 21 à l'aide des fonctions précédentes
+
+```{r}
+
+list_corr = NULL
+list_uncorr = NULL
+
+for (i in 1:(dim(data)[2]-1)){
+  
+  print(i)
+
+  # On commence par extraire la nature de variable et on regarde si elle est de type "numérique"
+  # ou "charactère"
+  nature_variable <- typeof(data[,i])
+  
+  if (nature_variable == "character"){
+    
+    nature_test <- "Khi_deux"
+    p_value <- test_quali_quali(i,data)
+    
+  }
+  
+  if (nature_variable == "double"){
+    
+    nature_test <- "Student"
+    p_value <- test_quali_quanti(i,data)
+    
+  }
+    
+  # On compare la p-value extraite au risque d'erreur de alpha = 5% pour tirer des conclusions quant 
+  # quant à la corrélation entre X21 et la variable testée
+    
+  if (p_value < 0.05) {
+    
+    print(paste(sprintf("Nous avons effectué un test du %s. Ce test nous a conduit à une p_value égale à %e ce qui nous montre que la variable X%d est corrélée à la variable X21",  nature_test, p_value, i))) 
+    
+    list_corr <- c(list_corr,i)
+    
+  } else {
+    
+        print(paste(sprintf("Nous avons effectué un test du %s. Ce test nous a conduit à une p_value égale à %e ce qui nous montre que la variable X%d n'est pas corrélée à la variable X21",  nature_test, p_value, i)))
+    
+     list_uncorr <- c(list_uncorr,i)
+    
+  }
+}
+
+# La liste des variables corrélées à la variable est donnée par 
+print(paste("X",list_corr,sep=""))
+# La liste des variables non corrélées à la variable est donnée par 
+print(paste("X",list_uncorr,sep=""))
+```
+
+
+La correction est incomplète ici.
+En effet, pour effectuer le test de Student, il faudrait vérifier que les conditions soient réunies :
+
+\begin{itemize}
+\item[•] taille des différents groupes $\ge 30$ ou gaussiens (test de shapiro)
+\item[•] vérfier, à l'aide d'un test de Fisher, si les variances sont égales ou non
+\end{itemize}
+
+De la même façon, pour le test du Chi-deux, il faudrait vérifier que les effectifs de nos différentes tables de contigence soient au minimum égaux à $5$. 
+C'est le cas pour la variable référencée dans la quatrième colonne de notre jeu de données où il est nécessaire de regrouper trois colonnes ensembles afin de vérifier cette condition.
+
+
+
+
+
