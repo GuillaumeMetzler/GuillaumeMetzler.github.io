@@ -18,6 +18,20 @@ def loadCsv(path):
     (n, d) = data.shape
     return data, n, d
 
+# Encode Categorical variables
+
+def oneHotEncodeColumns(data, columnsCategories):
+    dataCategories = data[:, columnsCategories]
+    dataEncoded = OneHotEncoder(sparse=False).fit_transform(dataCategories)
+    columnsNumerical = []
+    for i in range(data.shape[1]):
+        if i not in columnsCategories:
+            columnsNumerical.append(i)
+    dataNumerical = data[:, columnsNumerical]
+    return np.hstack((dataNumerical, dataEncoded)).astype(float)
+
+
+
 # Another function to prepare the data
 
 def data_recovery(dataset):
