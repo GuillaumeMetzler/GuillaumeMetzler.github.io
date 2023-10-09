@@ -71,9 +71,9 @@ def Fibo_iteratif(n):
     a = 0
     b = 1
     for i in range(n):
-        Fib = Dernier + avantDernier
+        Fib = a+b
         a = b
-        b = Fib+b
+        b = Fib
     return Fib
 
 
