@@ -13,6 +13,7 @@
 # entier n quelconque.
 
 from timeit import default_timer
+import numpy as np
 from math import sqrt
 
 def Fibo_recursif(n) :
@@ -81,5 +82,21 @@ def Fibo_iteratif(n):
 ### Une approche puissance de matrice ###
 #########################################
 
-# A faire pour la séance 4
+# On définit notre matrice A
+
+A = np.array([[0, 1], [1, 1]])
+
+# Puis notre fonction puissance
+
+def Fibo_puiss(A,n):
+	if n == 0:
+		output = np.array([[1, 0], [0, 1]])
+		return(output)
+	elif (n % 2) == 0:
+		output = Fibo_puiss(A,n/2)
+   		return(np.dot(output,output))
+	else:
+		output = Fibo_puiss(A,(n-1)/2)
+   		return(np.dot(A,np.dot(output,output)))
+
 
