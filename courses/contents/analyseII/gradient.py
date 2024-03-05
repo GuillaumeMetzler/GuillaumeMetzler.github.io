@@ -9,7 +9,7 @@ x_val = np.linspace(-7,7,m)
 
 # A cet endroit, il va falloir définir votre fonction f
 def my_func(x):  
-    return (x**2)
+    return (3*x**2 - 6*x +2)
 
 # Ici on calcule l'image de la fonction f 
 function_values = my_func(x_val[:,np.newaxis])
@@ -22,7 +22,7 @@ function_values = my_func(x_val[:,np.newaxis])
 # nombre d'itérations (ne pas changer cette valeur !)
 N = 10
 # pas d'apprentissage (il faudra jouer avec cette valeur)
-t = 1.2
+t = 0.5
 
 
 ##### Ecrire votre descente de gradient ici ######
@@ -38,7 +38,7 @@ f_values = [my_func(x_explore[0])]
 
 for j in range(N-1):
     last_x = x_explore[-1]
-    this_x = last_x - 2*t*last_x
+    this_x = last_x - t*(6*last_x - 6)
     x_explore.append(this_x)
     f_values.append(my_func(this_x))
 
@@ -67,7 +67,7 @@ for j in range(1,N):
 # Labels, titles and a legend.
 ax.scatter(x_explore, f_values, c=colors, s=40, lw=3)
 ax.set_xlim(-7,7)
-ax.set_ylim(0,50)
+ax.set_ylim(-2,50)
 ax.set_xlabel(r'$x$')
 ax.set_ylabel(r'$f(x)$')
 ax.set_title('Itérations de la descente de gradient')
