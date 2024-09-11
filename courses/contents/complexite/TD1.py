@@ -27,12 +27,11 @@ def Chercher(Les_crepes, Nombre_crepes):    #La fonction pour trouver la plus gr
             Grande = Les_crepes[i]
             Index_Grande = i
     return Index_Grande                     #Renvoie l'indice de la plus grandes des crêpes
-                        # Renvoie l'indice de la plus grandes des crêpes
 
 
 
 ###########################################
-####### Fonction : returner la pile #######
+####### Fonction : retourner la pile #######
 ###########################################
 
 
