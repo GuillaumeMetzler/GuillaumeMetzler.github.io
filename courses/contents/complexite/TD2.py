@@ -12,7 +12,7 @@ def Deplacer(N_palets, Cases, A,B,C):
     #B : position case Cible
     #C : position case Intermédiaire
     #N_palets : nombre d'éléments/palets.
-    #Cases : dictionnaire contient des Tours de type list; chaque list correspond à un Tour
+    #Cases : dictionnaire contient des Tours de type list; chaque liste correspond à une Tour
     if (N_palets!=0):
         global count
         Deplacer(N_palets-1,Cases, A, C, B) #1. Déplacer la pile de n-1 éléments de la case A vers la case C (en utilisant la case B comme case intermédiaire)
