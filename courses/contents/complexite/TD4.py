@@ -94,9 +94,9 @@ def Fibo_puiss(A,n):
 		return(output)
 	elif (n % 2) == 0:
 		output = Fibo_puiss(A,n/2)
-   		return(np.dot(output,output))
+		return(np.dot(output,output))
 	else:
 		output = Fibo_puiss(A,(n-1)/2)
-   		return(np.dot(A,np.dot(output,output)))
+		return(np.dot(A,np.dot(output,output)))
 
 
