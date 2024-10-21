@@ -102,14 +102,14 @@ for dataset in ['glass', 'wine']:
         # La suite n'est pas "importante" elle permettra de stocker vos résultats 
         # dans un tableau vous permettant de générer un pdf avec vos résultats
 
-    #if not os.path.exists("results"):
-    #    try:
-    #        os.makedirs("results")
-    #    except:
-    #        pass
-    #f = gzip.open("./results/res" + str(seed) + ".pklz", "wb")
-    #pickle.dump(results, f)
-    #f.close()
+    if not os.path.exists("results"):
+        try:
+            os.makedirs("results")
+        except:
+            pass
+    f = gzip.open("./results/res" + str(seed) + ".pklz", "wb")
+    pickle.dump(results, f)
+    f.close()
 
 # Affichage de l'ensemble des résultats
-print(results)
+#print(results)
