@@ -45,7 +45,7 @@ def loadCsv(path):
 
 def oneHotEncodeColumns(data, columnsCategories):
     dataCategories = data[:, columnsCategories]
-    dataEncoded = OneHotEncoder(sparse=False).fit_transform(dataCategories)
+    dataEncoded = OneHotEncoder(sparse_output=False).fit_transform(dataCategories)
     columnsNumerical = []
     for i in range(data.shape[1]):
         if i not in columnsCategories:
