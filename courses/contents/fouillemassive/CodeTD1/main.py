@@ -35,11 +35,11 @@ if len(sys.argv) >= 2:
 # On stocke ci-dessous les valeurs des hyper-paramètres que l'on souhaitent tester
 # La fonction listP va permetttre de créer une grille de valeurs sur les hyper-paramètres
 
-listParams = {"knn": listP({"k": [1]}),
-		      "svm_linear": listP({"C": [0.1,1,10]}),
-		      "svm_poly": listP({"C": [0.1,1,10], 
-		      						"d": [2,3,4]})
-              }
+#listParams = {"knn": listP({"k": [1]}),
+#		      "svm_linear": listP({"C": [0.1,1,10]}),
+#		      "svm_poly": listP({"C": [0.1,1,10], 
+#		      						"d": [2,3,4]})
+#             }
 
 # On va stocker les résultats obtenus pour chaque jeux de données et pour chaque algorithme
 results = {}
