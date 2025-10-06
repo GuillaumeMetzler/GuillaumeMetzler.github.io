@@ -16,6 +16,8 @@ from timeit import default_timer
 import numpy as np
 from math import sqrt
 
+n  = 40
+
 def Fibo_recursif(n) :
     if n <= 1 : return n
     else : return Fibo_recursif(n-1)+Fibo_recursif(n-2)
@@ -26,13 +28,13 @@ phi =  1/2 * (1 + sqrt(5))
 
 # Evaluation temps calcul 
 Start = default_timer()
-print('Resultat :', Fibo_recursif(30))
+print('Resultat :', Fibo_recursif(n))
 Stop  = default_timer()
-T_Fibo_30 = Stop-Start
+T_Fibo_n = Stop-Start
 print('Le temp d execution pour n=30 est de :', Stop-Start,'secondes')
 
-print("Estimation du temps de calcul de Fibo(50) en heures : ",  T_Fibo_30 * phi**20 / (60*60) )
-print("Estimation du temps de calcul de Fibo(500) en années : ",  T_Fibo_30 * phi**470 / (60*60*24*365) ) 
+print("Estimation du temps de calcul de Fibo(100) en heures : ",  T_Fibo_n * phi**(100-n) / (60*60) )
+print("Estimation du temps de calcul de Fibo(500) en années : ",  T_Fibo_n * phi**(500-n) / (60*60*24*365) ) 
 
 
 ####################################
@@ -57,9 +59,9 @@ def Fibo_recensement(n) :
 	return Fibo(n)
 
 	
-print("Résultat", Fibo_recensement(30))	
+print("Résultat", Fibo_recensement(n))	
 
-for k in range(30) :
+for k in range(n+1) :
 	print( "F({}) = {}.".format(k, Fibo_recensement(k) ) )
 
 
