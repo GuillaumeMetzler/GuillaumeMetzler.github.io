@@ -2525,7 +2525,7 @@ input, select, textarea {
 
 	}
 
-#link_ext {
+a.link_ext {
     color: #d87070;        /* rouge pâle */
     font-weight: bold;     /* gras */
     text-decoration: none; /* optionnel : enlève le soulignement */
