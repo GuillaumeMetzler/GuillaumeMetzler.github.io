@@ -6,17 +6,22 @@
 -->
 <html>
 	<head>
-		<title>Introduction to Supervised Machine Learning</title>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="../assets_teaching/css/main.css" />
-				<!-- Google tag (gtag.js) -->
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Introduction to Supervised Machine Learning — Guillaume Metzler</title>
+		<meta name="description" content="Ressources et supports du cours Introduction to Supervised Machine Learning - Guillaume Metzler, maitre de conferences a l'Universite Lyon 2." />
+		<link rel="icon" type="image/svg+xml" href="../images/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:wght@600;700&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+		<link rel="stylesheet" href="../assets/css/site.css" />
+		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-BYH92T5GHN"></script>
 		<script>
 		  window.dataLayer = window.dataLayer || [];
 		  function gtag(){dataLayer.push(arguments);}
 		  gtag('js', new Date());
-
 		  gtag('config', 'G-BYH92T5GHN');
 		</script>
 	</head>
@@ -25,7 +30,7 @@
 		<!-- Header -->
 			<header id="header">
 				<div class="inner">
-					<a class="image avatar"><img src="../images/machinelearning.jpg" alt="" /></a>
+					<a class="image avatar"><img src="../images/courses/supervisedlearning.jpg" alt="" /></a>
 					<h1><strong>Introduction to Supervised Machine Learning</strong> <br> <br></h1>
 					<h1><strong>  <a href="../teaching.html">Retour aux enseignements</a> </strong></h1>
 
@@ -72,6 +77,55 @@
 							<li><a href="contents/supervisedlearning/advanced.pdf" class="button">Advanced Learning</a> </li>
 						</ul>
 
+						<p><strong>Exercices en ligne</strong></p>
+
+						<p>Vous trouverz un lien vers des exercices, sous format QCM ou réponse à compléter, ci-dessous. Ces derniers. Ces derniers vous proposent de vérifier vos connaissances du cours et de mettre en application les différentes notions. Les questions recouvrent l'ensemble des notions abordées en cours.</p>
+
+						<ul class="actions">
+							<li><a href="../exercices/supervisedlearning_exercices.html" class="button primary">Répondre aux questions</a> </li>
+						</ul>
+
+						<p><strong>Notebooks Python</strong></p>
+
+						<p>Les différents notebook vous permettront de visualiser/illustrer les notions du cours sur des données simulées et des jeux de données disponibles dans scikit-learn. Vous serez amenés à construire un modèle et étudier leur comportement en élaborant vous même votre code sur la base d'exemples fournis ou simplement étudier l'influence de paramètres d'un modèle.</p>
+
+						<!--<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/01_fondations_algebre_convexite_optimisation_etudiant.ipynb" class="button" download="01_fondations_algebre_convexite_optimisation_etudiant.ipynb">1. Fondations : algèbre, convexité, optimisation</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/01_fondations_algebre_convexite_optimisation_corrige.ipynb" class="button" download="01_fondations_algebre_convexite_optimisation_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/02_theorie_statistique_apprentissage_etudiant.ipynb" class="button" download="02_theorie_statistique_apprentissage_etudiant.ipynb">2. Théorie statistique de l'apprentissage</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/02_theorie_statistique_apprentissage_corrige.ipynb" class="button" download="02_theorie_statistique_apprentissage_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/03_procedure_experimentale_evaluation_etudiant.ipynb" class="button" download="03_procedure_experimentale_evaluation_etudiant.ipynb">3. Procédure expérimentale &amp; mesures de performance</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/03_procedure_experimentale_evaluation_corrige.ipynb" class="button" download="03_procedure_experimentale_evaluation_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/04_knn_pertes_substitution_etudiant.ipynb" class="button" download="04_knn_pertes_substitution_etudiant.ipynb">4. k-NN &amp; pertes de substitution</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/04_knn_pertes_substitution_corrige.ipynb" class="button" download="04_knn_pertes_substitution_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/05_svm_etudiant.ipynb" class="button" download="05_svm_etudiant.ipynb">5. SVM</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/05_svm_corrige.ipynb" class="button" download="05_svm_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/06_regressions_etudiant.ipynb" class="button" download="06_regressions_etudiant.ipynb">6. Régressions (linéaire, logistique, à noyau)</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/06_regressions_corrige.ipynb" class="button" download="06_regressions_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/07_arbres_reseaux_neurones_etudiant.ipynb" class="button" download="07_arbres_reseaux_neurones_etudiant.ipynb">7. Arbres de décision &amp; réseaux de neurones</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/07_arbres_reseaux_neurones_corrige.ipynb" class="button" download="07_arbres_reseaux_neurones_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/08_bagging_forets_aleatoires_etudiant.ipynb" class="button" download="08_bagging_forets_aleatoires_etudiant.ipynb">8. Bagging &amp; forêts aléatoires</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/08_bagging_forets_aleatoires_corrige.ipynb" class="button" download="08_bagging_forets_aleatoires_corrige.ipynb">Corrigé</a> </li>
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/notebooks/09_boosting_gradient_boosting_etudiant.ipynb" class="button" download="09_boosting_gradient_boosting_etudiant.ipynb">9. Boosting, gradient boosting &amp; stacking</a> </li>
+							<li><a href="contents/supervisedlearning/notebooks/09_boosting_gradient_boosting_corrige.ipynb" class="button" download="09_boosting_gradient_boosting_corrige.ipynb">Corrigé</a> </li>
+						</ul>-->
+
 
 						<p><strong>Exercices</strong></p>
 
@@ -93,7 +147,7 @@
 
 						<ul class="actions">
 							<li><a href="contents/supervisedlearning/datasets_python.zip" class="button" download="datasets_python.zip">Données (Python)</a> </li>
-							<li><a href="contents/supervisedlearning/ML.ipynb" class="button" download="SVM.ipynb">TD ML</a> </li>
+							<li><a href="contents/supervisedlearning/ML.ipynb" class="button" download="ML.ipynb">TD ML</a> </li>
 						</ul>
 
 						<p>Vous pourrez ensuite télécharger les deux fichiers python que l'on trouve ci-dessous afin de vous permettre de travailler pendant la séance pratique</p>
@@ -141,14 +195,27 @@
 							<!--<li><a href="#" class="button">Correction</a> </li>-->
 						</ul>
 					</section>
+			
+					<section class="stats-widget" id="grades-widget" data-slug="supervisedlearning">
+						<header class="major">
+							<h2>Statistiques de reussite</h2>
+						</header>
+						<p class="stats-intro">Distribution des notes obtenues par les etudiant&middot;e&middot;s a cet enseignement (mise a jour au fil des sessions).</p>
+						<div class="stats-controls">
+							<select class="stats-year" hidden></select>
+						</div>
+						<p class="stats-empty" hidden>Aucune donnee de notes n'est encore disponible pour cet enseignement.</p>
+						<div class="stats-tiles" hidden></div>
+						<div class="stats-chart-wrap" hidden>
+							<canvas height="110"></canvas>
+						</div>
+					</section>
 			</div>
 		<!-- Scripts -->
-			<script src="../assets_teaching/js/jquery.min.js"></script>
-			<script src="../assets_teaching/js/jquery.poptrox.min.js"></script>
-			<script src="../assets_teaching/js/browser.min.js"></script>
-			<script src="../assets_teaching/js/breakpoints.min.js"></script>
-			<script src="../assets_teaching/js/util.js"></script>
-			<script src="../assets_teaching/js/main.js"></script>
+			<script src="../assets/js/site.js"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="../assets/js/grades.js"></script>
 
 	</body>
 </html>

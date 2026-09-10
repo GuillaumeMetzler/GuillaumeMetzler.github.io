@@ -6,17 +6,22 @@
 -->
 <html>
 	<head>
-		<title>Analyse I</title>
 		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="../assets_teaching/css/main.css" />
-				<!-- Google tag (gtag.js) -->
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Analyse I — Guillaume Metzler</title>
+		<meta name="description" content="Ressources et supports du cours Analyse I - Guillaume Metzler, maitre de conferences a l'Universite Lyon 2." />
+		<link rel="icon" type="image/svg+xml" href="../images/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:wght@600;700&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+		<link rel="stylesheet" href="../assets/css/site.css" />
+		<!-- Google tag (gtag.js) -->
 		<script async src="https://www.googletagmanager.com/gtag/js?id=G-BYH92T5GHN"></script>
 		<script>
 		  window.dataLayer = window.dataLayer || [];
 		  function gtag(){dataLayer.push(arguments);}
 		  gtag('js', new Date());
-
 		  gtag('config', 'G-BYH92T5GHN');
 		</script>
 	</head>
@@ -25,7 +30,7 @@
 		<!-- Header -->
 			<header id="header">
 				<div class="inner">
-					<a class="image avatar"><img src="../images/analyse_image.jpg" alt="" /></a>
+					<a class="image avatar"><img src="../images/courses/analyse.jpg" alt="" /></a>
 					<h1><strong>Analyse I</strong> <br> <br></h1>
 					<h1><strong>  <a href="../teaching.html">Retour aux enseignements</a> </strong></h1>
 				</div>
@@ -71,6 +76,14 @@
 						<ul class="actions">
 							<li><a href="contents/analyse/exercices.pdf" class="button">Fiche TD</a> </li>
 							<li><a href="contents/analyse/correctionpart1.pdf" class="button">Corrections</a> </li>
+						</ul>
+
+						<p><strong>Exercices interactifs</strong></p>
+
+						<p>Vous trouverz un lien vers des exercices, sous format QCM ou réponse à compléter, ci-dessous. Ces derniers. Ces derniers vous proposent de vérifier vos connaissances du cours et de mettre en application les différentes notions. Les questions recouvrent l'ensemble des notions abordées en cours.</p>
+
+						<ul class="actions">
+							<li><a href="../exercices/analyse_exercices.html" class="button primary">Faire les exercices</a> </li>
 						</ul>
 
 						<p><strong>Travaux Pratiques</strong></p>
@@ -141,14 +154,27 @@
 							<!--<li><a href="contents/analyse/cc1_2024_correction.pdf" class="button">Correction</a> </li>-->
 						</ul>
 					</section>
+			
+					<section class="stats-widget" id="grades-widget" data-slug="analyse">
+						<header class="major">
+							<h2>Statistiques de reussite</h2>
+						</header>
+						<p class="stats-intro">Distribution des notes obtenues par les etudiant&middot;e&middot;s a cet enseignement (mise a jour au fil des sessions).</p>
+						<div class="stats-controls">
+							<select class="stats-year" hidden></select>
+						</div>
+						<p class="stats-empty" hidden>Aucune donnee de notes n'est encore disponible pour cet enseignement.</p>
+						<div class="stats-tiles" hidden></div>
+						<div class="stats-chart-wrap" hidden>
+							<canvas height="110"></canvas>
+						</div>
+					</section>
 			</div>
 		<!-- Scripts -->
-			<script src="../assets_teaching/js/jquery.min.js"></script>
-			<script src="../assets_teaching/js/jquery.poptrox.min.js"></script>
-			<script src="../assets_teaching/js/browser.min.js"></script>
-			<script src="../assets_teaching/js/breakpoints.min.js"></script>
-			<script src="../assets_teaching/js/util.js"></script>
-			<script src="../assets_teaching/js/main.js"></script>
+			<script src="../assets/js/site.js"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="../assets/js/grades.js"></script>
 
 	</body>
 </html>
