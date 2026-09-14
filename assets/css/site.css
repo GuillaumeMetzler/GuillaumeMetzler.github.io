@@ -374,6 +374,39 @@ a.button{
 a.button:hover{ background:var(--primary); color:#fff; border-color:var(--primary); }
 a.link_ext{ text-decoration:underline; }
 
+/* Tableau de ressources par session/année (examens, DM...) sur les pages
+   de cours, pour remplacer les longues suites de ul.actions empilées. */
+table.resource-table{ width:100%; border-collapse:collapse; margin:8px 0 22px; }
+table.resource-table th{
+  text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--text-muted); font-weight:600; padding:0 14px 8px 0; border-bottom:1px solid var(--border);
+}
+table.resource-table td{ padding:10px 14px 10px 0; border-bottom:1px solid var(--border); vertical-align:middle; }
+table.resource-table tbody tr:last-child td{ border-bottom:0; }
+table.resource-table td.session{ font-weight:600; white-space:nowrap; }
+table.resource-table td.empty{ color:var(--text-muted); font-size:.85rem; }
+table.resource-table a.button{ padding:6px 14px; font-size:.82rem; }
+@media (max-width:600px){
+  table.resource-table thead{ display:none; }
+  table.resource-table, table.resource-table tbody, table.resource-table tr, table.resource-table td{ display:block; width:100%; }
+  table.resource-table tr{ border-bottom:1px solid var(--border); padding:10px 0; }
+  table.resource-table td{ border-bottom:0; padding:3px 0; }
+  table.resource-table td.session{ font-size:.92rem; color:var(--accent); text-transform:uppercase; letter-spacing:.03em; margin-bottom:2px; }
+  table.resource-table td:not(.session)::before{ content:attr(data-label) ": "; font-size:.76rem; color:var(--text-muted); }
+}
+
+/* Boîte de regroupement pour chaque catégorie de ressources (Cours, TD,
+   Exercices, TP, Devoir Maison, Examens...) sur les pages de cours, pour
+   donner à toutes les catégories d'une page le même alignement/habillage,
+   qu'elles contiennent des boutons (ul.actions) ou un resource-table. */
+.resource-block{
+  border:1px solid var(--border); border-radius:var(--radius-md);
+  background:var(--surface-2); padding:20px 22px; margin:20px 0 26px;
+}
+.resource-block > :first-child{ margin-top:0; }
+.resource-block > :first-child strong{ margin-top:0; }
+.resource-block > :last-child{ margin-bottom:0; }
+
 /* Stats / distribution des notes */
 .stats-widget{ margin-top:30px; border-top:1px solid var(--border); padding-top:26px; }
 .stats-widget h2{ font-size:1.28rem; }
@@ -455,14 +488,30 @@ a.link_ext{ text-decoration:underline; }
 }
 
 /* ---------- Exercices interactifs : onglets par categorie (banque complete) ---------- */
-.exo-tabs{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 22px; }
+.exo-tabs-wrap{
+  margin:0 0 26px; padding:16px 16px 18px; border:1px solid var(--border); border-radius:var(--radius-md);
+  background:var(--surface);
+}
+.exo-tabs-label{
+  font-family:var(--font-sans); font-size:.72rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.07em; color:var(--text-muted); margin:0 0 12px;
+}
+.exo-tabs{ display:grid; grid-template-columns:repeat(auto-fill, minmax(235px, 1fr)); gap:8px; }
 .exo-tab{
-  font-family:var(--font-sans); font-size:.85rem; font-weight:600; padding:9px 16px; border-radius:999px;
-  border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer;
-  transition:background .15s ease, color .15s ease, border-color .15s ease;
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+  font-family:var(--font-sans); font-size:.84rem; font-weight:600; line-height:1.3; color:var(--text);
+  padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--surface-2);
+  cursor:pointer; transition:background .15s ease, color .15s ease, border-color .15s ease;
 }
 .exo-tab:hover{ border-color:var(--primary); }
+.exo-tab-num{
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center; width:22px; height:22px;
+  border-radius:50%; background:var(--border); color:var(--text-muted); font-size:.72rem; font-weight:700;
+  transition:background .15s ease, color .15s ease;
+}
+.exo-tab-label{ flex:1 1 auto; }
 .exo-tab.active{ background:var(--primary); color:#fff; border-color:var(--primary); }
+.exo-tab.active .exo-tab-num{ background:rgba(255,255,255,.25); color:#fff; }
 .exo-cat-heading{
   display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;
   margin:0 0 16px; padding-bottom:10px; border-bottom:2px solid var(--border);
@@ -473,11 +522,12 @@ a.link_ext{ text-decoration:underline; }
 
 /* ---------- Exercices interactifs : score par categorie + LaTeX + figures ---------- */
 .exo-tab-score{
-  display:inline-block; margin-left:6px; font-size:.76rem; font-weight:700; opacity:.85;
-  padding:1px 7px; border-radius:999px; background:rgba(255,255,255,.18);
+  flex:0 0 auto; font-size:.74rem; font-weight:700; opacity:.9;
+  padding:2px 8px; border-radius:999px; background:var(--border); color:var(--text-muted);
 }
-.exo-tab:not(.active) .exo-tab-score{ background:var(--surface-2); color:var(--text-muted); }
-.exo-tab.complete:not(.active){ border-color:var(--success); color:var(--success); }
+.exo-tab.active .exo-tab-score{ background:rgba(255,255,255,.22); color:#fff; }
+.exo-tab.complete:not(.active){ border-color:var(--success); }
+.exo-tab.complete:not(.active) .exo-tab-num{ background:var(--success); color:#fff; }
 .exo-tab.complete:not(.active) .exo-tab-score{ background:#e6f2ea; color:var(--success); }
 @media (prefers-color-scheme: dark){
   .exo-tab.complete:not(.active) .exo-tab-score{ background:#173324; }
@@ -492,6 +542,62 @@ a.link_ext{ text-decoration:underline; }
 
 .exo-fig{ margin:2px 0 16px; border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border); background:var(--surface); }
 .exo-fig img{ display:block; width:100%; height:auto; }
+
+/* ---------- Exercices interactifs : fiche de revision (optionnelle par theme) ---------- */
+.exo-fiche{ margin:0 0 22px; }
+.exo-fiche-details{
+  background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+  padding:2px 22px 4px;
+}
+.exo-fiche-details[open]{ padding-bottom:20px; }
+.exo-fiche-details summary{
+  cursor:pointer; font-family:var(--font-serif); font-weight:700; font-size:1.05rem;
+  color:var(--primary); padding:16px 0; list-style:none;
+}
+.exo-fiche-details summary::-webkit-details-marker{ display:none; }
+.exo-fiche-details summary::before{ content:'▸ '; color:var(--accent); }
+.exo-fiche-details[open] summary::before{ content:'▾ '; }
+.exo-fiche-body{ font-size:.94rem; color:var(--text); border-top:1px solid var(--border); padding-top:16px; }
+.exo-fiche-body h4{
+  font-family:var(--font-serif); font-size:1rem; font-weight:700; margin:20px 0 8px; color:var(--text);
+}
+.exo-fiche-body h4:first-child{ margin-top:0; }
+.exo-fiche-body p{ margin:0 0 10px; line-height:1.55; }
+.exo-fiche-body ul{ margin:0 0 12px 20px; padding:0; }
+.exo-fiche-body li{ margin-bottom:5px; line-height:1.5; }
+.exo-fiche-body strong{ color:var(--text); font-weight:700; }
+.exo-fiche-exemple, .exo-fiche-piege{
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:10px 14px; margin:12px 0; font-size:.9rem;
+}
+.exo-fiche-exemple{ background:var(--surface-2); border-left:3px solid var(--accent-2); }
+.exo-fiche-piege{ background:var(--surface-2); border-left:3px solid var(--warning); }
+.exo-fiche-exemple strong, .exo-fiche-piege strong{ color:var(--text); }
+.exo-fiche-body .katex-display{ margin:.4em 0; overflow-x:auto; overflow-y:hidden; }
+
+/* ---------- Fiche de revision : illustration graphique (SVG inline) ---------- */
+.exo-fiche-fig{
+  margin:14px 0 18px; padding:12px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  background:var(--surface-2); text-align:center;
+}
+.exo-fiche-fig svg{ max-width:100%; height:auto; display:inline-block; }
+.exo-fiche-fig-caption{
+  margin:8px 0 0; font-size:.8rem; color:var(--text-muted); font-style:italic;
+}
+
+/* ---------- Exercices interactifs : problemes de synthese (plusieurs questions liees) ---------- */
+.exo-problem{
+  border:1px solid var(--border); border-radius:var(--radius-md); background:var(--surface);
+  padding:20px 22px 22px; margin:0 0 22px;
+}
+.exo-problem-head{ margin:0 0 16px; padding-bottom:14px; border-bottom:1px dashed var(--border); }
+.exo-problem-title{
+  font-family:var(--font-serif); font-weight:700; font-size:1.08rem; color:var(--primary); margin:0 0 8px;
+}
+.exo-problem-context{ font-size:.93rem; line-height:1.6; color:var(--text); }
+.exo-problem-context p{ margin:0 0 10px; }
+.exo-problem-context p:last-child{ margin-bottom:0; }
+.exo-problem .exo-card{ background:var(--surface-2); }
+.exo-problem .exo-card:last-child{ margin-bottom:0; }
 
 /* KaTeX : eviter que les formules debordent sur mobile */
 .exo-q .katex-display{ margin:.4em 0; overflow-x:auto; overflow-y:hidden; }

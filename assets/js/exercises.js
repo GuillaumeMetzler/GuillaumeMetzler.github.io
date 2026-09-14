@@ -98,7 +98,7 @@
     card._exoReset = reset;
   }
 
-  function buildCardFromData(q, numeroDansCategorie) {
+  function buildCardFromData(q, numeroDansCategorie, labelPrefix) {
     var card = document.createElement('div');
     card.className = 'exo-card';
     card.dataset.cat = q.cat;
@@ -108,7 +108,7 @@
 
     var numEl = document.createElement('p');
     numEl.className = 'exo-num';
-    numEl.textContent = 'Exercice ' + numeroDansCategorie;
+    numEl.textContent = (labelPrefix || 'Exercice') + ' ' + numeroDansCategorie;
     card.appendChild(numEl);
 
     var qEl = document.createElement('p');
@@ -187,9 +187,16 @@
     questions.forEach(function (q) { countByCat[q.cat] = (countByCat[q.cat] || 0) + 1; });
 
     // -- onglets --
+    var tabsWrap = document.createElement('div');
+    tabsWrap.className = 'exo-tabs-wrap';
+    var tabsLabel = document.createElement('p');
+    tabsLabel.className = 'exo-tabs-label';
+    tabsLabel.textContent = 'Choisir un thème';
+    tabsWrap.appendChild(tabsLabel);
     var tabsBar = document.createElement('div');
     tabsBar.className = 'exo-tabs';
-    app.appendChild(tabsBar);
+    tabsWrap.appendChild(tabsBar);
+    app.appendChild(tabsWrap);
 
     var catHeading = document.createElement('div');
     catHeading.className = 'exo-cat-heading';
@@ -201,26 +208,65 @@
       '</span>';
     app.appendChild(catHeading);
 
+    // -- fiche de revision (optionnelle, cat.fiche) --
+    var ficheWrap = document.createElement('div');
+    ficheWrap.className = 'exo-fiche';
+    ficheWrap.hidden = true;
+    app.appendChild(ficheWrap);
+
     var cardsWrap = document.createElement('div');
     cardsWrap.className = 'exo-cards';
     app.appendChild(cardsWrap);
 
     // -- construction de toutes les cartes (groupees par categorie) --
     var allCards = [];
-    categories.forEach(function (cat) {
+    var allBlocks = []; // enveloppes de "probleme" (plusieurs questions liees a afficher/masquer ensemble)
+    categories.forEach(function (cat, catIdx) {
       var qsOfCat = questions.filter(function (q) { return q.cat === cat.slug; });
-      qsOfCat.forEach(function (q, idx) {
-        var card = buildCardFromData(q, idx + 1);
-        attachCardBehavior(card, updateScoreDisplay);
-        cardsWrap.appendChild(card);
-        allCards.push(card);
-      });
+
+      if (cat.problems && cat.problems.length) {
+        var grouped = {};
+        qsOfCat.forEach(function (q) {
+          var pid = q.problem || '_';
+          (grouped[pid] = grouped[pid] || []).push(q);
+        });
+        cat.problems.forEach(function (pb) {
+          var pbWrap = document.createElement('div');
+          pbWrap.className = 'exo-problem';
+          pbWrap.dataset.cat = cat.slug;
+          var pbHead = document.createElement('div');
+          pbHead.className = 'exo-problem-head';
+          pbHead.innerHTML =
+            '<p class="exo-problem-title">' + pb.title + '</p>' +
+            '<div class="exo-problem-context">' + pb.context + '</div>';
+          pbWrap.appendChild(pbHead);
+          var qs = grouped[pb.id] || [];
+          qs.forEach(function (q, idx) {
+            var card = buildCardFromData(q, idx + 1, 'Question');
+            attachCardBehavior(card, updateScoreDisplay);
+            pbWrap.appendChild(card);
+            allCards.push(card);
+          });
+          cardsWrap.appendChild(pbWrap);
+          allBlocks.push(pbWrap);
+        });
+      } else {
+        qsOfCat.forEach(function (q, idx) {
+          var card = buildCardFromData(q, idx + 1);
+          attachCardBehavior(card, updateScoreDisplay);
+          cardsWrap.appendChild(card);
+          allCards.push(card);
+        });
+      }
 
       var tabBtn = document.createElement('button');
       tabBtn.type = 'button';
       tabBtn.className = 'exo-tab';
       tabBtn.dataset.cat = cat.slug;
-      tabBtn.innerHTML = cat.label + ' <span class="exo-tab-score">0/' + countByCat[cat.slug] + '</span>';
+      tabBtn.innerHTML =
+        '<span class="exo-tab-num">' + (catIdx + 1) + '</span>' +
+        '<span class="exo-tab-label">' + cat.label + '</span>' +
+        '<span class="exo-tab-score">0/' + countByCat[cat.slug] + '</span>';
       tabBtn.addEventListener('click', function () { selectCategory(cat.slug); });
       tabsBar.appendChild(tabBtn);
     });
@@ -258,7 +304,22 @@
       });
       var cat = categories.filter(function (c) { return c.slug === slug; })[0];
       catHeading.querySelector('.exo-cat-title').textContent = cat ? cat.label : '';
+
+      if (cat && cat.fiche) {
+        ficheWrap.innerHTML =
+          '<details class="exo-fiche-details" open>' +
+          '<summary>Fiche de révision — ' + cat.label + '</summary>' +
+          '<div class="exo-fiche-body">' + cat.fiche + '</div>' +
+          '</details>';
+        ficheWrap.hidden = false;
+        renderMath(ficheWrap);
+      } else {
+        ficheWrap.innerHTML = '';
+        ficheWrap.hidden = true;
+      }
+
       allCards.forEach(function (c) { c.hidden = c.dataset.cat !== slug; });
+      allBlocks.forEach(function (b) { b.hidden = b.dataset.cat !== slug; });
       updateScoreDisplay();
       app.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
