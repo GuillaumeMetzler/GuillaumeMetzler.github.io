@@ -1,5 +1,5 @@
 /* ================================================================
-   Banque de questions — Problèmes de synthèse (32 questions)
+   Banque de questions — Problèmes de synthèse (48 questions)
    Genere automatiquement a partir du contenu source - pur re-formatage,
    ne pas editer les valeurs a la main sans repercuter le changement
    dans le dossier source de generation.
@@ -365,6 +365,185 @@
       ans: "a",
       ansText: `Oui, car \\(f\\) appartient à l'intervalle de fluctuation`,
       problem: "pbH"
+    },
+    {
+      id: "problemes-synthese-33",
+      type: "qcm",
+      q: `On pose \\(v_n = u_n - 250\\) pour tout entier \\(n\\). Quelle est la nature de la suite \\((v_n)\\) ?`,
+      opts: [
+        { key: "a", text: `Géométrique de raison \\(0{,}8\\)` },
+        { key: "b", text: `Arithmétique de raison \\(0{,}8\\)` },
+        { key: "c", text: `Géométrique de raison \\(50\\)` },
+        { key: "d", text: `Ni arithmétique, ni géométrique` }
+      ],
+      ans: "a",
+      ansText: `Géométrique de raison \\(0{,}8\\)`,
+      problem: "pbI"
+    },
+    {
+      id: "problemes-synthese-34",
+      type: "num",
+      q: `Calculer \\(u_2\\).`,
+      ans: 218,
+      ansText: `218`,
+      tol: 0.01,
+      problem: "pbI"
+    },
+    {
+      id: "problemes-synthese-35",
+      type: "num",
+      q: `Déterminer la limite de la suite \\((u_n)\\) quand \\(n \\to +\\infty\\).`,
+      ans: 250,
+      ansText: `250`,
+      tol: 0.01,
+      problem: "pbI"
+    },
+    {
+      id: "problemes-synthese-36",
+      type: "num",
+      q: `À l'aide d'une résolution numérique, déterminer le plus petit entier \\(n\\) tel que \\(u_n &gt; 249\\).`,
+      ans: 18,
+      ansText: `18`,
+      tol: 0.01,
+      problem: "pbI"
+    },
+    {
+      id: "problemes-synthese-37",
+      type: "qcm",
+      q: `Quelle est l'expression de \\(f'(x)\\) ?`,
+      opts: [
+        { key: "a", text: `\\(-x\\,e^{-x}\\)` },
+        { key: "b", text: `\\((1-x)e^{-x}\\)` },
+        { key: "c", text: `\\(e^{-x}\\)` },
+        { key: "d", text: `\\(-e^{-x}\\)` }
+      ],
+      ans: "a",
+      ansText: `\\(-x\\,e^{-x}\\)`,
+      problem: "pbJ"
+    },
+    {
+      id: "problemes-synthese-38",
+      type: "qcm",
+      q: `Quel est le sens de variation de \\(f\\) sur \\([0\\,;\\,+\\infty[\\) ?`,
+      opts: [
+        { key: "a", text: `Croissante puis décroissante` },
+        { key: "b", text: `Décroissante sur \\([0\\,;\\,+\\infty[\\)` },
+        { key: "c", text: `Croissante sur \\([0\\,;\\,+\\infty[\\)` },
+        { key: "d", text: `Constante` }
+      ],
+      ans: "b",
+      ansText: `Décroissante sur \\([0\\,;\\,+\\infty[\\)`,
+      problem: "pbJ"
+    },
+    {
+      id: "problemes-synthese-39",
+      type: "num",
+      q: `Déterminer la limite de \\(f\\) en \\(+\\infty\\).`,
+      ans: 0,
+      ansText: `0`,
+      tol: 0.01,
+      problem: "pbJ"
+    },
+    {
+      id: "problemes-synthese-40",
+      type: "qcm",
+      q: `Quelle est l'équation de la tangente à \\(\\mathcal{C}_f\\) au point d'abscisse \\(0\\) ?`,
+      opts: [
+        { key: "a", text: `\\(y = 1\\)` },
+        { key: "b", text: `\\(y = x+1\\)` },
+        { key: "c", text: `\\(y = -x+1\\)` },
+        { key: "d", text: `\\(y = 0\\)` }
+      ],
+      ans: "a",
+      ansText: `\\(y = 1\\)`,
+      problem: "pbJ"
+    },
+    {
+      id: "problemes-synthese-41",
+      type: "num",
+      q: `Calculer \\(P(T \\cap M)\\).`,
+      ans: 0.019,
+      ansText: `0,019`,
+      tol: 0.001,
+      problem: "pbK"
+    },
+    {
+      id: "problemes-synthese-42",
+      type: "num",
+      q: `À l'aide de la formule des probabilités totales, calculer \\(P(T)\\).`,
+      ans: 0.0484,
+      ansText: `0,0484`,
+      tol: 0.001,
+      problem: "pbK"
+    },
+    {
+      id: "problemes-synthese-43",
+      type: "num",
+      q: `En déduire \\(P_T(M)\\), la probabilité qu'une personne testée positive soit réellement malade (arrondir à \\(0{,}001\\) près).`,
+      ans: 0.392562,
+      ansText: `\\(\\approx0{,}393\\)`,
+      tol: 0.001,
+      problem: "pbK"
+    },
+    {
+      id: "problemes-synthese-44",
+      type: "qcm",
+      q: `Que peut-on conclure de la valeur de \\(P_T(M)\\) ?`,
+      opts: [
+        { key: "a", text: `À peine plus d'une personne positive sur trois est réellement malade` },
+        { key: "b", text: `Un test positif garantit que la personne est malade` },
+        { key: "c", text: `Le test est positif chez 95&nbsp;% des personnes testées` },
+        { key: "d", text: `La maladie touche 39&nbsp;% de la population` }
+      ],
+      ans: "a",
+      ansText: `À peine plus d'une personne positive sur trois est réellement malade`,
+      problem: "pbK"
+    },
+    {
+      id: "problemes-synthese-45",
+      type: "qcm",
+      q: `Pour démontrer par récurrence que, pour tout entier \\(n\\), \\(0 \\leqslant u_n \\leqslant 3\\), quelle est l'initialisation correcte ?`,
+      opts: [
+        { key: "a", text: `\\(u_0 = 0\\), donc \\(0 \\leqslant u_0 \\leqslant 3\\) : la propriété est vraie au rang 0` },
+        { key: "b", text: `\\(u_1 = \\sqrt{3}\\), donc la propriété est vraie au rang 1` },
+        { key: "c", text: `\\(u_0 = 3\\)` },
+        { key: "d", text: `Il n'y a pas besoin d'initialisation pour une suite définie par récurrence` }
+      ],
+      ans: "a",
+      ansText: `\\(u_0 = 0\\), donc \\(0 \\leqslant u_0 \\leqslant 3\\) : la propriété est vraie au rang 0`,
+      problem: "pbL"
+    },
+    {
+      id: "problemes-synthese-46",
+      type: "num",
+      q: `Calculer \\(u_1\\) (arrondir à \\(0{,}01\\) près).`,
+      ans: 1.732,
+      ansText: `\\(\\sqrt{3}\\approx1{,}732\\)`,
+      tol: 0.01,
+      problem: "pbL"
+    },
+    {
+      id: "problemes-synthese-47",
+      type: "qcm",
+      q: `Dans l'hérédité, en supposant \\(0 \\leqslant u_n \\leqslant 3\\), comment montre-t-on que \\(u_{n+1} \\leqslant 3\\) ?`,
+      opts: [
+        { key: "a", text: `\\(u_n \\leqslant 3 \\Rightarrow 2u_n+3 \\leqslant 9 \\Rightarrow u_{n+1}=\\sqrt{2u_n+3} \\leqslant \\sqrt{9}=3\\)` },
+        { key: "b", text: `\\(u_{n+1} = 2u_n+3 \\leqslant 3\\)` },
+        { key: "c", text: `On ne peut pas le montrer sans calculatrice` },
+        { key: "d", text: `\\(u_{n+1} \\leqslant u_n\\) est toujours vrai` }
+      ],
+      ans: "a",
+      ansText: `\\(u_n \\leqslant 3 \\Rightarrow 2u_n+3 \\leqslant 9 \\Rightarrow u_{n+1}=\\sqrt{2u_n+3} \\leqslant \\sqrt{9}=3\\)`,
+      problem: "pbL"
+    },
+    {
+      id: "problemes-synthese-48",
+      type: "num",
+      q: `La suite \\((u_n)\\) étant croissante et majorée par \\(3\\), elle converge vers une limite \\(\\ell\\) vérifiant \\(\\ell = \\sqrt{2\\ell+3}\\). Déterminer \\(\\ell\\).`,
+      ans: 3,
+      ansText: `3`,
+      tol: 0.01,
+      problem: "pbL"
     }
   ];
   questions.forEach(function (q) {
