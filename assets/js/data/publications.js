@@ -42,7 +42,7 @@ var PUBLICATIONS = [
   {
     id: "debias-emnlp-2026", group: "group-conf-intl", year: 2026, month: 10,
     title: "Debias-SparseGPT: Bias-Aware Pruning for Large Language Models",
-    authors: "T. Leteno, I. Proskurina, A. Gourru, J. Velcin, C. Laclau, G. Metzler, C. Gravier",
+    authors: " I. Proskurina, G. Metzler, A. Gourru, J. Velcin",
     authorIds: ["iproskurina", "gmetzler", "agourru", "jvelcin"],
     venue: "The 2026 Conference on Empirical Methods in Natural Language Processing (EMNLP), Budapest, Hungary, octobre 2026",
     badges: [{ text: "CORE A*", color: "amber" }],
