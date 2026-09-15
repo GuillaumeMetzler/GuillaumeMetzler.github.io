@@ -375,8 +375,18 @@ var PUBLICATIONS = [
   },
 
   // --- Préprints ---
+  ON THE DISINTEGRATION OF THE STOCHASTIC MAJORITY VOTE: FROM PAC-BAYESIAN BOUNDS TO A SELF-BOUNDING ALGORITHM
 
-
+  {
+    id: "pacbayes-fairness-2026", group: "group-preprints", year: 2026, month: 9,
+    title: "On the Disintegration of the Stochastic Majority Vote: from PAC-Bayesian Bounds to a Self-Bounding Algorithm",
+    authors: "J. Bastian, B. Leblanc, P. Germain, A. Habrard, G. Metzler, E. Morvant, P. Viallard",
+    authorIds: ["jbastian", "bleblanc", "pgermain", "ahabrard",  "gmetzler", "emorvant", "pviallard"],
+    venue: "hal-05734573, 2026",
+    links: [
+      { label: "Préprint (HAL)", href: "https://hal.science/hal-05734573", external: true }
+    ]
+  },
   {
     id: "pacbayes-fairness-2026", group: "group-preprints", year: 2026, month: 2,
     title: "PAC-Bayesian Generalization Guarantees for Fairness on Stochastic and Deterministic Classifiers",
