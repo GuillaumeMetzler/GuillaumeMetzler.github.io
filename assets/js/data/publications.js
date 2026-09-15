@@ -52,7 +52,7 @@ var PUBLICATIONS = [
   {
     id: "multisigbert-ecml-2026", group: "group-conf-intl", year: 2026, month: 9,
     title: "MultiSigBERT: Beyond Survival Analysis through Multimodal and Sequential Modeling in Oncology",
-    authors: "P. Minchella, S. Chrétien, G. Metzler, L. Verlingue, and R. Vaucher3",
+    authors: "P. Minchella, S. Chrétien, G. Metzler, L. Verlingue, and R. Vaucher",
     authorIds: ["pminchella", "lverlingue", "schretien", "rvaucher", "gmetzler"],
     venue: "37th European Conference on Machine Learning & Principles and Practice of Knowledge Discovery in Databases (ECML-PKDD), Naples, Italy, septembre 2026",
     badges: [{ text: "CORE A", color: "blue" }],
