@@ -1,0 +1,508 @@
+%% ======================================================================
+\section{Mathematical toolbox}
+\label{chap:tools}
+%% ======================================================================
+
+\begin{objectives}
+\guiding{How can an error measured on a sample be turned into a guarantee on the
+true error, first for one classifier, then for many?}
+We fix the formal setting (Gibbs classifier and majority vote), and we gather
+the probabilistic tools that are used over and over in PAC-Bayesian proofs:
+concentration inequalities for a single voter, stated with the binary
+Kullback--Leibler divergence, the Kullback--Leibler divergence between
+distributions over voters, and the change of measure inequality, which is the
+key step of every PAC-Bayesian bound. The section ends with the Occam bound,
+which already contains the main idea of PAC-Bayes.
+\end{objectives}
+
+The section climbs three steps. We first learn how to certify \emph{one}
+classifier fixed in advance (concentration inequalities). We then introduce the
+tool that lets us move from a distribution fixed in advance to a distribution
+chosen with the data (the change of measure). Finally, combining the two in the
+simplest case gives the Occam bound, which certifies a classifier \emph{chosen}
+among many. The next section will take the last step, from one chosen
+classifier to a chosen distribution over classifiers.
+
+\subsection{Setting}
+
+Before stating any bound, we must fix the objects that the bounds talk about:
+the data, the voters, their risks, and the two ways of combining voters.
+We consider binary classification. Examples $(x,y)$ are drawn independently from
+an unknown distribution $\D$ on $\X\times\Y$ with $\Y=\{-1,+1\}$, and we observe
+a learning sample $S=\{(x_i,y_i)\}_{i=1}^m\sim\D^m$. We are given a set $\Hcal$ of
+voters and a loss function $\ell:\Hcal\times(\X\times\Y)\to[0,1]$, which will be
+the 0-1 loss $\ell(h,(x,y))=\ind{h(x)\neq y}$ unless stated otherwise. The true
+risk and the empirical risk of a voter are
+\[
+  \RD(h)=\Esp{(x,y)\sim\D}{\ell(h,(x,y))}\qquad\text{and}\qquad
+  \RS(h)=\frac1m\sum_{i=1}^m\ell(h,(x_i,y_i)).
+\]
+For voters with values in $\{-1,+1\}$ we will often use the identity
+$\ind{h(x)\neq y}=\frac{1-y\,h(x)}{2}$, which turns the 0-1 loss into a linear
+function of the prediction.
+
+\begin{definition}{Gibbs classifier and majority vote}{gibbs}
+Let $Q\in\M(\Hcal)$ be a distribution over $\Hcal$.
+The \textbf{Gibbs classifier} $\GQ$ predicts the label of $x$ by drawing
+$h\sim Q$ and returning $h(x)$. Its true and empirical risks are
+\[
+  \RD(\GQ)=\Esp{h\sim Q}{\RD(h)},\qquad \RS(\GQ)=\Esp{h\sim Q}{\RS(h)}.
+\]
+The \textbf{($Q$-weighted) majority vote} is the deterministic classifier
+$\BQ(x)=\sign\big(\Esp{h\sim Q}{h(x)}\big)$, with the convention
+$\sign(0)=-1$, so that a tie is counted as an error in the analysis. Its risk is
+$\RD(\BQ)=\P_{(x,y)\sim\D}\big(\BQ(x)\neq y\big)$.
+\end{definition}
+
+The two predictors behave very differently. The Gibbs risk is \emph{linear} in
+$Q$, which makes it easy to analyse, and it always lies between the risk of the
+best and the risk of the worst voter. The risk of the majority vote is not
+linear in $Q$, and it can be much smaller than the Gibbs risk: in the running
+example of \cref{chap:intro}, the Gibbs risk of the forest is $19\%$ while its
+vote only errs on $4.4\%$ of the test points. A convenient way to relate the two
+is to exchange the expectations over the voters and over the data (Fubini's theorem):
+\[
+\RD(\GQ)=\Esp{(x,y)\sim\D}{W_Q(x,y)},\qquad\text{where}\qquad
+W_Q(x,y)=\Esp{h\sim Q}{\ind{h(x)\neq y}}
+\]
+is the proportion, weighted by $Q$, of voters that err on $(x,y)$. The random
+variable $W_Q$ will be the main character of \cref{chap:mv}. For now, the
+important point is that the Gibbs risk is an average of the risks of single
+voters, so our first task is to control the risk of one voter.
+
+\subsection{Concentration inequalities}
+
+All generalization bounds rely on the same basic fact: for a \emph{fixed}
+voter $h$, chosen before seeing the data, the empirical risk $\RS(h)$ is an
+average of $m$ independent random variables with values in $[0,1]$ and mean
+$\RD(h)$, hence it concentrates around $\RD(h)$. The tools below quantify this
+concentration. We start with the simplest of all.
+
+\begin{lemma}{Markov's inequality}{markov}
+Let $Z\geq 0$ be a random variable and $a>0$. Then $\P(Z\geq a)\leq \frac{\E Z}{a}$.
+Equivalently, for any $\delta\in(0,1]$, with probability at least $1-\delta$, $Z\leq\frac{\E Z}{\delta}$.
+\end{lemma}
+\begin{proof}
+Since $Z\geq0$, we have $a\ind{Z\geq a}\leq Z$; take expectations.
+\end{proof}
+
+Markov's inequality looks weak, but it becomes remarkably powerful when it is
+applied to a well-chosen transformation of the variable of interest. Applied to
+the exponential $e^{\lambda(p-\hat p)}$, it gives Hoeffding's inequality.
+
+\begin{lemma}{Hoeffding's inequality \citep{hoeffding1963probability}}{hoeffding}
+Let $Z_1,\dots,Z_m$ be i.i.d.\ random variables in $[0,1]$ with mean $p$, and
+$\hat p=\frac1m\sum_i Z_i$. For any $\lambda\in\R$,
+$\E\,e^{\lambda(p-\hat p)}\leq e^{\lambda^2/(8m)}$, and, for $\varepsilon>0$,
+$\P(p-\hat p\geq\varepsilon)\leq e^{-2m\varepsilon^2}$.
+\end{lemma}
+\begin{proofsketch}
+The first inequality is Hoeffding's lemma, applied to each of the $m$
+independent terms $\frac{p-Z_i}{m}$, which have zero mean and range $\frac1m$.
+For the second, Markov's inequality gives
+$\P(p-\hat p\geq\varepsilon)\leq e^{-\lambda\varepsilon}\E e^{\lambda(p-\hat p)}\leq e^{-\lambda\varepsilon+\lambda^2/(8m)}$,
+and the choice $\lambda=4m\varepsilon$ gives $e^{-2m\varepsilon^2}$.
+\end{proofsketch}
+
+Inverting Hoeffding's inequality, the true risk of a fixed voter satisfies
+$\RD(h)\leq\RS(h)+\sqrt{\ln(1/\delta)/(2m)}$ with probability at least
+$1-\delta$. In words, the empirical risk underestimates the true risk by more
+than $\sqrt{\ln(1/\delta)/(2m)}$ with probability at most $\delta$. This is already
+a certificate, but its width does not depend on the value of the risk, which is
+wasteful when the risk is small: a Bernoulli variable of mean $0.01$ fluctuates
+much less than a Bernoulli variable of mean $0.5$.
+
+The sharpest statement for Bernoulli variables uses the \textbf{binary
+Kullback--Leibler divergence}
+\[
+\kl(q\|p)=q\ln\frac{q}{p}+(1-q)\ln\frac{1-q}{1-p},\qquad q,p\in[0,1],
+\]
+which is the Kullback--Leibler divergence between two Bernoulli distributions of
+parameters $q$ and $p$.
+
+The binary kl has a very concrete meaning: it measures how \emph{surprising} it
+is to observe a frequency $q$ of errors when the true error rate is $p$. Indeed,
+the probability that $m$ independent coin flips of bias $p$ produce a frequency
+close to $q$ behaves like $e^{-m\,\kl(q\|p)}$. This is Sanov's theorem for coins,
+and the next lemma makes one side of it precise. A small kl means that the
+observation is plausible under $p$, while a kl of $\varepsilon$ means that it has a
+probability of order $e^{-m\varepsilon}$. Turning this around, the true risks $p$
+compatible with an observed empirical risk $\hat q$ are those for which
+$\kl(\hat q\|p)$ is small.
+
+\begin{lemma}{Chernoff's bound and Maurer's lemma}{chernoff}
+Let $Z_1,\dots,Z_m$ be i.i.d.\ random variables in $[0,1]$ with mean $p$ and
+average $\hat p$. Chernoff's bound states that, for $\varepsilon\in(0,p)$,
+$\P\big(\hat p\leq p-\varepsilon\big)\leq e^{-m\,\kl(p-\varepsilon\|p)}$.
+Maurer's lemma \citep{maurer2004note} states that, for $m\geq 8$,
+\begin{equation}\label{eq:maurer}
+  \E\Big[e^{m\,\kl(\hat p\|p)}\Big]\leq \xi(m):=\sum_{k=0}^m\binom mk\Big(\frac km\Big)^k\Big(1-\frac km\Big)^{m-k},
+\end{equation}
+with $\sqrt m\leq\xi(m)\leq 2\sqrt m$; the first inequality in \eqref{eq:maurer} is an
+equality when the $Z_i$ are Bernoulli variables.
+\end{lemma}
+
+The two statements say the same thing in two different forms. Chernoff's bound
+controls a \emph{tail}: a large deviation of the empirical mean is exponentially
+unlikely, at the rate given by the kl. Maurer's lemma controls an
+\emph{exponential moment}: on average, $e^{m\kl(\hat p\|p)}$ is only of order
+$\sqrt m$, although it could a priori be as large as $e^{m\ln 2}$. The first form
+is the natural one for a single classifier; the second is the one that
+PAC-Bayesian proofs need, because an expectation can be averaged over voters,
+whereas a tail probability cannot.
+
+\begin{proofsketch}
+The key step in the second statement is that, for any convex function $f$ on
+$[0,1]^m$, $\E f(Z_1,\dots,Z_m)\leq \E f(B_1,\dots,B_m)$ where the $B_i$ are
+i.i.d.\ Bernoulli$(p)$ variables: a variable in $[0,1]$ is ``less spread'' than
+a Bernoulli variable with the same mean. Since $q\mapsto e^{m\kl(q\|p)}$ is
+convex, it suffices to treat the case $m\hat p\sim\mathrm{Bin}(m,p)$, for which
+\[
+\E e^{m\kl(\hat p\|p)}=\sum_k \binom mk p^k(1-p)^{m-k}\Big(\frac{k/m}{p}\Big)^{k}\Big(\frac{1-k/m}{1-p}\Big)^{m-k}=\xi(m),
+\]
+a quantity which, remarkably, does not depend on $p$; Stirling's formula gives
+the bounds on $\xi(m)$.
+\end{proofsketch}
+
+\paragraph{Inverting the kl.} Both statements bound the kl between the empirical
+and the true risk, whereas what we want is an explicit upper bound on the true
+risk. We therefore need to invert the binary kl. For a fixed $q$, the function
+$p\mapsto\kl(q\|p)$ is convex, vanishes at $p=q$ and increases on $[q,1]$ (see
+\cref{fig:klinv}). The inequality $\kl(\hat q\|p)\leq\varepsilon$ therefore defines
+an interval $[\kllow(\hat q,\varepsilon),\klup(\hat q,\varepsilon)]$ of admissible
+values of $p$, with
+\[
+  \klup(\hat q,\varepsilon)=\sup\{p\in[\hat q,1]:\kl(\hat q\|p)\leq\varepsilon\},\qquad
+  \kllow(\hat q,\varepsilon)=\inf\{p\in[0,\hat q]:\kl(\hat q\|p)\leq\varepsilon\}.
+\]
+These quantities have no closed form, but since the function is monotone on each
+side of $\hat q$ they are computed to any precision by a few iterations of
+bisection (\cref{algo:klinv}). In the rest of the notes, $\klup$ will be our
+standard way of turning an empirical quantity into a certified upper bound.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{kl_inverse}
+\caption{The function $p\mapsto\kl(\hat q\|p)$ for $\hat q=0.1$. For
+$\varepsilon=0.05$, the values of $p$ compatible with $\kl(\hat q\|p)\leq\varepsilon$ form
+an interval whose upper end $\klup(\hat q,\varepsilon)=0.220$ is smaller than the
+Pinsker relaxation $\hat q+\sqrt{\varepsilon/2}=0.258$.}
+\label{fig:klinv}
+\end{figure}
+
+\begin{algorithm}[t]
+\caption{Upper inversion of the binary kl by bisection}\label{algo:klinv}
+\KwIn{empirical value $\hat q\in[0,1]$, budget $\varepsilon\geq 0$, tolerance $\tau$}
+$a\leftarrow\hat q$, $b\leftarrow 1$\;
+\While{$b-a>\tau$}{
+  $c\leftarrow(a+b)/2$\;
+  \lIf{$\kl(\hat q\|c)>\varepsilon$}{$b\leftarrow c$}\lElse{$a\leftarrow c$}
+}
+\KwOut{$b$ \tcp*{$\geq\klup(\hat q,\varepsilon)$, within $\tau$}}
+\end{algorithm}
+
+\begin{example}[Inverting the kl by hand]
+Let $\hat q=0.1$ and $\varepsilon=0.05$. We know that $\klup(0.1,0.05)\geq0.1$.
+Since $\kl(0.1\|0.2)\approx0.037<0.05$ and $\kl(0.1\|0.25)\approx0.072>0.05$, the
+answer lies in $[0.2,0.25]$; the midpoint gives $\kl(0.1\|0.225)\approx0.053>0.05$,
+so the answer is in $[0.2,0.225]$, and so on. After twenty steps the interval
+has length $10^{-6}$ and we find $\klup(0.1,0.05)\approx0.220$.
+\end{example}
+
+Bisection gives numbers, but not formulas. To understand how kl-based bounds
+behave, and to derive bounds with a closed form, we also need explicit (if
+looser) upper bounds on $\klup$; the next two inequalities provide them.
+
+\begin{lemma}{Pinsker-type inequalities}{pinsker}
+For $q,p\in[0,1]$, $\kl(q\|p)\geq 2(q-p)^2$ (Pinsker's inequality), hence
+$\klup(q,\varepsilon)\leq q+\sqrt{\varepsilon/2}$. Moreover, if $q<p$, then
+$\kl(q\|p)\geq\frac{(p-q)^2}{2p}$ (refined Pinsker inequality), hence
+$\klup(q,\varepsilon)\leq q+\sqrt{2q\varepsilon}+2\varepsilon$.
+\end{lemma}
+
+Pinsker's inequality recovers a Hoeffding-type width $\sqrt{\varepsilon/2}$. The
+refined inequality explains why it is so much better for small risks: when $q$ is close to zero, the width of the
+confidence interval is of order $\varepsilon$ instead of $\sqrt\varepsilon$, i.e.\ of order
+$1/m$ instead of $1/\sqrt m$ when $\varepsilon\propto1/m$. This ``fast rate'' is
+visible on the left panel of \cref{fig:concentration}: for an empirical risk of
+$1\%$ and $m=1000$ examples, the kl interval is four times narrower than the
+Hoeffding interval. The right panel checks by simulation that both intervals
+are valid: their failure frequency always stays below $\delta$, and usually well
+below, as these inequalities are worst-case statements.
+
+\begin{running}
+Suppose that we had fixed the forest before seeing the $540$ test digits, and
+that we use them only to certify it: this is the classical \emph{test-set bound}.
+The vote errs on $4.4\%$ of them; with $\delta=0.05$, Hoeffding's inequality
+certifies a true risk below $0.044+\sqrt{\ln 20/1080}=0.097$, and the kl
+inversion below $0.069$. For an average tree ($19\%$ of test errors), the two
+certificates are $0.243$ and $0.234$: the kl only makes a difference for small
+risks. These numbers will serve as a reference. Our goal is to obtain comparable
+guarantees \emph{without} setting aside a test sample, from the training data
+alone.
+\end{running}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{concentration}
+\caption{Left: width $p-\hat p$ of the upper confidence bound on the risk of a
+fixed voter given by Hoeffding's inequality (constant) and by the kl inversion,
+as a function of the empirical risk, for $m=100$ and $m=1000$. Right: frequency,
+over $4000$ simulated samples of size $100$, of the event ``the true risk is
+above the bound''; both bounds are valid.}
+\label{fig:concentration}
+\end{figure}
+
+\paragraph{Second moments.} The inequalities above only use the fact that the
+variables are bounded. Majority votes will require a finer tool, which also
+uses the \emph{variance} of a random variable, and not only its mean.
+
+\begin{lemma}{Chebyshev--Cantelli inequality}{cantelli}
+Let $Z$ be a random variable with mean $\mu$ and variance $v$. For every $a>0$,
+$\P(Z-\mu\geq a)\leq\frac{v}{v+a^2}$ and $\P(Z-\mu\leq-a)\leq\frac{v}{v+a^2}$.
+\end{lemma}
+\begin{proof}
+For any $t\geq0$, $\{Z-\mu\geq a\}\subseteq\{(Z-\mu+t)^2\geq(a+t)^2\}$, so by Markov's
+inequality $\P(Z-\mu\geq a)\leq\frac{\E(Z-\mu+t)^2}{(a+t)^2}=\frac{v+t^2}{(a+t)^2}$. The
+right-hand side is minimal for $t=v/a$, where it equals $\frac{v}{v+a^2}$. Applying
+the result to $-Z$ gives the lower tail.
+\end{proof}
+
+In words, a variable whose variance is small compared with $a^2$ rarely
+deviates from its mean by more than $a$, whatever its distribution. Note also
+the structure of the proof, which we will meet again in \cref{chap:mv}: we control a tail probability by the expectation of a well-chosen non-negative
+function, and then optimize over a free parameter of this function.
+
+\subsection{The Kullback--Leibler divergence and the change of measure}
+
+Everything so far concerns a voter fixed \emph{before} seeing the data. Learning
+is precisely the opposite: the algorithm looks at the sample and chooses. To
+account for this choice, PAC-Bayes compares the distribution $Q$ that has been
+chosen with a distribution $P$ that was fixed in advance. We need two things: a
+way to measure how far $Q$ is from $P$, and a way to transfer statements that are
+true under $P$ into statements under $Q$. The Kullback--Leibler divergence and
+the change of measure inequality provide exactly these two things.
+
+\begin{definition}{Kullback--Leibler divergence}{kl}
+For $Q,P\in\M(\Hcal)$ such that $Q$ is absolutely continuous w.r.t.\ $P$,
+\[
+  \KL(Q\|P)=\Esp{h\sim Q}{\ln\frac{dQ}{dP}(h)}
+  \quad\Big(=\sum_{h\in\Hcal}Q(h)\ln\frac{Q(h)}{P(h)}\ \text{ if $\Hcal$ is finite}\Big),
+\]
+and $\KL(Q\|P)=+\infty$ otherwise.
+\end{definition}
+
+The KL divergence is always non-negative and it vanishes only when $Q=P$; this
+is Gibbs' inequality, a consequence of Jensen's inequality applied to the
+concave logarithm. It is not symmetric, and it is not a distance, but it
+behaves as a measure of how far the posterior has moved away from the prior.
+A few examples help to get a feeling for its values.
+
+On a finite set of $n$ voters with the uniform prior, it takes the simple form
+$\KL(Q\|P)=\ln n-H(Q)$, where $H(Q)=-\sum_hQ(h)\ln Q(h)$ is the Shannon entropy
+of $Q$. The KL is then zero for the uniform posterior and maximal, equal to
+$\ln n$, for a Dirac on a single voter; if $Q$ is uniform on $k$ of the $n$
+voters, $\KL(Q\|P)=\ln\frac nk$: concentrating on a tenth of the voters costs
+$\ln 10$ nats. For product distributions the KL divergence
+adds up, $\KL(Q_1\otimes Q_2\|P_1\otimes P_2)=\KL(Q_1\|P_1)+\KL(Q_2\|P_2)$; in
+particular $\KL(Q^2\|P^2)=2\KL(Q\|P)$ where $Q^2=Q\otimes Q$ is the distribution
+of a pair of independent voters, an identity which will be used for majority
+votes. Finally, for Gaussian distributions with the same covariance,
+$\KL\big(\mathcal N(\mu_1,\sigma^2 I_d)\,\|\,\mathcal N(\mu_0,\sigma^2 I_d)\big)=\frac{\|\mu_1-\mu_0\|^2}{2\sigma^2}$.
+These properties are proved in the tutorial sheet.
+
+We now have a way to measure how far $Q$ is from $P$; it remains to transfer
+statements from one to the other. The following inequality, the heart of every
+PAC-Bayesian proof, does exactly that. It allows
+us to replace an expectation under the data-dependent posterior $Q$ by an
+expectation under the data-independent prior $P$, at the price of $\KL(Q\|P)$.
+
+\begin{lemma}{Change of measure \citep{donsker1975asymptotic,csiszar1975divergence}}{dv}
+For any measurable function $\phi:\Hcal\to\R$ and any $P\in\M(\Hcal)$,
+\begin{equation}\label{eq:dv}
+  \forall Q\in\M(\Hcal),\qquad
+  \Esp{h\sim Q}{\phi(h)}\ \leq\ \KL(Q\|P)+\ln\Esp{h\sim P}{e^{\phi(h)}}.
+\end{equation}
+Moreover, when $\E_P e^{\phi}<\infty$, equality holds for the
+\emph{Gibbs distribution} $Q_\phi(h)=\frac{e^{\phi(h)}P(h)}{\E_{P}e^{\phi}}$, so that
+\begin{equation}\label{eq:gibbs_variational}
+  \ln\Esp{h\sim P}{e^{\phi(h)}}=\sup_{Q\in\M(\Hcal)}\Big\{\Esp{h\sim Q}{\phi(h)}-\KL(Q\|P)\Big\}.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Assume $\KL(Q\|P)<\infty$ (otherwise there is nothing to prove) and let
+$Q_\phi$ be the Gibbs distribution. By definition of $Q_\phi$,
+\[
+  \KL(Q\|Q_\phi)=\Esp{h\sim Q}{\ln\frac{Q(h)}{P(h)}-\phi(h)+\ln\E_{P}e^{\phi}}
+  =\KL(Q\|P)-\E_Q\phi+\ln\E_P e^{\phi}.
+\]
+Since $\KL(Q\|Q_\phi)\geq0$, we obtain \eqref{eq:dv}, with equality if and only if $Q=Q_\phi$.
+\end{proof}
+
+In plain words, the average of $\phi$ under \emph{any} posterior is controlled
+by an exponential average under the prior, which does not depend on $Q$, plus a
+penalty that grows as $Q$ moves away from $P$. Since the inequality holds
+for all $Q$ at once, the posterior may be chosen after the fact. The proof shows
+even more than the inequality: the gap in \eqref{eq:dv} is exactly
+$\KL(Q\|Q_\phi)$, the divergence between $Q$ and the Gibbs distribution.
+\Cref{fig:change_of_measure} illustrates this on a small example with $25$
+voters: along the segment joining an arbitrary posterior $Q$ to $Q_\phi$, the
+quantity $\E_Q\phi-\KL(Q\|P)$ increases until it reaches the value
+$\ln\E_Pe^\phi$ at $Q_\phi$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{change_of_measure}
+\caption{The change of measure on $25$ voters. Left: a prior $P$, a function $\phi$
+(black dots), an arbitrary posterior $Q$ and the Gibbs distribution $Q_\phi\propto Pe^\phi$,
+which puts its mass on the voters where $\phi$ is large while remaining close to $P$.
+Right: value of $\E_{Q_t}\phi-\KL(Q_t\|P)$ along $Q_t=(1-t)Q+tQ_\phi$; it never exceeds
+$\ln\E_Pe^\phi$ and reaches it at $Q_\phi$.}
+\label{fig:change_of_measure}
+\end{figure}
+
+\begin{intuition}
+Equation~\eqref{eq:gibbs_variational} says that $\ln\E_P e^\phi$ is the
+maximal value of a ``fit minus complexity'' criterion $\E_Q\phi-\KL(Q\|P)$, and
+that the best posterior is obtained by \emph{exponentially reweighting} the
+prior. This variational principle is the origin of the \emph{Gibbs posterior}
+(\cref{sec:gibbs_posterior}) and of the link between PAC-Bayes and Bayesian inference.
+\end{intuition}
+
+\subsection{Warm-up: the Occam bound}\label{sec:occam}
+
+Before combining the two tools in full generality, let us see how far the
+concentration inequalities alone can take us when the learner selects one
+classifier among many. Consider a \emph{countable} class $\Hcal$ and a
+prior $P$ on $\Hcal$, which can be thought of as a ``description length'':
+$\ln\frac1{P(h)}$ is the number of nats needed to describe $h$ with a code
+adapted to $P$.
+
+\begin{theorem}{Occam's razor bound \citep{blumer1987occam,langford2005tutorial}}{occam}
+For any countable $\Hcal$, any prior $P$ with $P(h)>0$ for all $h$, and any
+$\delta\in(0,1]$, with probability at least $1-\delta$ over $S\sim\D^m$,
+\begin{gather*}
+  \forall h\in\Hcal,\qquad \RD(h)\leq\klup\Big(\RS(h),\frac{\ln\frac{1}{P(h)}+\ln\frac1\delta}{m}\Big),\\
+  \text{hence}\qquad \RD(h)\leq\RS(h)+\sqrt{\frac{\ln\frac1{P(h)}+\ln\frac1\delta}{2m}}.
+\end{gather*}
+\end{theorem}
+
+\begin{proof}
+For a fixed $h$, $m\RS(h)$ is a sum of $m$ i.i.d.\ Bernoulli variables of mean
+$\RD(h)$. By Chernoff's bound (lower tail of $\RS(h)$), the event
+\[
+\big\{\RS(h)<\RD(h)\text{ and }\kl(\RS(h)\|\RD(h))>\varepsilon_h\big\}=\big\{\RD(h)>\klup(\RS(h),\varepsilon_h)\big\}
+\]
+has probability at most $e^{-m\varepsilon_h}=\delta P(h)$ when
+$\varepsilon_h=\frac1m\ln\frac{1}{\delta P(h)}$. A union bound over $h\in\Hcal$ gives
+a total failure probability at most $\sum_h\delta P(h)=\delta$. The second
+statement follows from Pinsker's inequality.
+\end{proof}
+
+The theorem certifies every hypothesis of the class at once, so it remains valid
+for the one the learner finally picks. Its proof shows how the prior works: it \emph{distributes the confidence budget}
+$\delta$ over the hypotheses, each $h$ receiving the share $\delta P(h)$. A
+hypothesis that was \emph{a priori} likely is cheap, and an unlikely one is
+expensive. With the uniform prior on a finite class, $\ln\frac1{P(h)}=\ln|\Hcal|$
+and we recover the classical bound for finite classes seen in the first part of
+the course. As shown in \cref{fig:occam}, the price of a large finite class is
+surprisingly small: with $m=1000$ examples and an empirical risk of $5\%$,
+going from $10$ to $10^{12}$ candidate classifiers only moves the bound from
+about $0.08$ to $0.12$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.66\linewidth]{occam}
+\caption{The Occam bound (kl form, $\delta=0.05$, $m=1000$) as a function of the
+size of the class, for three values of the empirical risk. The complexity only
+grows like $\ln|\Hcal|$.}
+\label{fig:occam}
+\end{figure}
+
+The Occam bound already has the PAC-Bayesian flavour, but it has two limits. It
+only certifies a \emph{single} hypothesis --- in the language of the next
+sections, a Dirac posterior, for which $\KL(\delta_h\|P)=\ln\frac1{P(h)}$ --- and
+it is useless for uncountable classes, where $P(h)=0$ for every $h$. PAC-Bayes
+removes both limits by considering \emph{averages} of hypotheses: averaging
+over a posterior which puts a large mass around a good hypothesis costs much
+less than pinpointing this hypothesis exactly. Making this idea precise, with
+the change of measure in place of the union bound, is the purpose of the next
+section.
+
+\begin{keypoints}
+For a fixed voter, the empirical risk concentrates around the true risk; the
+binary kl gives the sharpest statement, and its inversion $\klup$, computed by
+bisection, turns an empirical risk into a certified upper bound, with a fast
+rate when the risk is small. The change of measure inequality
+$\E_Q\phi\leq\KL(Q\|P)+\ln\E_Pe^\phi$ transfers a statement about a
+data-independent prior to any posterior, at the price $\KL(Q\|P)$, and it is an
+equality for the Gibbs distribution. The Occam bound is the special case of
+Dirac posteriors on a countable class; its price is $\ln\frac1{P(h)}$.
+\end{keypoints}
+
+\begin{quickchecks}
+\item Why is the kl confidence interval narrower than Hoeffding's when the empirical risk is small?
+\item What is $\KL(Q\|P)$ when $P$ is uniform on $n$ voters and $Q$ is uniform on $k$ of them?
+\item For which posterior is the change of measure inequality an equality?
+\item In the Occam bound, what plays the role of the complexity of the chosen hypothesis?
+\end{quickchecks}
+
+\begin{exercises}
+\begin{exercise}
+Compute $\kl(0.1\|0.2)$ and $\kl(0.2\|0.1)$. Is the binary kl symmetric?
+\end{exercise}
+\begin{exercise}
+Show that the Gibbs distribution $Q_\phi$ of Lemma~\ref{lem:dv} is the only posterior
+for which the change of measure is an equality.
+\end{exercise}
+\begin{exercise}
+Using the Occam bound in Pinsker form, how many examples are needed to certify a
+risk below $0.15$ for a classifier with empirical risk $0.1$ chosen among $10^6$
+candidates, with $\delta=0.05$?
+\end{exercise}
+\begin{exercise}
+Using Pinsker's inequality, show that the kl interval of \cref{fig:concentration}
+is never wider than the Hoeffding interval. Using notebook~1, determine for which
+empirical risks it is at least twice narrower when $m=1000$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} True or false? Justify briefly. (a)~If $P$ and $Q$ are
+two distributions on a finite set of voters, $\KL(Q\|P)$ is finite. (b)~If $P$ is
+uniform on $n$ voters, then $\KL(Q\|P)\leq\ln n$ for every posterior $Q$.
+(c)~In the Occam bound with the uniform prior, doubling the number of candidate
+classifiers doubles the complexity term $\ln\frac1{P(h)}$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} Let $P$ be uniform on $n=4$ voters. Compute $\KL(Q\|P)$
+for $Q=(\frac12,\frac14,\frac14,0)$, for $Q'=(0.7,0.1,0.1,0.1)$ and for the Dirac
+$\delta_{h_1}$, both from the definition and with the formula $\ln n-H(Q)$.
+Compute also $\KL(P\|Q')$ and $\KL(P\|Q)$, and comment.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} Check the two test-set certificates of the running
+example of this section: a vote with $4.4\%$ of errors on $540$ test points,
+certified by Hoeffding's inequality ($0.097$) and by the kl inversion ($0.069$) with
+$\delta=0.05$. Recompute both certificates with $\delta=0.01$, and comment on the
+cost of the extra confidence.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Prove Markov's inequality (Lemma~\ref{lem:markov}) in detail, then
+deduce Chebyshev's inequality: for a random variable $Z$ with mean $\mu$ and
+variance $v$, $\P(|Z-\mu|\geq a)\leq\frac{v}{a^2}$ for every $a>0$. Compare it with the
+one-sided Cantelli inequality (Lemma~\ref{lem:cantelli}) when $a^2=v$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Admitting Hoeffding's lemma
+$\E\,e^{\lambda(p-\hat p)}\leq e^{\lambda^2/(8m)}$ (Lemma~\ref{lem:hoeffding}), prove the tail bound
+$\P(p-\hat p\geq\varepsilon)\leq e^{-2m\varepsilon^2}$ by optimizing over $\lambda>0$, and deduce that
+$p\leq\hat p+\sqrt{\ln(1/\delta)/(2m)}$ with probability at least $1-\delta$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Let $Q_1,P_1$ be distributions on a finite set $\Hcal_1$ and
+$Q_2,P_2$ distributions on a finite set $\Hcal_2$, with $P_1,P_2$ positive. Show that
+$\KL(Q_1\otimes Q_2\|P_1\otimes P_2)=\KL(Q_1\|P_1)+\KL(Q_2\|P_2)$, and deduce that
+$\KL(Q^2\|P^2)=2\KL(Q\|P)$, the identity used for the tandem bound. Show also that
+$\KL(\delta_h\|P)=\ln\frac1{P(h)}$ for a Dirac posterior.
+\end{exercise}
+\end{exercises}

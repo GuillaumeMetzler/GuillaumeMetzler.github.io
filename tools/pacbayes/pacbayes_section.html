@@ -1,0 +1,69 @@
+					<section id="pacbayes">
+						<header class="major">
+							<h2>Apprentissage PAC-Bayes</h2>
+						</header>
+						<p>This part of the course presents <strong>PAC-Bayesian theory</strong>, a theoretical framework which is particularly well suited to ensemble methods: a weighted majority vote (bagging, random forests, boosting...) is nothing but a <em>distribution over voters</em>. We will see how to derive tight generalization bounds (risk certificates) for such votes, how the <em>diversity</em> of the voters appears in these bounds (tandem bound, C-bound), and how to learn the weights of a vote by minimizing a bound. Kernel methods and linear classifiers are also revisited from this point of view.</p>
+
+						<div class="resource-block">
+<p><strong>Lecture notes</strong></p>
+
+						<p>A complete document covering the theory (general PAC-Bayesian theorem, classical bounds of McAllester, Seeger, Catoni, bounds on the majority vote) and the associated learning algorithms, with historical and recent references.</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/poly_pacbayes.pdf" class="button">PAC-Bayes Poly</a> </li>
+						</ul>
+						</div>
+
+						<div class="resource-block">
+<p><strong>Python Notebooks</strong></p>
+
+						<p>The notebooks illustrate the notions of the lecture on simulated data and on datasets available in scikit-learn. The button <strong>« Open in Colab »</strong> lets you run a notebook directly in your browser; the other button downloads the file to run it locally (Jupyter, VS Code...).</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/01_pacbayes_foundations_student.ipynb" class="button" download="01_pacbayes_foundations_student.ipynb">1. Foundations: Gibbs classifier, KL, concentration</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/01_pacbayes_foundations_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/01_pacbayes_foundations_solution.ipynb" class="button" download="01_pacbayes_foundations_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/02_pacbayes_classical_bounds_student.ipynb" class="button" download="02_pacbayes_classical_bounds_student.ipynb">2. Classical PAC-Bayesian bounds</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/02_pacbayes_classical_bounds_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/02_pacbayes_classical_bounds_solution.ipynb" class="button" download="02_pacbayes_classical_bounds_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/03_pacbayes_majority_vote_student.ipynb" class="button" download="03_pacbayes_majority_vote_student.ipynb">3. Bounds on the majority vote</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/03_pacbayes_majority_vote_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/03_pacbayes_majority_vote_solution.ipynb" class="button" download="03_pacbayes_majority_vote_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/04_pacbayes_learning_votes_student.ipynb" class="button" download="04_pacbayes_learning_votes_student.ipynb">4. Learning the weights of a vote</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/04_pacbayes_learning_votes_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/04_pacbayes_learning_votes_solution.ipynb" class="button" download="04_pacbayes_learning_votes_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/05_pacbayes_linear_kernel_student.ipynb" class="button" download="05_pacbayes_linear_kernel_student.ipynb">5. Linear classifiers, SVM and kernels</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/05_pacbayes_linear_kernel_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/05_pacbayes_linear_kernel_solution.ipynb" class="button" download="05_pacbayes_linear_kernel_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						</div>
+
+						<div class="resource-block">
+<p><strong>Tutorials and Practical Session</strong></p>
+
+						<p>The tutorial sheet (pen and paper) covers the main proofs of the lecture; the practical session computes risk certificates for random forests and boosting on the datasets of the course, using the module <code>pbtools.py</code>.</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/td_pacbayes.pdf" class="button">TD PAC-Bayes</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/td_pacbayes_solutions.pdf" class="button">Solutions</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/tp_pacbayes.pdf" class="button">TP PAC-Bayes</a> </li>
+							<li><a href="contents/ensemblemethods/pacbayes/pbtools.py" class="button" download="pbtools.py">pbtools.py</a> </li>
+						</ul>
+						</div>
+
+						<div class="resource-block">
+<p><strong>Project</strong></p>
+
+						<p>Project for M2 students: PAC-Bayesian learning of weighted majority votes (library, experimental study and one research direction).</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/projet_pacbayes.pdf" class="button">PAC-Bayes Project</a> </li>
+						</ul>
+						</div>
+					</section>
+

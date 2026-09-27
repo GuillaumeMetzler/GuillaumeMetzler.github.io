@@ -1,0 +1,150 @@
+%% ======================================================================
+\section{Cheat sheet and code}
+\label{app:cheat}
+%% ======================================================================
+
+\subsection{Main bounds at a glance}
+
+All statements hold w.p.\ $\geq1-\delta$ over $S\sim\D^m$, simultaneously for all
+posteriors $Q$, for a prior $P$ fixed before seeing $S$. We write
+$\varepsilon_k=\frac{k\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{m}$.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.6}
+\begin{tabular}{p{3.9cm}p{9.6cm}}
+\toprule
+Seeger (Gibbs) & $\RD(\GQ)\leq\klup\big(\RS(\GQ),\varepsilon_1\big)$ \\
+McAllester (Gibbs) & $\RD(\GQ)\leq\RS(\GQ)+\sqrt{\varepsilon_1/2}$ \\
+Catoni (Gibbs, $C$ fixed) & $\RD(\GQ)\leq\frac{1-\exp\left(-C\RS(\GQ)-\frac{\KL(Q\|P)+\ln(1/\delta)}{m}\right)}{1-e^{-C}}$ \\
+PAC-Bayes-$\lambda$ (Gibbs) & $\RD(\GQ)\leq\frac{\RS(\GQ)}{1-\lambda/2}+\frac{\varepsilon_1}{\lambda(1-\lambda/2)}$, all $\lambda\in(0,2)$ \\
+Gibbs posterior & $Q_\lambda(h)\propto P(h)\,e^{-\lambda m\RS(h)}$ \\
+First order (vote) & $\RD(\BQ)\leq2\,\klup\big(\RS(\GQ),\varepsilon_1\big)$ \\
+Tandem (vote) & $\RD(\BQ)\leq4\,\klup\big(\eS(Q),\varepsilon_2\big)$ \\
+C-bound (vote, oracle) & $\RD(\BQ)\leq1-\frac{(1-2\RD(\GQ))^2}{1-2\dD(Q)}$ if $\RD(\GQ)<\frac12$ \\
+CCTND (vote, oracle) & $\RD(\BQ)\leq\frac{\eD(Q)-2\mu\RD(\GQ)+\mu^2}{(1/2-\mu)^2}$, $\mu<\frac12$ \\
+Identity & $\RD(\GQ)=\eD(Q)+\frac12\dD(Q)$ \\
+Linear classifiers & $Q=\mathcal N(\mathbf w,I)$: $\KL=\frac{\|\mathbf w\|^2}{2}$, $\RS(\GQ)=\frac1m\sum_i\Phi\big(-\frac{y_i\langle\mathbf w,x_i\rangle}{\|x_i\|}\big)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Python snippets}
+
+The following functions (from \texttt{pbtools.py}, distributed with the
+notebooks) are all that is needed to compute the certificates of this course.
+
+\begin{tcolorbox}[colback=black!3,colframe=black!30,boxrule=0.4pt,sharp corners]
+\small
+\begin{verbatim}
+import numpy as np
+
+def kl_bin(q, p):
+    """Binary kl divergence kl(q || p)."""
+    p = np.clip(p, 1e-12, 1 - 1e-12)
+    t1 = q * np.log(q / p) if q > 0 else 0.0
+    t2 = (1 - q) * np.log((1 - q) / (1 - p)) if q < 1 else 0.0
+    return t1 + t2
+
+def kl_inv_upper(q, eps, tol=1e-10):
+    """sup { p >= q : kl(q || p) <= eps } by bisection."""
+    lo, hi = q, 1.0
+    while hi - lo > tol:
+        mid = (lo + hi) / 2
+        if kl_bin(q, mid) > eps: hi = mid
+        else: lo = mid
+    return hi
+
+def kl_div(rho, pi):
+    """KL(rho || pi) for discrete distributions."""
+    mask = rho > 0
+    return np.sum(rho[mask] * np.log(rho[mask] / pi[mask]))
+
+def seeger_bound(emp_risk, KL, m, delta=0.05):
+    eps = (KL + np.log(2 * np.sqrt(m) / delta)) / m
+    return kl_inv_upper(emp_risk, eps)
+
+def tandem_bound(rho, pi, L_tandem, m, delta=0.05):
+    """4 * kl^{-1}( rho^T L rho , (2 KL + ln(2 sqrt(m)/delta)) / m )."""
+    eps = (2 * kl_div(rho, pi) + np.log(2 * np.sqrt(m) / delta)) / m
+    return 4 * kl_inv_upper(rho @ L_tandem @ rho, eps)
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Proof of the refined Pinsker inequality}
+
+We prove that for $0\leq q<p\leq 1$, $\kl(q\|p)\geq\frac{(p-q)^2}{2p}$.
+Fix $p$ and let $g(q)=\kl(q\|p)-\frac{(p-q)^2}{2p}$ on $[0,p]$. We have
+$g(p)=0$ and
+\[
+g'(q)=\ln\frac{q}{p}-\ln\frac{1-q}{1-p}+\frac{p-q}{p}.
+\]
+Using $\ln u\leq u-1$ for $u=\frac{q}{p}\cdot\frac{1-p}{1-q}$ we get
+$\ln\frac{q(1-p)}{p(1-q)}\leq\frac{q-p}{p(1-q)}\leq\frac{q-p}{p}$
+(since $q-p<0$ and $1-q\leq1$), so $g'(q)\leq0$ on $(0,p)$: $g$ is
+non-increasing and $g(q)\geq g(p)=0$.
+
+\subsection{Answers to the quick checks}\label{app:answers}
+
+\paragraph{Section~\ref{chap:intro}.}
+\textbf{Q1.1} Its weights $\alpha_t$ are non-negative (weak learners are better than
+random), and dividing them by their sum does not change the sign of the vote.
+\textbf{Q1.2} About $19\%$ for the Gibbs classifier (a tree drawn at random) and
+$4.4\%$ for the vote.
+\textbf{Q1.3} The posterior may depend on the sample in any way; the prior must be
+fixed before seeing the sample used in the bound.
+\textbf{Q1.4} For a fixed sign vector, the correlation with the signs is linear in
+the predictor, so its supremum over weighted averages is reached at a single voter.
+
+\paragraph{Section~\ref{chap:tools}.}
+\textbf{Q2.1} Because the variance of a Bernoulli variable is small when its mean is
+small; the kl adapts to it (width of order $\varepsilon$ instead of $\sqrt\varepsilon$).
+\textbf{Q2.2} $\ln\frac nk$.
+\textbf{Q2.3} For the Gibbs distribution $Q_\phi\propto Pe^{\phi}$; the gap is $\KL(Q\|Q_\phi)$.
+\textbf{Q2.4} The description length $\ln\frac1{P(h)}$ of the chosen hypothesis.
+
+\paragraph{Section~\ref{chap:bounds}.}
+\textbf{Q3.1} The third step (Markov), where the expectations over the sample and
+over the prior are exchanged.
+\textbf{Q3.2} Because the posterior only appears in the deterministic steps; the
+probabilistic event does not depend on it.
+\textbf{Q3.3} Seeger's bound.
+\textbf{Q3.4} Because the PAC-Bayes-$\lambda$ bound is a deterministic consequence of
+Seeger's bound, true for all $\lambda$ on the same event, whereas each value of
+$\lambda$ in the Hoeffding-based bound defines a different event.
+
+\paragraph{Section~\ref{chap:posteriors}.}
+\textbf{Q4.1} When $\lambda\to0$ it tends to the prior; when $\lambda\to\infty$ it
+concentrates on the empirical risk minimizers.
+\textbf{Q4.2} Because, conditionally on the part used to learn it, the prior is fixed;
+the bound must then be computed on the other part only.
+\textbf{Q4.3} Because the Monte Carlo estimate is itself random: its deviation from the
+exact Gibbs risk must be controlled, at the price of a second confidence level $\delta'$.
+\textbf{Q4.4} Bounding the majority vote through the Gibbs risk and second-order
+quantities, using margins, and disintegrated bounds.
+
+\paragraph{Section~\ref{chap:mv}.}
+\textbf{Q5.1} $\RD(\BQ)=\P(W_Q\geq\frac12)$ and $\RD(\GQ)=\E W_Q$.
+\textbf{Q5.2} It only uses the mean of $W_Q$, which does not tell whether the errors
+of the voters fall on the same examples or on different ones.
+\textbf{Q5.3} The disagreement $\dD(Q)$.
+\textbf{Q5.4} When the disagreement is smaller than the Gibbs risk, i.e.\ when the voters are strongly correlated.
+
+\paragraph{Section~\ref{chap:selfbounding}.}
+\textbf{Q6.1} Because the bound holds on an event that does not depend on the posterior
+(Theorem~\ref{thm:sb_valid}): it holds in particular for the minimizer.
+\textbf{Q6.2} The temperature is free, since it only indexes posteriors; $C$ in
+Catoni's bound is not, since it changes the event, and must be chosen on a grid with a
+union bound.
+\textbf{Q6.3} Replacing $\delta$ by $\delta/K$, i.e.\ adding $\ln K$ to the complexity term.
+\textbf{Q6.4} The hold-out certificate is tighter and applies to any predictor; the
+self-bounding certificate uses all the data, guides learning and makes model selection almost free.
+
+\paragraph{Section~\ref{chap:algos}.}
+\textbf{Q7.1} Conditionally on its bootstrap sample, a tree is fixed and its
+out-of-bag examples form an independent sample; the prior is put on the indices of
+the trees, which are fixed in advance.
+\textbf{Q7.2} Because the bound ignores the correlations of the errors: it concentrates
+the weights on the few trees with the smallest loss, which are similar, and the vote
+loses its diversity.
+\textbf{Q7.3} The targeted first moment of the margin; it acts as a regularization parameter.
+\textbf{Q7.4} The KL divergence $\frac12\|\mathbf w\|^2$ between the posterior and the prior.

@@ -204,6 +204,17 @@ var PUBLICATIONS = [
   },
 
   // --- Conférences nationales ---
+
+	{
+    id: "evalue-cap-2026", group: "group-conf-nat", year: 2026, month: 7,
+    title: "Une approche par graphes des tests conformes en grande dimension utilisant des e-values basées sur la centralité, avec application à la détection d'anomalies",
+    authors: "S. Chretien, J.A. Kouassi, G. Metzler",
+    authorIds: ["schretien", "jakouassi", "gmetzler"],
+    venue: "Conférence pour l'Apprentissage Automatique (CAp), Montpellier, France, Juillet 2026",
+    links: [
+      { label: "Article ", href: "articles/2026/cap2026.pdf", external: true }
+    ]
+  },
   {
     id: "histoiresmorales-jeptalnrecital-2025", group: "group-conf-nat", year: 2025, month: 7,
     title: "HISTOIRESMORALES: Un jeu de données français pour évaluer l'alignement moral des modèles de langage",
@@ -211,7 +222,7 @@ var PUBLICATIONS = [
     authorIds: ["tleteno", "iproskurina", "agourru", "jvelcin", "claclau", "gmetzler", "cgravier"],
     venue: "JEP-TALN-RECITAL, Marseille, juin-juillet 2025",
     links: [
-      { label: "Article (ACL Anthology)", href: "https://aclanthology.org/2025.jeptalnrecital-trad.16/", external: true }
+      { label: "Article", href: "https://aclanthology.org/2025.jeptalnrecital-trad.16/", external: true }
     ]
   },
     {

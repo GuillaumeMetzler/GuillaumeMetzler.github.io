@@ -1,0 +1,164 @@
+%% dastyle.sty -- style partagé pour le cours "Fouille de Données Massives"
+%% Séance 6 : Adaptation de Domaine (Poly / TD / TP)
+%% G. Metzler, Université Lumière Lyon 2 -- M2 Informatique, parcours SISE
+%% Repris du style utilisé pour "Ensemble Methods" (pbstyle/polystyle) et adapté
+%% au français ainsi qu'à l'en-tête des fiches existantes (TD5, CorrectionTD1).
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{dastyle}[2026/09/26 Domain Adaptation course style]
+
+\RequirePackage[utf8]{inputenc}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{lmodern}
+\RequirePackage[round,authoryear]{natbib}
+\RequirePackage[french]{babel}
+\RequirePackage[a4paper,top=2.8cm,bottom=3.2cm,left=2.8cm,right=2.8cm]{geometry}
+\RequirePackage{amsmath,amssymb,amsthm,mathtools,bm,dsfont}
+\RequirePackage{graphicx,xcolor}
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric,decorations.pathreplacing,fit,backgrounds,patterns}
+\RequirePackage[most]{tcolorbox}
+\RequirePackage{enumitem}
+\RequirePackage{booktabs,array,multirow}
+\RequirePackage[ruled,vlined,linesnumbered]{algorithm2e}
+\RequirePackage{fancyhdr}
+\RequirePackage{titlesec}
+\RequirePackage{needspace}
+\definecolor{polylink}{RGB}{255,0,51}
+\definecolor{polyblue}{RGB}{40,90,200}
+\RequirePackage[colorlinks=true,linkcolor=polylink,citecolor=polylink,urlcolor=polyblue]{hyperref}
+\RequirePackage[capitalise,nameinlink]{cleveref}
+\Crefname{example}{Exemple}{Exemples}
+\Crefname{exercise}{Exercice}{Exercices}
+\RequirePackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\frenchspacing
+
+%% ------------------------------------------------------------ couleurs
+\definecolor{dablue}{HTML}{1F5F99}
+\definecolor{dared}{HTML}{C8553D}
+\definecolor{dateal}{HTML}{2A9D8F}
+\definecolor{daorange}{HTML}{E9A13B}
+\definecolor{daviolet}{HTML}{6C4F9C}
+\definecolor{dagrey}{HTML}{8C8C8C}
+\definecolor{dagreen}{HTML}{3E8853}
+
+%% ------------------------------------------------------------ parties / sections
+\titleformat{\part}[display]{\raggedright\normalfont}{\Large\bfseries\partname\ \thepart}{6pt}{\LARGE}
+\titlespacing*{\part}{0pt}{0pt}{20pt}
+\let\oldpart\part
+\renewcommand{\part}{\clearpage\oldpart}
+\setlength{\parskip}{4pt}
+\setlength{\emergencystretch}{2.5em}
+
+%% ------------------------------------------------------------ boîtes (théorèmes)
+\tcbset{daboxstyle/.style={enhanced,breakable,fonttitle=\bfseries\hypersetup{citecolor=white,linkcolor=white},boxrule=0.8pt,arc=2mm,
+  left=3mm,right=3mm,top=2mm,bottom=2mm,before skip=10pt,after skip=10pt}}
+\newtcbtheorem[number within=section]{definition}{Définition}{daboxstyle,colback=blue!5,colframe=blue!50}{def}
+\newtcbtheorem[use counter from=definition]{theorem}{Théorème}{daboxstyle,colback=red!5,colframe=red!50!black}{thm}
+\newtcbtheorem[use counter from=definition]{proposition}{Proposition}{daboxstyle,colback=red!5,colframe=red!50!black}{prop}
+\newtcbtheorem[use counter from=definition]{corollary}{Corollaire}{daboxstyle,colback=red!5,colframe=red!50!black}{cor}
+\newtcbtheorem[use counter from=definition]{lemma}{Lemme}{daboxstyle,colback=blue!5,colframe=blue!50!black}{lem}
+\newtcbtheorem[use counter from=definition]{assumption}{Hypothèse}{daboxstyle,colback=daviolet!5,colframe=daviolet!60!black}{hyp}
+\newtcbtheorem[use counter from=definition]{algo}{Algorithme}{daboxstyle,colback=dateal!5,colframe=dateal!55!black}{algobox}
+
+%% boîtes pédagogiques (bandeau gauche coloré)
+\newtcolorbox{remark}[1][]{enhanced,breakable,colback=green!4!white,colframe=green!45!black,
+  boxrule=0pt,leftrule=2.5pt,sharp corners,title={Remarque #1},coltitle=green!35!black,
+  colbacktitle=green!4!white,fonttitle=\bfseries,attach title to upper={\ }}
+\newtcolorbox{intuition}[1][]{enhanced,breakable,colback=orange!6!white,colframe=orange!80!black,
+  boxrule=0pt,leftrule=2.5pt,sharp corners,title={En bref#1},coltitle=orange!60!black,
+  colbacktitle=orange!6!white,fonttitle=\bfseries,attach title to upper={\ }}
+\newtcolorbox{history}[1][]{enhanced,breakable,colback=black!4,colframe=black!45,
+  boxrule=0pt,leftrule=2.5pt,sharp corners,title={Repère historique#1},coltitle=black!75,
+  colbacktitle=black!4,fonttitle=\bfseries,attach title to upper={\ }}
+\newtcolorbox{keypoints}[1][]{enhanced,breakable,colback=blue!3,colframe=blue!50,boxrule=0.5pt,
+  arc=2mm,title={À retenir de la Section~\thesection},fonttitle=\bfseries,colbacktitle=blue!12,coltitle=black}
+\newtcolorbox{objectives}[1][]{enhanced,breakable,colback=white,colframe=black!35,boxrule=0.4pt,
+  arc=1mm,title={Objectifs de la section},fonttitle=\bfseries\small,colbacktitle=black!6,coltitle=black,fontupper=\small\itshape}
+\newtcolorbox{pitfall}[1][]{enhanced,breakable,colback=red!3,colframe=red!60!black,boxrule=0pt,
+  leftrule=2.5pt,sharp corners,title={Piège classique#1},coltitle=red!55!black,colbacktitle=red!3,
+  fonttitle=\bfseries,attach title to upper={\ }}
+\newtcolorbox{running}[1][]{enhanced,breakable,colback=teal!4!white,colframe=teal!60!black,
+  boxrule=0pt,leftrule=2.5pt,sharp corners,title={Fil rouge#1},coltitle=teal!50!black,
+  colbacktitle=teal!4!white,fonttitle=\bfseries,attach title to upper={\ }}
+\newtcolorbox{recent}[1][]{enhanced,breakable,colback=daviolet!5,colframe=daviolet!70!black,boxrule=0.4pt,
+  arc=1mm,title={Travaux récents#1},fonttitle=\bfseries,colbacktitle=daviolet!15,coltitle=black}
+\newtcolorbox{exercisebox}[1][]{enhanced,breakable,colback=white,colframe=dablue!70,
+  boxrule=0.5pt,sharp corners,title={#1},fonttitle=\bfseries,colbacktitle=dablue!12,coltitle=black}
+
+%% auto-évaluation (réponses en annexe)
+\newcounter{quickcheck}[section]
+\renewcommand{\thequickcheck}{\thesection.\arabic{quickcheck}}
+\newenvironment{quickchecks}{\Needspace{5\baselineskip}\subsection*{Testez votre compréhension}\small
+  \noindent\emph{Questions courtes, sans calcul ; réponses en Annexe~\ref{app:answers}.}\par
+  \begin{list}{\bfseries Q\thequickcheck.}{\usecounter{quickcheck}\setlength{\leftmargin}{3.2em}\setlength{\labelwidth}{2.8em}\setlength{\itemsep}{2pt}}}
+  {\end{list}}
+\newcommand{\guiding}[1]{\noindent\textbf{\textup{Question directrice.}} #1\par\smallskip}
+
+\newtheoremstyle{daex}{8pt}{8pt}{\normalfont}{}{\itshape}{.}{0.5em}{}
+\theoremstyle{daex}
+\newtheorem{example}{Exemple}[section]
+\newtheorem{exercise}{Exercice}[section]
+\newenvironment{proofsketch}{\begin{proof}[Idée de preuve]}{\end{proof}}
+\newenvironment{exercises}{\Needspace{6\baselineskip}\subsection*{Exercices}\small}{}
+\renewcommand{\proofname}{Démonstration}
+
+%% ------------------------------------------------------------ notations
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Hcal}{\mathcal{H}}
+\newcommand{\Fcal}{\mathcal{F}}
+\newcommand{\Tcal}{\mathcal{T}}
+\newcommand{\E}{\mathbb{E}}
+\renewcommand{\P}{\mathbb{P}}
+\newcommand{\1}{\mathds{1}}
+\newcommand{\KL}{\operatorname{KL}}
+\newcommand{\kl}{\operatorname{kl}}
+\newcommand{\sign}{\operatorname{sign}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\PS}{P_S}
+\newcommand{\PT}{P_T}
+\newcommand{\RS}{R_S}
+\newcommand{\RT}{R_T}
+\newcommand{\hRS}{\widehat{R}_S}
+\newcommand{\hRT}{\widehat{R}_T}
+\newcommand{\ps}{p_s}
+\newcommand{\pt}{p_t}
+\newcommand{\Esp}[2]{\mathop{\mathbb{E}}_{#1}\!\left[#2\right]}
+\newcommand{\ind}[1]{\mathds{1}\!\left[#1\right]}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\dHDelta}{d_{\Hcal\Delta\Hcal}}
+\providecommand{\enquote}[1]{\og #1\fg}
+
+%% ------------------------------------------------------------ en-tête des fiches (TD/TP), même
+%% mise en page que dans les fiches existantes du cours (TD5.pdf, CorrectionTD1.pdf)
+\newcommand{\sheethead}[2]{%
+\begin{center}
+\textbf{Fouille de Données Massives}\\
+{\Large #1}\\[0.15cm]
+M2 Informatique - SISE (2026-2027)\\[0.3cm]
+Guillaume Metzler\\
+Institut de Communication (ICOM)\\
+Université de Lyon, Université Lumière Lyon 2\\
+Laboratoire ERIC UR 3083, Lyon, France\\[0.15cm]
+\texttt{guillaume.metzler@univ-lyon2.fr}
+\end{center}
+\vspace{0.2cm}
+\begin{center}\begin{minipage}{0.88\linewidth}\small\textbf{Résumé.} #2\end{minipage}\end{center}
+\vspace{0.3cm}}
+
+%% ------------------------------------------------------------ pied de page (identique aux fiches existantes)
+\setlist{itemsep=2pt,topsep=4pt}
+\newcommand{\coursefoot}{Fouille de Données Massives - M2 SISE}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyfoot[C]{\small\coursefoot}
+\fancyfoot[R]{\small\thepage}
+\fancypagestyle{plain}{\fancyhf{}\renewcommand{\headrulewidth}{0pt}\fancyfoot[C]{\small\coursefoot}\fancyfoot[R]{\small\thepage}}
+
+\endinput

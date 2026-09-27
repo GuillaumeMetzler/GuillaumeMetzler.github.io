@@ -1,0 +1,133 @@
+\documentclass[11pt]{article}
+\usepackage{../common/pbstyle}
+\input{../common/sheethead}
+\renewcommand{\course}{Ensemble Methods -- Project PAC-Bayes}
+\usepackage{needspace}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\begin{document}
+\sheethead{Project -- PAC-Bayesian Learning of Weighted Majority Votes}{The goal of this project is
+to study, implement and compare learning algorithms for weighted majority votes that come with
+PAC-Bayesian risk certificates. You will build a small library, run a rigorous experimental study
+on the datasets of the course, and explore one research direction based on a recent paper. The
+project mobilizes Sections~3 to~7 of the lecture notes (in particular the self-bounding part, Sections~6--7) and notebooks~3 to~5.}
+
+Groups of two persons are allowed to do this project. The work shall be submitted at the following
+mail address
+\begin{center}\texttt{guillaume.metzler@univ-lyon2.fr}\end{center}
+before the deadline mentioned in your program. The submission shall contain (i)~the Python code
+(package or notebooks) used to produce \emph{all} the results of the report, (ii)~a report in PDF
+(10 to 15 pages, figures and tables included) presenting the methods, the experimental protocol, the
+results and their analysis. The code shall reproduce the results presented in the report.
+
+%% ------------------------------------------------------------------
+\section{Datasets}
+
+You will use the datasets of the course (\code{datasets.zip}, loaded with \code{prepdata.py}), with
+\textbf{at least 15 datasets}. As in the first project, they can be divided into two groups
+(balanced / imbalanced), which may require different performance measures. In addition, you will use
+\code{make\_moons} and \code{make\_classification} from \code{scikit-learn} for illustrations.
+
+%% ------------------------------------------------------------------
+\section{Part A -- A library for PAC-Bayesian majority votes (mandatory)}
+
+Starting from \code{pbtools.py} (you may rewrite it entirely), implement a Python class
+\code{PBMajorityVote} with a \code{scikit-learn}-like interface (\code{fit}, \code{predict},
+\code{certificate}) which:
+\begin{enumerate}
+\item builds a set of $n$ voters by bagging (decision trees, with a parameter for the size of the bootstrap
+      samples and for the randomization of the trees) and keeps track of the out-of-bag samples;
+\item computes the out-of-bag statistics: individual losses, tandem losses and disagreements, with the sizes
+      $n_1$ and $n_2$ of the smallest OOB sets and intersections;
+\item learns a posterior $\rho$ among: uniform, minimizer of the first-order PAC-Bayes-$\lambda$ bound
+      \citep{thiemann2017strongly}, minimizer of the tandem bound \citep{masegosa2020second}, minimizer of a
+      PAC-Bayesian C-bound \citep{germain2015risk,viallard2021self};
+\item returns the certificates (first-order, tandem and C-bound) of the learned vote, computed with the kl
+      inversion, for a confidence $\delta$ given by the user.
+\end{enumerate}
+The code must be tested: check your kl inversion against a brute-force search, and check the identity
+$R(G_\rho)=e_\rho+\frac12d_\rho$ on a test sample. Explain in the report how the out-of-bag construction
+makes the certificates valid (Theorem~7.1 of the lecture notes).
+
+%% ------------------------------------------------------------------
+\section{Part B -- Experimental study (mandatory)}
+
+\paragraph{Protocol.} For each dataset, use at least 5 random train/test splits (stratified). Hyperparameters
+that are tuned (depth of the trees, number of features per split, \dots) must be tuned by cross-validation on
+the training set only. Report means and standard deviations, and use a statistical test (e.g.\ Wilcoxon signed-rank
+test over the datasets) when you compare two methods.
+
+\paragraph{Methods to compare.}
+\begin{itemize}
+\item a random forest (\code{scikit-learn}) and AdaBoost, as baselines without certificates;
+\item your \code{PBMajorityVote} with the four posteriors (uniform, FO, TND, C-bound);
+\item a single decision tree and a linear SVM, to measure the benefit of the vote.
+\end{itemize}
+
+\paragraph{Expected results and questions.}
+\begin{enumerate}
+\item A table of the test risks (and of a balanced measure for the imbalanced group) and a table of the
+      certificates. Which method gives the best vote? the best certificate? Are the certificates non-vacuous
+      (smaller than $0.5$) on all datasets?
+\item The influence of the number of voters $n\in\{10,50,100,200,500\}$ and of the bootstrap size on the test
+      risk and on the certificates (use figures).
+\item The influence of the diversity: for a few datasets, plot the Gibbs risk, the disagreement, the risk of the
+      vote and the bounds as functions of the number of features tried at each split. Discuss the
+      strength/diversity trade-off in the light of the C-bound.
+\item The computation times of the different methods.
+\end{enumerate}
+
+%% ------------------------------------------------------------------
+\section{Part C -- A research direction (choose one)}
+
+\begin{description}
+\item[C1 -- Boosting with certificates.] Learn the voters with AdaBoost or gradient boosting on one part of the
+      data and learn their weights by minimizing the tandem bound or the C-bound on the other part. Compare with the
+      weights given by the boosting algorithm, in terms of risk, certificate and margins \citep{schapire1998boosting,roy2016column}.
+\item[C2 -- Kernels as priors.] Following \citet{letarte2019pseudo} (and the first project of the course), use random
+      Fourier features as voters with the kernel as prior. Learn a pseudo-posterior over the features (Gibbs posterior,
+      or minimization of a second-order bound), and compare with an RBF SVM and with the gradient boosting with random
+      Fourier features of the first project.
+\item[C3 -- Tighter bounds for the vote.] Read \citet{wu2021chebyshev} and implement the Chebyshev--Cantelli
+      bound with the PAC-Bayes-Bennett inequality (CCPBB). Compare it with the tandem bound and the C-bound, as
+      certificates and as learning objectives.
+\item[C4 -- Linear classifiers and data-dependent priors.] Implement PBGD \citep{germain2009pac} with Gaussian
+      posteriors, with a prior centred at $\mathbf 0$ and with a data-dependent prior
+      \citep{ambroladze2006tighter,parrado2012pac}. Compare the certificates and the risks with those of a linear SVM,
+      as a function of the proportion of data used to learn the prior.
+\item[C5 -- Stochastic majority votes.] Read \citet{zantedeschi2021learning} and implement their Dirichlet posterior
+      over the weights of the vote on a small number of voters (e.g.\ 20 trees). Compare the certificates with those of Part~B.
+\end{description}
+For the chosen direction, the report must contain a short presentation of the method (with the key equations
+and their justification), your implementation choices, and an experimental comparison on at least 5 datasets.
+
+%% ------------------------------------------------------------------
+\section{Evaluation}
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+Part A: correctness and quality of the code, tests & 5 points \\
+Part B: protocol, results, figures and analysis & 8 points \\
+Part C: understanding of the method, implementation, experiments & 5 points \\
+Quality of the report (clarity, notation, references) & 2 points \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Suggestions for the report}
+
+\paragraph{Introduction.} Present the context (ensemble methods, need for guarantees) and the objectives.
+
+\paragraph{Methodology.} Introduce the notation, then the PAC-Bayesian bounds you use and the learning
+algorithms, with the key equations: explain what is minimized and why the certificate is valid. Present the
+performance measures and the experimental protocol.
+
+\paragraph{Results.} Tables and figures, always with a sentence explaining what they show. Compare methods that
+are comparable, and discuss both the risk \emph{and} the tightness of the certificates.
+
+\paragraph{Conclusion.} Summarize your findings, their limits and possible extensions.
+
+\bibliographystyle{plainnat}
+\bibliography{../common/pacbayes}
+\end{document}

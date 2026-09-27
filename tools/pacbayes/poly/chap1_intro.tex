@@ -1,0 +1,400 @@
+%% ======================================================================
+\section{Why PAC-Bayes for ensemble methods?}
+\label{chap:intro}
+%% ======================================================================
+
+\begin{objectives}
+\guiding{Why is a vote of mediocre classifiers so good, and can we guarantee its
+accuracy without a test set?}
+We first observe that all the ensemble methods of the course --- bagging,
+random forests, boosting, stacking, and even kernel machines --- produce the same
+object: a probability distribution over base classifiers, used to vote. We then
+explain why the generalization bounds seen so far say little about such votes,
+and we introduce the three ingredients of PAC-Bayesian theory: a prior, a
+posterior, and a bound that holds for every posterior. A short history and a
+map of the notes close the section.
+\end{objectives}
+
+\subsection{A puzzling experiment}
+
+Let us start with an experiment that will accompany us throughout these notes.
+We train a random forest of $100$ trees on the \texttt{digits} dataset of
+\texttt{scikit-learn}, where the task is to decide whether a handwritten digit is
+smaller than $5$. We use $1257$ examples for training and keep $540$ for testing.
+Taken one by one, the trees are mediocre: their test errors range from $14\%$
+to $25\%$, with an average of $19\%$. Yet the forest, which simply lets the $100$
+trees vote, errs on only $4.4\%$ of the test digits. The vote is more than four
+times better than an average tree, and three times better than the best one.
+
+This experiment raises two questions, which organize the whole course. The
+first one is \emph{explanatory}: why is a vote of mediocre classifiers so much
+better than its members, and what property of the ensemble makes this possible?
+The second one is \emph{practical}: could we have \emph{guaranteed} that the
+forest is accurate without a test set, that is, from the training data alone?
+PAC-Bayesian theory answers both. To see why it is the right tool, we first need
+to notice that the forest is not an isolated case.
+
+\begin{running}
+We will come back to this forest in every section. In \cref{chap:bounds} we
+certify the risk of an average tree, in \cref{chap:mv} we certify the vote itself
+and see why its accuracy is linked to the diversity of the trees, and in
+\cref{chap:selfbounding,chap:algos} we learn new weights for the trees by
+minimizing the certificates.
+\end{running}
+
+\subsection{Ensemble methods produce majority votes}
+
+In the first part of the course we built several \emph{ensemble} predictors from
+a family of base classifiers $h_1,\dots,h_n$, which we will call \emph{voters}
+from now on. The methods rely on very different ideas, but they all end up with
+the same kind of predictor.
+
+In bagging \citep{breiman1996bagging}, each tree $h_t$ is learned on a bootstrap
+sample $S_t$ of the learning sample $S$, and random forests \citep{breiman2001random}
+add some randomness in the construction of each tree by drawing, at each split,
+a random subset of the features. The final prediction is obtained by letting the
+trees vote,
+\[
+  H(x)=\sign\Big(\frac1n\sum_{t=1}^n h_t(x)\Big),
+\]
+a majority vote in which every tree has the same weight $\frac1n$.
+
+Boosting looks different at first sight. AdaBoost \citep{freund1997decision}
+builds the voters sequentially: at round $t$, the weak learner $h_t$ is trained on
+a reweighted sample and receives the weight
+$\alpha_t=\frac12\ln\frac{1-\varepsilon_t}{\varepsilon_t}$, which is non-negative as soon
+as its weighted error $\varepsilon_t$ is smaller than $\frac12$. But the final
+classifier can be written in two equivalent ways,
+\[
+  H(x)=\sign\Big(\sum_{t=1}^n \alpha_t h_t(x)\Big)
+      =\sign\Big(\sum_{t=1}^n Q(h_t)\, h_t(x)\Big),
+  \qquad\text{with}\qquad Q(h_t)=\frac{\alpha_t}{\sum_{s}\alpha_s},
+\]
+because dividing the score by the positive constant $\sum_s\alpha_s$ does not
+change its sign. The normalized weights $Q(h_1),\dots,Q(h_n)$ are non-negative
+and sum to one. In other words, AdaBoost outputs a \emph{probability
+distribution} over the weak learners, and predicts with the corresponding
+weighted majority vote. \Cref{fig:adaboost} shows such a distribution on a
+simulated problem. Gradient boosting \citep{friedman2001greedy} follows the same
+pattern with real-valued regressors, and stacking \citep{wolpert1992stacked}
+with a linear meta-learner learns the weights of a vote on a held-out sample.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{adaboost_margins}
+\caption{AdaBoost with decision stumps on a simulated problem (1000 training
+examples, 20 features). Left: the normalized weights $Q(h_t)$ of the first 60
+stumps form a probability distribution over the weak learners. Middle: the
+training error of the vote goes to zero while the test error stabilizes.
+Right: even after the training error is small, the distribution of the
+normalized margins keeps moving to the right; this observation motivated the
+margin theory of boosting \citep{schapire1998boosting}, to which we come back
+in \cref{sec:margins}.}
+\label{fig:adaboost}
+\end{figure}
+
+Even kernel methods fit in this picture. With random Fourier features
+\citep{rahimi2007random}, a kernel machine is approximated by
+$\sign\big(\sum_k \alpha_k \cos(\omega_k^\top x+b_k)\big)$, where the frequencies
+$\omega_k$ are drawn from a distribution determined by the kernel. This is a vote
+over an infinite family of voters indexed by $\omega$ \citep{letarte2019pseudo},
+and it is precisely the model studied in the project of the first part of the
+course.
+
+In all these cases, the learned predictor has the form
+\begin{equation}\label{eq:mv}
+  \BQ(x)=\sign\Big(\Esp{h\sim Q}{h(x)}\Big),
+  \qquad Q\in\M(\Hcal),
+\end{equation}
+where $\Hcal$ is a (finite or infinite) set of voters and $Q$ a probability
+distribution on $\Hcal$. The learning problem for ensembles can therefore be
+rephrased in a single sentence: \emph{how should we choose a good distribution
+$Q$ over the voters?} This is exactly the question addressed by PAC-Bayesian
+theory. \Cref{fig:gibbs_vs_mv} shows, on a two-dimensional problem, the
+phenomenon of our puzzling experiment: the individual trees of a random forest
+are irregular and rather inaccurate, whereas their vote is smooth and accurate.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{gibbs_vs_mv}
+\caption{Two voters $h_1,h_2$ drawn from the posterior $Q$ of a random forest
+(uniform over 200 randomized trees), the average vote $\E_{h\sim Q}h(x)$ and
+the majority vote $\BQ$ on the \texttt{moons} dataset. Individual voters are
+very irregular; the vote is smoother and more accurate. Explaining, and
+certifying, this improvement is the purpose of this part of the course.}
+\label{fig:gibbs_vs_mv}
+\end{figure}
+
+\subsection{What classical bounds say about majority votes}
+
+Can the generalization bounds of the first part of the course answer our two
+questions? Recall the Rademacher bound \citep{bartlett2002rademacher,mohri2018foundations}:
+for a loss with values in $[0,1]$, with probability at least $1-\delta$ over the
+draw of $S\sim\D^m$, simultaneously for all $h\in\Hcal$,
+\begin{equation}\label{eq:rademacher}
+  \RD(h)\leq \RS(h)+2\,\mathfrak{R}_m(\Hcal)+\sqrt{\frac{\ln(1/\delta)}{2m}}.
+\end{equation}
+Such a bound is called \emph{uniform}: it holds for every hypothesis of the
+class, whatever the way it has been chosen, and the price to pay is a measure
+of the complexity of the whole class. There are two reasons why this is not
+satisfactory for ensembles.
+
+The first one is good news in disguise: taking averages does not make a class
+more complex. The empirical Rademacher complexity of the convex hull
+$\mathrm{conv}(\Hcal)$, that is of the set of all weighted averages of voters, is
+exactly the same as that of $\Hcal$, because a linear function reaches its
+supremum over a convex set at one of its extreme points (Exercise~\ref{ex:conv}).
+\citet{schapire1998boosting} and \citet{koltchinskii2002empirical} exploited this
+remark to derive \emph{margin bounds} for voting classifiers that do not depend
+on the number of voters. This was the first explanation of the surprising
+behaviour of AdaBoost in \cref{fig:adaboost}, which does not overfit when more
+rounds are added. Unfortunately, for realistic sample sizes these bounds are
+almost always larger than one, and hence useless as guarantees.
+
+The second reason is more fundamental: a uniform bound ignores \emph{what has
+been learned}. Whether the forest puts all its weight on a few very good trees or
+spreads it over many diverse trees, the bound \eqref{eq:rademacher} pays the same
+price. Intuitively, a distribution $Q$ that remains ``close'' to something we
+could have chosen \emph{before} seeing the data should be cheaper than a
+distribution tuned very precisely on the sample. PAC-Bayesian theory turns this
+intuition into a theorem: the complexity of the class is replaced by a
+\emph{divergence} between the learned distribution $Q$, called the
+\emph{posterior}, and a reference distribution $P$ fixed before seeing the data,
+called the \emph{prior}.
+
+\subsection{The PAC-Bayesian principle}
+
+\Cref{fig:principle} summarizes the setting. Before seeing the data, we fix a
+prior $P$ over the voters, for instance the uniform distribution over the trees
+of a forest. A learning algorithm then looks at the sample and produces a
+posterior $Q$, which may depend on the data in any way we like. Finally, a bound
+compares the two, and certifies the predictor associated with $Q$.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=1.2cm and 0.7cm,
+   box/.style={draw,rounded corners,align=center,minimum height=1.1cm,minimum width=2.4cm,fill=#1!6,draw=#1},
+   arr/.style={-{Stealth[length=2.5mm]},thick}]
+\node[box=pbgrey] (prior) {\textbf{Prior} $P$\\\small chosen \emph{before} $S$};
+\node[box=pbblue,right=of prior] (learn) {\textbf{Learning}\\\small algorithm uses $S$};
+\node[box=pbblue,right=of learn] (post) {\textbf{Posterior} $Q$\\\small depends on $S$};
+\node[box=pborange,right=of post] (pred) {\textbf{Predictor}\\\small $\GQ$ or $\BQ$};
+\node[box=pbteal,below=1.4cm of learn] (data) {\textbf{Sample} $S\sim\D^m$};
+\node[box=pbred,below=1.4cm of pred,xshift=-1.0cm,minimum width=4.4cm] (bound)
+  {\textbf{Certificate} (w.p.\ $\geq 1-\delta$)\\
+   $\RD(Q)\leq \RS(Q) + \text{\small complexity}\big(\KL(Q\|P),m,\delta\big)$};
+\draw[arr] (prior) -- (learn);
+\draw[arr] (learn) -- (post);
+\draw[arr] (data) -- (learn);
+\draw[arr] (post) -- (pred);
+\draw[arr] (post.south) -- (bound.north west);
+\draw[arr,dashed] (data) -- (bound);
+\draw[arr,dashed,pbred] (bound.north-|pred.south) -- node[right,align=left]{\small minimize the\\\small bound itself} (pred.south);
+\end{tikzpicture}
+\caption{The PAC-Bayesian setting. The prior $P$ encodes what we believe
+before seeing the data; the posterior $Q$ may depend arbitrarily on $S$. The
+generalization bound holds \emph{simultaneously for all posteriors}, so it can
+be used both as a certificate and as an objective to minimize
+(\emph{self-bounding} learning, \cref{chap:selfbounding}).}
+\label{fig:principle}
+\end{figure}
+
+Which predictor does a PAC-Bayesian bound certify? Its central object is not
+the vote but a randomized cousin of it, the \emph{Gibbs classifier} $\GQ$: to
+predict the label of a point $x$, it draws a voter $h$ at random according to
+$Q$ and outputs $h(x)$. Since a new voter is drawn for each prediction, its risk
+is simply the average risk of the voters,
+\[
+  \RD(\GQ)=\Esp{h\sim Q}{\RD(h)},\qquad \RS(\GQ)=\Esp{h\sim Q}{\RS(h)}.
+\]
+In our running example, the Gibbs classifier is ``pick a tree at random and use
+it'', and its test error is the $19\%$ of an average tree. A typical PAC-Bayesian
+theorem \citep[in the form of \citealp{maurer2004note}]{mcallester1999some} then
+reads as follows: for any prior $P$ that does not depend on $S$, with probability
+at least $1-\delta$ over $S\sim\D^m$,
+\begin{equation}\label{eq:mcall_intro}
+  \forall Q\in\M(\Hcal),\qquad
+  \RD(\GQ)\leq \RS(\GQ)+\sqrt{\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{2m}}.
+\end{equation}
+
+Let us read this statement slowly, because it contains the whole theory in a
+nutshell. On the left is the unknown quantity we care about, the true risk of the
+Gibbs classifier. On the right, the first term is its empirical risk, which we can
+compute. The second term is a price, which grows with the Kullback--Leibler
+divergence $\KL(Q\|P)$ between the posterior and the prior, and decreases with
+the sample size $m$. Three features make this statement very different from
+\eqref{eq:rademacher}. First, the price depends on the \emph{learned}
+distribution $Q$ and on the prior, and not on the size of $\Hcal$, which may even
+be infinite and uncountable. Second, the bound holds \emph{for all posteriors
+simultaneously}: we are free to choose $Q$ after having seen the data, and in
+particular to choose the posterior that minimizes the right-hand side. Third,
+every quantity on the right can be computed from the sample, so the bound is a
+genuine \emph{risk certificate}: a number which, with high probability, is larger
+than the true risk of the predictor, and which can be reported next to it.
+
+One difficulty remains: in practice we predict with the majority vote $\BQ$, not
+with the Gibbs classifier, and in our experiment the two differ enormously ($4.4\%$
+against $19\%$). \Cref{chap:mv} is devoted to the relations between the two
+predictors. We will see that the gap between them is governed by the
+\emph{disagreement} between the voters, that is by their diversity, which
+answers the explanatory question raised at the beginning of this section.
+
+\begin{intuition}
+PAC-Bayes $=$ PAC $+$ Bayes. From the PAC framework (Probably Approximately
+Correct, \citealp{valiant1984theory}) it inherits the form of the guarantee: a
+bound on the true risk which holds with high probability over the sample,
+whatever the data distribution $\D$. From Bayesian statistics it borrows the
+vocabulary of priors and posteriors. But, unlike in Bayesian inference, the
+posterior is not required to be given by Bayes' rule, and the data are not
+assumed to be generated by a probabilistic model: the guarantee is purely
+frequentist.
+\end{intuition}
+
+\subsection{A short history}
+
+The first PAC-Bayesian analyses are due to \citet{shawe1997pac} and to
+\citet{mcallester1998some,mcallester1999some,mcallester1999pac}, who combined
+the PAC framework with Bayesian priors and thereby generalized the \emph{Occam's
+razor} bound of \citet{blumer1987occam}, which we present in
+\cref{sec:occam}. The bound was then sharpened by using the binary
+Kullback--Leibler divergence \citep{seeger2002pac,langford2005tutorial}, and
+\citet{maurer2004note} gave it the simple constant that we use today.
+Independently, \citet{catoni2007pac} (see also \citealp{audibert2004pac,zhang2006information})
+developed a very complete theory, emphasizing the role of the Gibbs posterior
+and the analogy with statistical physics. At the same time,
+\citet{langford2002pac} and \citet{mcallester2003simplified} used PAC-Bayes to
+explain why large margins make support vector machines generalize.
+
+The link with majority votes appeared early \citep{mcallester1999pac}, but it
+became central with the work of \citet{lacasse2007pac}, who introduced the
+\emph{C-bound}, and of \citet{germain2009pac,germain2015risk}, who turned
+PAC-Bayesian bounds into learning algorithms such as MinCq
+\citep{laviolette2011from}. The field gained a new momentum in 2017, when
+\citet{dziugaite2017computing} obtained the first non-vacuous bounds for deep
+neural networks. Since then, a series of works has produced tight bounds for
+random forests \citep{lorenzen2019pac}, second-order bounds for majority votes
+\citep{masegosa2020second,wu2021chebyshev}, and algorithms which minimize them
+directly \citep{viallard2021self,zantedeschi2021learning}. Recent surveys are
+those of \citet{guedj2019primer}, \citet{alquier2024user} and
+\citet{hellstrom2025generalization}. \Cref{fig:timeline} summarizes these milestones.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[y=-0.52cm]
+\draw[thick,pbgrey] (0,0.3) -- (0,15.7);
+\newcommand{\ev}[4]{\fill[#4] (0,#1) circle (3pt); \node[left,font=\small\bfseries,#4] at (-0.2,#1) {#2}; \node[right,font=\small,align=left,text width=10.6cm] at (0.25,#1) {#3};}
+\ev{1}{1984}{PAC learning \citep{valiant1984theory}}{black}
+\ev{2}{1987}{Occam's razor bound \citep{blumer1987occam}}{black}
+\ev{3}{1996--97}{Bagging \citep{breiman1996bagging}; AdaBoost \citep{freund1997decision}}{pbteal}
+\ev{4}{1997--99}{First PAC-Bayesian theorems \citep{shawe1997pac,mcallester1998some,mcallester1999some}}{pbred}
+\ev{5}{1998}{Margin theory of boosting \citep{schapire1998boosting}}{pbteal}
+\ev{6}{2001}{Random forests \citep{breiman2001random}}{pbteal}
+\ev{7}{2002--04}{kl bound \citep{seeger2002pac}; PAC-Bayes \& margins \citep{langford2002pac}; \citet{maurer2004note}}{pbred}
+\ev{8}{2006--07}{The C-bound \citep{lacasse2007pac}; Catoni's monograph \citep{catoni2007pac}}{pbred}
+\ev{9}{2009--11}{PAC-Bayesian learning of linear classifiers \citep{germain2009pac}; MinCq \citep{laviolette2011from}}{pbblue}
+\ev{10}{2015}{Risk bounds for the majority vote \citep{germain2015risk}}{pbblue}
+\ev{11}{2017}{Non-vacuous bounds for deep networks \citep{dziugaite2017computing}; PAC-Bayes-$\lambda$ \citep{thiemann2017strongly}}{pbred}
+\ev{12}{2019}{PAC-Bayesian bounds for random forests \citep{lorenzen2019pac}}{pbblue}
+\ev{13}{2020--21}{Tandem bound \citep{masegosa2020second}; CCTND \citep{wu2021chebyshev}; self-bounding votes \citep{viallard2021self,zantedeschi2021learning}}{pbblue}
+\ev{14}{2022}{Margins for voting classifiers \citep{biggs2022margins}; split-kl \citep{wu2022split}}{pbblue}
+\ev{15}{2024--25}{Surveys \citep{alquier2024user,hellstrom2025generalization}}{pbgrey}
+\end{tikzpicture}
+\caption{A few milestones. Black: learning theory; teal: ensemble methods;
+red: PAC-Bayesian bounds; blue: PAC-Bayes for majority votes; grey: surveys.}
+\label{fig:timeline}
+\end{figure}
+
+\subsection{Organization of the notes}
+
+The notes follow the two questions of our puzzling experiment, in four parts.
+\emph{Part~I} gathers the foundations. After this introduction,
+\cref{chap:tools} presents the mathematical tools --- concentration
+inequalities, the Kullback--Leibler divergence and the change of measure
+inequality --- and ends with the Occam bound, the ancestor of all PAC-Bayesian
+bounds. \emph{Part~II} builds the certificates. \Cref{chap:bounds} proves a
+general PAC-Bayesian theorem and derives from it the classical bounds of
+McAllester, Seeger, Maurer and Catoni; \cref{chap:posteriors} discusses how to
+choose the posterior and the prior; \cref{chap:mv} finally goes from the Gibbs
+classifier to the majority vote, where the diversity of the voters comes into
+play and where our first question receives its answer. \emph{Part~III} turns the
+certificates into learning objectives: \cref{chap:selfbounding} explains why a
+bound can be minimized without losing its validity, and \cref{chap:algos}
+presents, and runs, the resulting algorithms for forests, boosting-like methods,
+linear classifiers, kernels and neural networks. \emph{Part~IV}
+(\cref{chap:advances}) opens on current research.
+
+\begin{keypoints}
+Ensemble methods learn a distribution $Q$ over a set of voters and predict with
+the corresponding majority vote $\BQ$, which can be much more accurate than its
+voters. PAC-Bayesian bounds replace the complexity of the whole class by the
+divergence $\KL(Q\|P)$ between this distribution and a prior fixed before seeing
+the data, and they hold for all posteriors simultaneously. They certify the Gibbs
+classifier (a voter drawn at random) directly, the majority vote through the
+relations of \cref{chap:mv}, and they can themselves be used as learning
+objectives (\cref{chap:selfbounding}).
+\end{keypoints}
+
+\begin{quickchecks}
+\item Why is the output of AdaBoost a probability distribution over the weak learners?
+\item In the running example, what are the test errors of the Gibbs classifier and of the majority vote?
+\item What may the posterior depend on, and what may the prior not depend on?
+\item Why is the Rademacher complexity of the convex hull of $\Hcal$ not larger than that of $\Hcal$?
+\end{quickchecks}
+
+\begin{exercises}
+\begin{exercise}
+Write the predictors of bagging, of AdaBoost and of a kernel machine with random
+Fourier features in the form \eqref{eq:mv}. In each case, what is the set of
+voters $\Hcal$, and what is the distribution $Q$?
+\end{exercise}
+\begin{exercise}\label{ex:conv}
+Show that the empirical Rademacher complexity of $\mathrm{conv}(\Hcal)$ equals the
+one of $\Hcal$. \emph{Hint:} for a fixed vector of signs $\sigma$, the function
+$f\mapsto\frac1m\sum_i\sigma_if(x_i)$ is linear in $f$.
+\end{exercise}
+\begin{exercise}
+In \cref{fig:adaboost}, the training error reaches zero after a few dozen
+rounds. Using the right panel, explain why a bound based on the empirical
+margin distribution can keep decreasing afterwards.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} True or false? Justify in one or two sentences.
+(a)~Since the vote of the running example is better than an average tree, the
+risk of a majority vote is always smaller than the risk of its Gibbs classifier,
+$\RD(\BQ)\leq\RD(\GQ)$. (b)~The Gibbs risk $\RD(\GQ)$ always lies between the
+smallest and the largest risk of the voters in the support of $Q$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} A student proposes the following trick: ``since the
+bound \eqref{eq:mcall_intro} holds for any prior, I learn my posterior $Q$ and
+then take $P=Q$, so that $\KL(Q\|P)=0$ and the certificate is simply
+$\RS(\GQ)+\sqrt{\ln(2\sqrt m/\delta)/(2m)}$.'' Explain what is wrong.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} AdaBoost produces three weak learners with weighted
+errors $\varepsilon_1=0.1$, $\varepsilon_2=0.2$ and $\varepsilon_3=0.3$.
+Compute their weights $\alpha_t$ and the normalized distribution $Q$. On a point
+$x$ where $h_1(x)=+1$ and $h_2(x)=h_3(x)=-1$, what does the vote predict? Is
+the best weak learner always obeyed?
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} Consider the bound \eqref{eq:mcall_intro} with
+$\delta=0.05$ and $m=1000$. Compute its complexity term for the uniform
+posterior $Q=P$, and for a Dirac posterior on one of $n=100$ voters with the
+uniform prior (for which $\KL(Q\|P)=\ln n$). How many examples are needed for
+the complexity term of the uniform posterior to be below $0.02$?
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Let $\Hcal=\{h_1,\dots,h_n\}$ be finite and $Q\in\M(\Hcal)$.
+Show that $\RD(\GQ)=\Esp{(x,y)\sim\D}{W_Q(x,y)}$ with
+$W_Q(x,y)=\sum_tQ(h_t)\ind{h_t(x)\neq y}$, and deduce that
+$\min_{t:Q(h_t)>0}\RD(h_t)\leq\RD(\GQ)\leq\max_{t:Q(h_t)>0}\RD(h_t)$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} For voters with values in $\{-1,+1\}$, show that
+$\ind{h(x)\neq y}=\frac{1-y\,h(x)}{2}$, deduce that the margin
+$M_Q(x,y)=y\,\Esp{h\sim Q}{h(x)}$ equals $1-2W_Q(x,y)$, and show that if the
+vote $\BQ$ errs on $(x,y)$, then $W_Q(x,y)\geq\frac12$ (whatever the convention
+chosen for $\sign(0)$).
+\end{exercise}
+\end{exercises}

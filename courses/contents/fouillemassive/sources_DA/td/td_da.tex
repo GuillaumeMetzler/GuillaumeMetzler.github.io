@@ -1,0 +1,178 @@
+\documentclass[11pt]{article}
+\usepackage{../common/dastyle}
+\graphicspath{{../figures/}}
+
+\begin{document}
+\pagestyle{fancy}
+\sheethead{TD -- Adaptation de Domaine}{Ce TD reprend et prolonge les notions du cours (séance 6) : repondération d'instances sous covariate shift, estimation du ratio de densités (KDE, KMM, classifieur de domaine), puis bornes de généralisation ($\Hcal\Delta\Hcal$, PAC-Bayes) et un aperçu des méthodes profondes récentes (DANN). Les exercices marqués \textbf{(Application)} demandent un calcul numérique court ; ceux marqués \textbf{(Preuve)} une démonstration. La correction est fournie dans un document séparé (\texttt{td\_da\_solutions.pdf}).}
+
+\section{Fondamentaux : covariate shift et repondération}
+
+\begin{exercise}[Identifier l'hypothèse de correspondance]
+Pour chacune des situations suivantes, indiquez laquelle des quatre hypothèses vues en cours
+(covariate shift, target shift, biais de sélection, concept shift) est la plus plausible, et
+justifiez en une phrase.
+\begin{enumerate}[label=(\alph*)]
+\item Un hôpital A forme un modèle de dépistage sur ses patients (population plutôt âgée) ; l'hôpital B,
+dans une autre région, a une population plus jeune, mais la même pathologie se manifeste de la même façon
+cliniquement dans les deux populations.
+\item Une plateforme de recommandation de films est entraînée sur des clics de 2015, où les
+utilisateurs préféraient les DVD physiques loués en magasin ; en 2025, les mêmes types de contenus sont
+préférés, mais la manière de les consommer (SVOD) a totalement changé la notion même de \enquote{clic}.
+\item Un capteur de température, mal calibré, sous-échantillonne systématiquement les mesures extrêmes
+lors de la collecte des données d'entraînement, alors que le capteur de production (bien calibré) ne
+souffre pas de ce biais.
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Régression pondérée -- calcul explicite] \textbf{(Application)}
+\label{ex:td-weighted-reg}
+On considère $P_S(X) = \mathcal N(-1,1)$, $P_T(X) = \mathcal N(1, 1)$, et le modèle
+$P_S(Y\mid X=x) = P_T(Y\mid X=x) = \mathcal N(|x|, \sigma^2)$ (covariate shift).
+\begin{enumerate}[label=(\alph*)]
+\item Rappelez la définition de $w(x) = p_t(x)/p_s(x)$ et montrez que, dans ce cas précis,
+$w(x) = \exp(2x)$.
+\item On observe un unique point source $x_1 = -0.5$. Calculez $w(x_1)$.
+\item On observe un second point source $x_2 = 1.5$. Calculez $w(x_2)$ et comparez à $w(x_1)$. Que
+constatez-vous sur le comportement de $w$ loin de la zone où vivent les données source ?
+\item \textbf{(Preuve)} Pour $X\in\R^{m\times p}$, $Y\in\R^m$, et $\Delta=\mathrm{diag}(\sqrt{w_1},
+\ldots,\sqrt{w_m})$, retrouvez la solution $\beta^\star$ du problème de régression pondérée
+$\min_\beta \sum_i w_i(x_i\beta^\top - y_i)^2$.
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Effective Sample Size] \textbf{(Application)}
+\label{ex:ess}
+Un problème pratique des méthodes instance-based : si quelques poids $w_i$ dominent tous les autres, on
+n'utilise \enquote{effectivement} qu'une poignée de points source, même si $m$ est grand. On mesure cela
+par la taille d'échantillon effective :
+\[
+\mathrm{ESS}(w) = \frac{\left(\sum_{i=1}^m w_i\right)^2}{\sum_{i=1}^m w_i^2}.
+\]
+\begin{enumerate}[label=(\alph*)]
+\item Calculez $\mathrm{ESS}(w)$ pour $m=4$ poids égaux $w=(1,1,1,1)$. Commentez.
+\item Calculez $\mathrm{ESS}(w)$ pour $w=(10, 0.1, 0.1, 0.1)$. Commentez, en particulier au regard de la
+Figure~3.5 du cours (supports peu recouvrants).
+\item \textbf{(Preuve)} Montrez que $1 \le \mathrm{ESS}(w) \le m$ pour tout vecteur de poids positifs
+$w$ (indication : utilisez l'inégalité de Cauchy-Schwarz pour la borne supérieure).
+\end{enumerate}
+\end{exercise}
+
+\section{Estimer le ratio de densités}
+
+\begin{exercise}[Densité paramétrique vs. noyaux] \textbf{(Application)}
+On dispose de $S_X = \{-1.2, -0.9, -1.1, -0.8\}$ et $T_X=\{0.8, 1.3, 1.0\}$.
+\begin{enumerate}[label=(\alph*)]
+\item Calculez les estimateurs de moyenne et variance empiriques $(\hat\mu_s,\hat\sigma_s^2)$ et
+$(\hat\mu_t,\hat\sigma_t^2)$ utilisés par l'approche paramétrique gaussienne (méthode du maximum de
+vraisemblance).
+\item En déduire $\hat w(x_i) = \hat p_t(x_i)/\hat p_s(x_i)$ pour $x_1=-1.2$.
+\item \textbf{(Preuve)} Pour un noyau gaussien $k(x,x')=\exp(-(x-x')^2/2\sigma^2)$, écrivez l'estimateur
+de densité par noyaux $\hat p_s(x)$ non normalisé pour l'échantillon $S_X$ ci-dessus, et donnez sa valeur
+en $x=-1$ pour $\sigma=0.3$ (à $10^{-2}$ près).
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Kernel Mean Matching] \textbf{(Preuve)}
+\label{ex:kmm}
+On rappelle que KMM résout $w^\star = \argmin_{w\ge0,\ w^\top\mathbf 1 = m}\ w^\top K w - 2\kappa^\top w$,
+où $K_{ij}=k(x_i,x_j)$, $\kappa_i = \frac{m}{n}\sum_{j} k(x_i,x'_j)$.
+\begin{enumerate}[label=(\alph*)]
+\item Sans la contrainte $w\ge 0$ ni $w^\top\mathbf1=m$, écrivez la condition d'optimalité du premier
+ordre du problème $\min_w w^\top K w - 2\kappa^\top w$ et donnez la solution non contrainte $w^\star$
+(en supposant $K$ inversible).
+\item Que représente $\kappa_i$ intuitivement ? Pourquoi la normalisation par $m/n$ est-elle nécessaire ?
+\item Pourquoi le problème original impose-t-il $w\ge 0$ et $\sum_i w_i = m$ ? Que se passerait-il pour
+l'interprétation de $w$ comme ratio de densités si l'on retirait ces contraintes ?
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Classifieur de domaine] \textbf{(Preuve)}
+\label{ex:iwc-td}
+On adopte ici la convention \emph{inverse} de celle du cours : $\phi(x) = \widehat\P(\text{domaine}=S
+\mid X=x)$ (et non $T$). On entraîne $\phi$ par minimisation de l'entropie croisée
+\[
+\phi^\star = \argmax_{\phi}\ \Esp{P_S(X)}{\log\phi(X)} + \Esp{P_T(X)}{\log(1-\phi(X))}.
+\]
+\begin{enumerate}[label=(\alph*)]
+\item Montrez que $\phi^\star(x) = p_s(x)/(p_s(x)+p_t(x))$.
+\item En déduire l'expression de $w(x)=p_t(x)/p_s(x)$ en fonction de $\phi^\star(x)$ uniquement.
+\item Un data scientist utilise par erreur un classifieur de domaine avec la convention du cours
+($\phi(x)=\widehat\P(T\mid x)$) mais applique la formule $w(x)=1/\phi(x)-1$ de cet exercice. Quelle erreur
+commet-il, et quel est l'effet pratique sur les poids obtenus (sous-estimation ou surestimation de
+l'importance des zones \enquote{typiquement cible}) ?
+\end{enumerate}
+\end{exercise}
+
+\section{Bornes de généralisation}
+
+\begin{exercise}[$\Hcal$-divergence sur un exemple jouet] \textbf{(Application)}
+On considère $\X=\{1,2,3,4\}$, avec $D_S$ uniforme sur $\{1,2\}$ et $D_T$ uniforme sur $\{3,4\}$. On prend
+$\Hcal = \{h_1, h_2\}$ où $h_1(x) = \1[x\le 2]$ et $h_2(x)=\1[x\le 3]$.
+\begin{enumerate}[label=(\alph*)]
+\item Calculez $\P_{D_S}[h_1(x)=1]$ et $\P_{D_T}[h_1(x)=1]$.
+\item En déduire une valeur de $d_\Hcal(D_S,D_T)$ obtenue avec $h_1$ (rappel :
+$d_\Hcal(D_S,D_T)=2\sup_{h\in\Hcal}|\P_{D_S}[h=1]-\P_{D_T}[h=1]|$).
+\item Refaites le calcul avec $h_2$. Quel est le classifieur de $\Hcal$ qui \enquote{sépare le mieux}
+source et cible ici, et quelle est la valeur de $d_\Hcal(D_S,D_T)$ pour cette classe $\Hcal=\{h_1,h_2\}$ ?
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Lecture de la borne de Ben-David] \textbf{(Application)}
+On suppose qu'un data scientist entraîne un classifieur $h$ et mesure $R_S(h) = 0.05$ (risque source),
+un classifieur de domaine avec un taux d'erreur $\mathrm{err}(\phi)=0.42$ pour séparer $S_X$ de $T_X$, et
+estime (par une méthode indépendante) $\lambda_\Hcal \approx 0.03$.
+\begin{enumerate}[label=(\alph*)]
+\item Rappelez la formule reliant $\mathrm{err}(\phi)$ (erreur du meilleur classifieur de domaine) et le
+proxy empirique $\hat d_\Hcal(S_X,T_X)$.
+\item Calculez la valeur numérique de $\hat d_\Hcal(S_X,T_X)$ pour cet exemple.
+\item En déduire une borne numérique sur $R_T(h)$ à l'aide du théorème de Ben-David et al.
+\item Un second data scientist obtient un classifieur de domaine bien plus performant,
+$\mathrm{err}(\phi')=0.08$, sur les mêmes données. Que peut-on en conclure sur la difficulté du problème
+de transfert dans ce second cas ? La borne obtenue est-elle plus ou moins informative ?
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}[Comprendre le rôle du $\KL$ dans la borne PAC-Bayésienne] \textbf{(Application)}
+On propose deux posteriors $Q_1$ et $Q_2$ sur une même classe $\Hcal$, avec les valeurs suivantes (unités
+arbitraires, $m=500$, $\delta=0.05$) :
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+& $R_S(Q)$ & $\mathrm{dis}_T(Q)/2$ & $\KL(Q\|P)$ \\
+\midrule
+$Q_1$ & $0.10$ & $0.04$ & $2.0$ \\
+$Q_2$ & $0.06$ & $0.03$ & $45.0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+On néglige ici le terme $\lambda(Q)$ (supposé identique et faible pour les deux) et on prend le terme de
+complexité sous la forme simplifiée $\sqrt{(\KL(Q\|P)+\log(1/\delta))/m}$.
+\begin{enumerate}[label=(\alph*)]
+\item Calculez la borne PAC-Bayésienne approchée pour $Q_1$ puis pour $Q_2$.
+\item Quel posterior semble préférable au vu du risque source seul ? Et au vu de la borne complète ?
+\item En une phrase, expliquez pourquoi ce phénomène illustre le compromis biais/complexité déjà rencontré
+dans d'autres contextes d'apprentissage statistique.
+\end{enumerate}
+\end{exercise}
+
+\section{Ouverture : méthodes récentes}
+
+\begin{exercise}[DANN et Gradient Reversal Layer] \textbf{(Preuve/Réflexion)}
+\begin{enumerate}[label=(\alph*)]
+\item DANN entraîne conjointement un extracteur de features $G_f$, un classifieur de labels $G_y$ et un
+classifieur de domaine $G_d$. Écrivez (sans détailler l'architecture) la fonction objectif combinée que
+$G_f$ et $G_y$ cherchent à \emph{minimiser}, et celle que $G_d$ cherche à minimiser, en notant
+$\mathcal L_y$ la perte de classification des labels et $\mathcal L_d$ la perte du classifieur de domaine.
+\item Le Gradient Reversal Layer multiplie le gradient de $\mathcal L_d$ par $-\lambda$ (avec
+$\lambda > 0$) lorsqu'il traverse $G_f$ dans la rétropropagation. Expliquez pourquoi cela permet
+d'entraîner $G_f$ à \emph{maximiser} $\mathcal L_d$ tout en gardant une seule passe de descente de
+gradient pour l'ensemble du réseau.
+\item Reliez cette procédure à la borne de Ben-David vue en cours : quelle quantité de cette borne DANN
+cherche-t-il concrètement à minimiser via $G_d$ ?
+\item \textbf{(Réflexion)} D'après la mise en garde de Zhao et al. (2019) vue en cours, dans quelle
+situation (en termes de proportions de classes) le principe même de DANN peut-il devenir contre-productif ?
+\end{enumerate}
+\end{exercise}
+
+\end{document}

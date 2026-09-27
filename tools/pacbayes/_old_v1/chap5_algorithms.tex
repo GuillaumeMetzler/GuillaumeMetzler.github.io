@@ -1,0 +1,299 @@
+%% ======================================================================
+\chapter{PAC-Bayesian learning of ensembles}
+\label{chap:algos}
+%% ======================================================================
+
+\section{Self-bounding learning}
+
+A PAC-Bayesian bound holds \emph{simultaneously for all posteriors}. We can
+therefore use it as a learning objective:
+\[
+Q^\star\in\argmin_{Q\in\M(\Hcal)}\ \mathcal B\big(\widehat{\text{stat}}_S(Q),\KL(Q\|P),m,\delta\big),
+\]
+where $\widehat{\text{stat}}_S(Q)$ is an empirical quantity (Gibbs risk, joint
+error, disagreement\dots). The resulting predictor comes with its own
+generalization guarantee: the value of the bound at $Q^\star$ is a valid
+\emph{risk certificate}, without any test set. Such algorithms are called
+\emph{self-bounding} \citep{freund1998self}; in the PAC-Bayesian context, see
+\citet{germain2015risk} and \citet{viallard2021self}. In this chapter we apply this principle to the
+ensemble methods of the course.
+
+\begin{remark}
+A bound minimizer is not necessarily a risk minimizer: the bound is a
+worst-case, high-probability statement. Minimizing it is a principled form of
+regularization, with the KL as regularizer and $P$ as the reference point.
+The quality of the result depends on how well the bound reflects the actual
+behaviour of the predictor --- which, for majority votes, depends on the
+\emph{order} of the bound (first vs.\ second order).
+\end{remark}
+
+\section{Bagging and random forests: out-of-bag PAC-Bayes}\label{sec:oob}
+
+\subsection{The split construction}
+
+The prior must not depend on the data used to evaluate the bound. With
+bagging this looks problematic, since every tree is learned from $S$. But
+each tree $h_t$ is learned on a bootstrap sample $S_t$ only, and the
+\emph{out-of-bag} (OOB) examples $T_t=S\setminus S_t$ were not used to build it:
+from the point of view of $h_t$, $T_t$ is a fresh test sample
+(\cref{fig:oob}).
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[scale=0.55]
+\foreach \t/\pat in {1/{1,1,0,1,0,1,1,0,1,1,0,1,1,1,0,1},2/{0,1,1,1,1,0,1,1,0,1,1,0,1,1,1,0},3/{1,0,1,1,1,1,0,1,1,0,1,1,0,1,1,1}}{
+  \node[left] at (0,-\t*1.2+0.35) {\small $h_{\t}$};
+  \foreach \b [count=\i] in \pat {
+    \ifnum\b=1
+      \fill[pbblue!45] (\i-1,-\t*1.2) rectangle (\i,-\t*1.2+0.7);
+    \else
+      \fill[pborange!70] (\i-1,-\t*1.2) rectangle (\i,-\t*1.2+0.7);
+    \fi
+    \draw[white] (\i-1,-\t*1.2) rectangle (\i,-\t*1.2+0.7);
+  }
+}
+\node[left] at (0,0.35) {\small $S$};
+\foreach \i in {1,...,16}{\draw (\i-1,0) rectangle (\i,0.7); \node[font=\tiny] at (\i-0.5,0.35) {$z_{\i}$};}
+\fill[pbblue!45] (17.5,-1.1) rectangle (18.3,-0.6); \node[right,font=\small] at (18.4,-0.85) {in the bootstrap sample $S_t$ (training)};
+\fill[pborange!70] (17.5,-2.1) rectangle (18.3,-1.6); \node[right,font=\small] at (18.4,-1.85) {out-of-bag $T_t=S\setminus S_t$ (evaluation)};
+\node[right,font=\small,align=left] at (17.5,-3.3) {tandem loss of $(h_1,h_2)$: evaluated on $T_1\cap T_2$};
+\end{tikzpicture}
+\caption{Out-of-bag construction. Each tree is trained on its bootstrap
+sample (blue) and its loss is estimated on its OOB sample (orange), which is
+independent of the tree. The joint error of two trees is estimated on the
+examples that are out-of-bag for both.}
+\label{fig:oob}
+\end{figure}
+
+\begin{theorem}{PAC-Bayes with a split construction \citep{thiemann2017strongly,lorenzen2019pac}}{oob}
+Let $h_1,\dots,h_n$ be voters, $h_t$ being learned on $S_t\subset S$ by any
+procedure, and let $T_t=S\setminus S_t$ with $|T_t|\geq n_0$ for all $t$. Let
+$\widehat L_t=\frac{1}{|T_t|}\sum_{(x,y)\in T_t}\ind{h_t(x)\neq y}$ be the OOB
+loss of $h_t$ and $\pi$ a distribution on $\{1,\dots,n\}$ fixed in advance
+(e.g.\ uniform). Then, w.p.\ $\geq1-\delta$ over $S\sim\D^m$ (and the
+randomness of the bootstrap), for all $\rho\in\M(\{1,\dots,n\})$,
+\begin{equation}\label{eq:oob}
+\kl\Big(\sum_t\rho_t\widehat L_t\ \Big\|\ \sum_t\rho_t\RD(h_t)\Big)\leq\frac{\KL(\rho\|\pi)+\ln\frac{2\sqrt{n_0}}{\delta}}{n_0}.
+\end{equation}
+The same holds for the tandem losses $\widehat L_{tt'}$ computed on $T_t\cap T_{t'}$,
+with $\KL(\rho^2\|\pi^2)=2\KL(\rho\|\pi)$ and $n_0\leq\min_{t,t'}|T_t\cap T_{t'}|$.
+\end{theorem}
+
+\begin{proofsketch}
+We follow the proof of Theorem~\ref{thm:general} with ``hypotheses'' being the
+\emph{indices} $t$, on which $\pi$ is a legitimate data-independent prior. Only
+Step~3 changes: for each $t$, conditionally on $S_t$ the voter $h_t$ is fixed
+and $T_t$ is an i.i.d.\ sample independent of it, so Maurer's lemma gives
+$\E\,e^{|T_t|\kl(\widehat L_t\|\RD(h_t))}\leq2\sqrt{|T_t|}$. Since $|T_t|\geq n_0$,
+Jensen's inequality yields $\E\,e^{n_0\kl(\widehat L_t\|\RD(h_t))}\leq(2\sqrt{|T_t|})^{n_0/|T_t|}\leq2\sqrt{n_0}$.
+\end{proofsketch}
+
+In practice, with standard bootstrap each OOB set contains about
+$(1-1/m)^m\approx e^{-1}\approx37\%$ of the sample, and the intersection of two OOB
+sets about $e^{-2}\approx14\%$. Drawing bootstrap samples of size $m/2$ instead
+of $m$ increases these proportions to about $e^{-1/2}\approx61\%$ and
+$e^{-1}\approx37\%$, at the price of slightly weaker trees (this is the choice
+made in the figures and notebooks of this course).
+
+\subsection{Minimizing the first-order bound}\label{sec:algo_fo}
+
+With the PAC-Bayes-$\lambda$ form \eqref{eq:lambda} of the bound, for a fixed
+$\lambda$ the optimal posterior is the Gibbs posterior on the OOB losses
+(Proposition~\ref{prop:gibbs_post}), and for a fixed posterior the optimal $\lambda$ is
+given by \eqref{eq:lambda_star}. This suggests an alternating minimization.
+
+\begin{algorithm}[h]
+\caption{PAC-Bayes-$\lambda$ minimization for a forest \citep{thiemann2017strongly}}\label{algo:fo}
+\KwIn{OOB losses $\widehat L_1,\dots,\widehat L_n$, prior $\pi$, $n_0$, $\delta$}
+$\lambda\leftarrow1$\;
+\Repeat{convergence of $\lambda$}{
+  $\rho_t\leftarrow\dfrac{\pi_t\,e^{-\lambda n_0\widehat L_t}}{\sum_{s}\pi_s\,e^{-\lambda n_0\widehat L_s}}$ for $t=1,\dots,n$\;
+  $\lambda\leftarrow\dfrac{2}{\sqrt{2n_0\,\rho^\top\widehat L/\big(\KL(\rho\|\pi)+\ln\frac{2\sqrt{n_0}}{\delta}\big)+1}+1}$\;
+}
+\KwOut{$\rho$ and the certificate $2\,\klup\big(\rho^\top\widehat L,\frac{\KL(\rho\|\pi)+\ln(2\sqrt{n_0}/\delta)}{n_0}\big)$ on $\RD(B_\rho)$}
+\end{algorithm}
+
+\citet{thiemann2017strongly} proved that, under mild conditions, the
+PAC-Bayes-$\lambda$ bound is strongly quasiconvex and that this procedure
+converges to its global minimum. It produces excellent bounds on the
+\emph{Gibbs} risk. However, as observed by \citet{lorenzen2019pac} and
+\citet{masegosa2020second}, the resulting majority vote is often \emph{worse}
+than the uniform vote: the Gibbs posterior concentrates on the few trees with
+the smallest OOB loss, which are highly correlated, and the benefit of the vote
+disappears (\cref{fig:rf_opt}). This is a direct consequence of the first-order
+nature of the bound, which ignores the correlations between voters.
+
+\subsection{Minimizing the tandem bound}
+
+The tandem bound \eqref{eq:tnd_pb} with the PAC-Bayes-$\lambda$ relaxation
+gives the objective
+\begin{equation}\label{eq:tnd_objective}
+\mathcal B_{\text{TND}}(\rho,\lambda)=4\left[\frac{\rho^\top\widehat{\mathbf L}\rho}{1-\frac\lambda2}+\frac{2\KL(\rho\|\pi)+\ln\frac{2\sqrt{n_0}}{\delta}}{\lambda\big(1-\frac\lambda2\big)n_0}\right],
+\qquad\widehat{\mathbf L}=(\widehat L_{tt'})_{t,t'},
+\end{equation}
+which is quadratic in $\rho$ (plus the convex KL term). Its minimization has no
+closed form but is easily performed by gradient descent on the softmax
+parametrization $\rho=\mathrm{softmax}(\theta)$, alternated with the closed-form
+update of $\lambda$ \citep{masegosa2020second}. Because the objective penalizes
+pairs of voters that err \emph{together}, the optimal posterior keeps the
+ensemble diverse: in \cref{fig:rf_opt} the tandem-optimized forest is as
+accurate as the uniform one, and its certificate is tighter.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{rf_optimisation}
+\caption{Forests of 100 trees (bootstrap samples of size $m/2$), on four
+datasets. For the uniform posterior, the posterior minimizing the first-order
+(FO) bound, and the posterior minimizing the tandem (TND) bound, we report the
+test risk of the majority vote and the two OOB certificates ($\delta=0.05$).
+Minimizing the FO bound improves the FO certificate but can seriously degrade
+the vote (e.g.\ \texttt{digits}); minimizing the TND bound preserves diversity.
+Generated with \texttt{pbtools.py} (notebook 4).}
+\label{fig:rf_opt}
+\end{figure}
+
+\section{Boosting-like algorithms: learning the weights of a vote}
+
+\subsection{AdaBoost from the PAC-Bayesian viewpoint}
+
+AdaBoost greedily minimizes the exponential loss $\frac1m\sum_ie^{-y_if(x_i)}$
+of $f=\sum_t\alpha_th_t$, an upper bound on the training error of the vote
+\citep{freund1997decision}. In PAC-Bayesian terms, it learns a posterior
+$Q\propto(\alpha_t)_t$ whose \emph{margins} $M_Q$ are large on $S$ (the
+normalized margins are $y_if(x_i)/\|\alpha\|_1$), which is the explanation of
+\citet{schapire1998boosting}. But nothing controls $\KL(Q\|P)$ or the
+disagreement explicitly. The following algorithms instead learn the weights of
+a set of (possibly boosted) voters by minimizing a C-bound.
+
+\subsection{MinCq: minimizing the C-bound}
+
+Recall that $\mathcal C_Q=1-\frac{(\E M_Q)^2}{\E M_Q^2}$. For a fixed value of the
+first moment $\E M_Q=\mu$, minimizing the C-bound amounts to minimizing the
+second moment of the margin. \citet{laviolette2011from} and
+\citet{germain2015risk} proposed
+\begin{equation}\label{eq:mincq}
+\textbf{MinCq:}\qquad \min_{Q}\ \widehat{\E}_S\big[M_Q^2\big]\quad\text{s.t.}\quad\widehat{\E}_S\big[M_Q\big]=\mu,\quad Q\text{ quasi-uniform},
+\end{equation}
+where $\Hcal$ is \emph{self-complemented} ($h\in\Hcal\Rightarrow-h\in\Hcal$) and a
+\emph{quasi-uniform} posterior satisfies $Q(h)+Q(-h)=\frac1{|\Hcal|/2}$. Since
+$M_Q$ is linear in $Q$, $\widehat\E_S[M_Q^2]$ is a quadratic form in the weights
+and \eqref{eq:mincq} is a \emph{quadratic program}. Two remarkable facts:
+\begin{itemize}
+\item on quasi-uniform posteriors, PAC-Bayesian bounds hold \emph{without the KL
+      term} \citep{germain2015risk}, so that the empirical C-bound itself is controlled;
+      the restriction is not a loss of expressiveness because any vote can be
+      represented by a quasi-uniform posterior with the same predictions;
+\item the hyperparameter $\mu$ (the targeted first moment of the margin)
+      plays the role of a regularization parameter, selected by cross-validation.
+\end{itemize}
+MinCq has been extended to incorporate prior knowledge on the weights
+\citep[P-MinCq,][]{bellet2014learning} and to a column-generation (boosting-like)
+algorithm that adds voters one at a time \citep[CqBoost,][]{roy2016column}.
+
+\subsection{Direct minimization of PAC-Bayesian C-bounds}
+
+\citet{viallard2021self} proposed to minimize by (stochastic) gradient descent
+the \emph{PAC-Bayesian} C-bounds themselves, i.e.\ the right-hand side of
+\eqref{eq:cbound_pb} and tighter joint versions, over the posterior
+$\rho=\mathrm{softmax}(\theta)$. The learned vote comes with a tight certificate
+and competes with the state of the art. \citet{zantedeschi2021learning} go one
+step further: they consider \emph{stochastic majority votes} whose weights are
+themselves drawn from a Dirichlet posterior; for such votes the expected risk
+can be computed (or tightly approximated) and bounded directly, avoiding the
+loose Gibbs-to-vote relations of \cref{chap:mv}.
+
+\section{Linear classifiers and kernel methods}
+
+\subsection{Gaussian posteriors on linear classifiers}
+
+Consider linear voters $h_{\mathbf v}(x)=\sign(\langle\mathbf v,x\rangle)$,
+$\mathbf v\in\R^d$, a prior $P=\mathcal N(\mathbf 0,I_d)$ and posteriors
+$Q_{\mathbf w}=\mathcal N(\mathbf w,I_d)$.
+\begin{itemize}
+\item \textbf{Majority vote.} By symmetry of the Gaussian around $\mathbf w$,
+      $B_{Q_{\mathbf w}}(x)=\sign\big(\E_{\mathbf v}\sign\langle\mathbf v,x\rangle\big)=\sign\langle\mathbf w,x\rangle$:
+      the vote of an infinite number of linear classifiers is the linear
+      classifier $\mathbf w$.
+\item \textbf{Gibbs risk.} For $\mathbf v\sim Q_{\mathbf w}$,
+      $y\langle\mathbf v,x\rangle\sim\mathcal N\big(y\langle\mathbf w,x\rangle,\|x\|^2\big)$, hence
+      \begin{equation}\label{eq:probit}
+      \RS(G_{Q_{\mathbf w}})=\frac1m\sum_{i=1}^m\Phi\Big(-\frac{y_i\langle\mathbf w,x_i\rangle}{\|x_i\|}\Big),
+      \end{equation}
+      where $\Phi$ is the standard Gaussian CDF: the 0-1 loss is replaced by
+      a smooth \emph{probit} loss of the normalized margin.
+\item \textbf{Complexity.} $\KL(Q_{\mathbf w}\|P)=\frac12\|\mathbf w\|^2$.
+\end{itemize}
+Plugging these quantities into Catoni's bound \eqref{eq:catoni} and removing
+the monotone transformation, one obtains the objective of the algorithm
+PBGD \citep{germain2009pac}:
+\begin{equation}\label{eq:pbgd}
+\min_{\mathbf w\in\R^d}\ C\sum_{i=1}^m\Phi\Big(-\frac{y_i\langle\mathbf w,x_i\rangle}{\|x_i\|}\Big)+\frac12\|\mathbf w\|^2,
+\end{equation}
+to be compared with the soft-margin SVM $\min_{\mathbf w}C\sum_i\max(0,1-y_i\langle\mathbf w,x_i\rangle)+\frac12\|\mathbf w\|^2$:
+PAC-Bayes \emph{explains} the SVM objective (regularization $=$ KL to the
+prior, loss $=$ a surrogate of the Gibbs risk), and the norm of $\mathbf w$
+plays the role of the inverse of a margin \citep{langford2002pac,mcallester2003simplified}.
+\Cref{fig:linear} illustrates the trade-off: scaling $\mathbf w$ up makes the
+Gibbs classifier behave like the vote (smaller Gibbs risk) but increases the KL.
+The objective \eqref{eq:pbgd} is not convex; it is optimized by gradient
+descent with several restarts, and has a kernelized version
+\citep{germain2009pac}. Data-dependent Gaussian priors centred on an SVM
+learned on part of the data give some of the tightest bounds for SVMs
+\citep{ambroladze2006tighter,parrado2012pac}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{linear_gaussian}
+\caption{Gaussian posterior $\mathcal N(\mathbf w,I)$ over linear classifiers:
+40 sampled hyperplanes (grey) and the majority vote $\sign\langle\mathbf w,x\rangle$
+(black). Multiplying $\mathbf w$ by $5$ does not change the vote but makes the
+sampled voters agree with it: the Gibbs risk decreases while the KL grows
+quadratically.}
+\label{fig:linear}
+\end{figure}
+
+\subsection{Kernels as priors: random Fourier features}
+
+For a shift-invariant kernel $k(x,x')=k(x-x')$, Bochner's theorem gives
+$k(x-x')=\E_{\omega\sim p}\cos\big(\omega^\top(x-x')\big)$ where $p$ is the Fourier
+transform of $k$ \citep{rahimi2007random}. \citet{letarte2019pseudo} interpret
+this as a \emph{majority vote}: the voters are the functions
+$h_\omega(x,x')=\cos(\omega^\top(x-x'))$ and the kernel is the vote under the
+\emph{prior} $p$. Learning a kernel adapted to the task then amounts to learning a
+\emph{posterior} $Q$ over frequencies; with $N$ frequencies $\omega_1,\dots,\omega_N$
+drawn from $p$, the pseudo-posterior $Q(\omega_j)\propto e^{-\beta\,\widehat L_S(h_{\omega_j})}$
+is exactly a Gibbs posterior, and the PAC-Bayesian bound certifies the
+learned kernel. This is closely related to the boosting-with-random-Fourier-features
+algorithm studied in the first project of the course.
+
+\section{Neural networks and deep ensembles}
+
+The same machinery applies to neural networks with a Gaussian posterior on
+the weights (a \emph{stochastic} neural network). \citet{dziugaite2017computing}
+optimized a PAC-Bayesian bound over such posteriors and obtained the first
+\emph{non-vacuous} bounds for over-parametrized networks on MNIST;
+\citet{perez2021tighter} showed that \emph{training} with PAC-Bayesian objectives
+and data-dependent priors yields both accurate networks and tight certificates,
+and \citet{lotfi2022pac} obtained non-vacuous bounds on large models with
+compression-based priors. \emph{Deep ensembles} \citep{lakshminarayanan2017simple}
+are majority votes of independently trained networks, to which the
+second-order bounds of \cref{chap:mv} directly apply.
+
+\section{Practical guidelines}
+
+\begin{enumerate}
+\item \textbf{Decide what is certified.} Gibbs classifier, majority vote, or a
+      single deterministic model? Use the corresponding bound (\cref{chap:mv}).
+\item \textbf{Fix the prior before looking at the evaluation data}: uniform over
+      voters built on other data (split, OOB), Gaussian around a model learned on a
+      separate sample, etc.
+\item \textbf{Account for every choice made with the data}: a grid of $k$ values for
+      $\lambda$, $C$ or $\sigma$ costs $\ln k$ via a union bound.
+\item \textbf{Use the kl form} ($\klup$) to compute the final certificate, even if a
+      relaxation was used to learn $Q$.
+\item \textbf{Prefer second-order bounds} (tandem, C-bound, CCTND) for majority
+      votes of diverse voters; they need enough data to pay the doubled KL.
+\item \textbf{Report} the bound together with its ingredients (empirical term, KL,
+      $m$, $\delta$) and compare it with the test error: a bound is a guarantee,
+      not an estimate.
+\end{enumerate}

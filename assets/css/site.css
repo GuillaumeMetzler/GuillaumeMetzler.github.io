@@ -188,11 +188,18 @@ p{ margin:0 0 1em; color:var(--text); }
 .news-item h3{ font-size:1.02rem; margin:.2em 0 .3em; }
 .news-item p{ font-size:.9rem; color:var(--text-muted); margin:0; }
 .news-item p a{ white-space:nowrap; }
+.news-item p.title, .news-item p.venue{ margin:0 0 4px; }
+.news-item p.venue .badge{ margin-left:4px; }
 .news-icon{ width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.25rem; flex:none; }
 .news-icon.blue{ background:#e7eef8; color:var(--primary); }
+.news-icon.teal{ background:#e2f4f1; color:var(--accent-2); }
 .news-icon.amber{ background:#f8ecdf; color:var(--accent); }
+.news-icon.green{ background:#e6f2ea; color:var(--s-green); }
+.news-icon.plum{ background:#f1e9f7; color:var(--s-plum); }
+.news-icon.rose{ background:#f7e7ec; color:var(--s-rose); }
 @media (prefers-color-scheme: dark){
-  .news-icon.blue{ background:#1c2c3e; } .news-icon.amber{ background:#3a2c1c; }
+  .news-icon.blue{ background:#1c2c3e; } .news-icon.teal{ background:#173330; } .news-icon.amber{ background:#3a2c1c; }
+  .news-icon.green{ background:#1b3324; } .news-icon.plum{ background:#2c1f38; } .news-icon.rose{ background:#3a1f28; }
 }
 
 .empty-note{ display:flex; align-items:center; gap:12px; margin-top:6px; padding:16px 20px; border:1px dashed var(--border); border-radius:var(--radius-md); background:var(--surface-2); }
@@ -559,9 +566,14 @@ table.resource-table a.button{ padding:6px 14px; font-size:.82rem; }
 .exo-fiche-details[open] summary::before{ content:'▾ '; }
 .exo-fiche-body{ font-size:.94rem; color:var(--text); border-top:1px solid var(--border); padding-top:16px; }
 .exo-fiche-body h4{
-  font-family:var(--font-serif); font-size:1rem; font-weight:700; margin:20px 0 8px; color:var(--text);
+  font-family:var(--font-serif); font-size:1rem; font-weight:700; margin:32px 0 14px; color:var(--accent);
 }
 .exo-fiche-body h4:first-child{ margin-top:0; }
+.exo-fiche-body h5{
+  font-family:var(--font-sans, inherit); font-size:.78rem; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase; margin:22px 0 10px; color:var(--accent-2);
+}
+.exo-fiche-body h4 + h5{ margin-top:10px; }
 .exo-fiche-body p{ margin:0 0 10px; line-height:1.55; }
 .exo-fiche-body ul{ margin:0 0 12px 20px; padding:0; }
 .exo-fiche-body li{ margin-bottom:5px; line-height:1.5; }
@@ -583,6 +595,26 @@ table.resource-table a.button{ padding:6px 14px; font-size:.82rem; }
 .exo-fiche-fig-caption{
   margin:8px 0 0; font-size:.8rem; color:var(--text-muted); font-style:italic;
 }
+
+/* ---------- Fiche de revision : mini sommaire (table des matieres) ---------- */
+.exo-fiche-toc{
+  border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2);
+  padding:12px 16px 14px; margin:0 0 18px;
+}
+.exo-fiche-toc-title{
+  margin:0 0 6px; font-size:.72rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-muted);
+}
+.exo-fiche-toc ol{ margin:0; padding-left:1.15em; list-style:decimal; }
+.exo-fiche-toc > ol{ list-style:none; padding-left:0; }
+.exo-fiche-toc li{ margin:3px 0; line-height:1.4; }
+.exo-fiche-toc a{ color:var(--text); text-decoration:none; font-size:.88rem; }
+.exo-fiche-toc a:hover{ color:var(--accent); text-decoration:underline; }
+.exo-fiche-toc ol.exo-fiche-toc-sub{
+  list-style:none; margin:2px 0 4px; padding-left:1.2em;
+}
+.exo-fiche-toc ol.exo-fiche-toc-sub a{ font-size:.82rem; color:var(--text-muted); }
+.exo-fiche-body h4[id], .exo-fiche-body h5[id]{ scroll-margin-top:16px; }
 
 /* ---------- Exercices interactifs : problemes de synthese (plusieurs questions liees) ---------- */
 .exo-problem{

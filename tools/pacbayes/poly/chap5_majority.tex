@@ -1,0 +1,567 @@
+%% ======================================================================
+\section{From the Gibbs classifier to the majority vote}
+\label{chap:mv}
+%% ======================================================================
+
+\begin{objectives}
+\guiding{Why is the vote better than its voters, and how can we certify the vote
+itself rather than a voter drawn at random?}
+The bounds of \cref{chap:bounds} concern the Gibbs classifier, whose risk is the
+risk of an average voter. Ensemble methods, however, predict with the majority
+vote, whose whole point is to be better than the average voter. This section
+relates the two. We show that the risk of the vote is a tail probability of the
+proportion of erring voters, and we control this tail with moments, which leads
+to the first-order bound, the tandem bound and the C-bound. We compare them with
+Condorcet's jury theorem and on random forests, prove which one is the tightest
+in which regime, and show how PAC-Bayes estimates each of them from data.
+\end{objectives}
+
+Throughout this section, the voters take values in $\{-1,+1\}$ and we use the
+0-1 loss.
+
+\subsection{Two random variables that describe the vote}
+
+To compare the vote with its voters, we need a common language. A single
+random variable will do: on each example, the proportion of voters that err.
+For an example $(x,y)$, let
+\begin{align*}
+W_Q(x,y)&=\Esp{h\sim Q}{\ind{h(x)\neq y}}\in[0,1],\\
+M_Q(x,y)&=y\,\Esp{h\sim Q}{h(x)}=1-2W_Q(x,y)\in[-1,1].
+\end{align*}
+The variable $W_Q$ is the $Q$-weight of the voters that make a mistake on
+$(x,y)$, and $M_Q$ is the \emph{margin} of the vote, already met in
+\cref{chap:intro} for AdaBoost. The vote errs exactly when at least half of the
+weight is on the wrong side, so that, with our convention for ties,
+\begin{equation}\label{eq:mv_risk_W}
+\RD(\BQ)=\P_{(x,y)\sim\D}\big(M_Q(x,y)\leq0\big)=\P_{(x,y)\sim\D}\Big(W_Q(x,y)\geq\tfrac12\Big),
+\end{equation}
+whereas the Gibbs risk is its expectation, $\RD(\GQ)=\E_{\D}W_Q$. In other words,
+the risk of the majority vote is a \emph{tail probability} of the random
+variable $W_Q$, and the Gibbs risk is its \emph{first moment}. All the bounds of
+this section control this tail with moments of $W_Q$, exactly as Markov's,
+Chebyshev's and Cantelli's inequalities control the tail of a random variable
+with its first two moments.
+
+\Cref{fig:wq} shows the distribution of $W_Q$ for a random forest of $200$ trees
+on the \texttt{digits} dataset (digits $0$--$4$ against $5$--$9$). This forest is
+larger than the one of our running example and is evaluated on a different
+split, hence the slightly different values. Most test points
+are classified correctly by a large majority of trees, so that the histogram is
+concentrated near zero; its mean, the Gibbs risk, is $0.164$. Only the points in
+the red area, where at least half of the trees err, are misclassified by the
+vote, and they represent $3.5\%$ of the test sample. The vote is thus almost
+five times more accurate than an average tree, and a good bound on the vote must
+be able to see this. Let us check how far each moment inequality can go,
+starting with the crudest one.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{wq_distribution}
+\caption{Random forest of 200 trees on \texttt{digits} (classes $0$--$4$ vs
+$5$--$9$). Left: histogram of $W_Q$ on the test set; the Gibbs risk is the mean
+of this distribution ($0.164$), while the majority vote only errs when
+$W_Q\geq1/2$ (red area, $3.5\%$ of the points). Right: distribution of the
+margins $M_Q=1-2W_Q$.}
+\label{fig:wq}
+\end{figure}
+
+\subsection{The first-order bound}
+
+Since we already know how to bound the Gibbs risk, the first moment of $W_Q$,
+the simplest idea is to turn it into a bound on the tail with Markov's
+inequality.
+
+\begin{proposition}{First-order bound (folklore, e.g.\ \citealp{langford2002pac})}{fo}
+For any $Q\in\M(\Hcal)$, $\RD(\BQ)\leq2\,\RD(\GQ)$.
+\end{proposition}
+\begin{proof}
+By \eqref{eq:mv_risk_W} and Markov's inequality,
+$\RD(\BQ)=\P(W_Q\geq\frac12)\leq\frac{\E W_Q}{1/2}=2\RD(\GQ)$.
+\end{proof}
+
+In words, the vote is never worse than twice an average voter: whatever the
+ensemble, voting cannot go badly wrong. Combined with Seeger's bound, the
+first-order bound gives a first PAC-Bayesian
+certificate for the majority vote: with probability at least $1-\delta$ over
+$S\sim\D^m$, for all $Q$,
+\begin{equation}\label{eq:fo_pb}
+\RD(\BQ)\leq2\,\klup\Big(\RS(\GQ),\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{m}\Big).
+\end{equation}
+The factor $2$ cannot be improved in general: if $W_Q$ only takes the values
+$0$ and $\frac12$, the vote errs on every example where $W_Q=\frac12$ and the
+inequality is an equality. But this worst case is precisely the one where voting
+is useless, and the first-order bound completely ignores the benefit of the
+vote. On the forest of \cref{fig:wq}, it gives $0.327$, twice the risk of an
+average tree, for a vote whose risk is ten times smaller ($0.035$). Worse, as
+we will see in \cref{sec:algo_fo}, \emph{minimizing} this bound pushes $Q$
+towards the few best voters and destroys the diversity of the ensemble. To do
+better, we must understand where the benefit of voting comes from.
+
+\subsection{Condorcet's jury theorem}
+
+To understand what a good bound on the vote should capture, consider the
+most favourable situation, known since Condorcet (1785): the voters err
+\emph{independently}.
+
+\begin{example}[Condorcet's jury theorem]
+Let $Q$ be uniform over $n=2k+1$ voters that err independently, each with
+probability $p<1/2$. Then $nW_Q\sim\mathrm{Bin}(n,p)$, the Gibbs risk is $p$ and
+$\RD(\BQ)=\P(\mathrm{Bin}(n,p)\geq k+1)$, which tends to $0$ exponentially fast
+when $n\to\infty$. With $n=3$ and $p=0.3$, $\RD(\BQ)=3p^2(1-p)+p^3=0.216$; with
+$n=25$, it is already $0.017$, and with $n=101$ it is about $10^{-5}$.
+\end{example}
+
+The left panel of \cref{fig:condorcet} plots this risk together with the bounds
+of this section. The first-order bound stays at $2p=0.6$ whatever the number of
+voters. The tandem bound, introduced below, improves on it but converges to
+$4p^2=0.36$. Only the C-bound follows the risk of the vote down to zero, at the
+rate $1/n$.
+
+Independence is of course unrealistic. In the right panel, the $25$
+voters copy the errors of a common ``leader'' with probability $c$ and err
+independently otherwise, so that $c$ measures the correlation of their errors.
+When $c$ increases, the vote loses its advantage, its risk goes from $0.018$ to
+$0.30$, and all the bounds deteriorate; for strongly correlated voters, the
+first-order bound becomes the best of the three. The rest of this section
+explains these observations.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{condorcet}
+\caption{Risk of the majority vote and oracle bounds for voters of individual
+error $p=0.3$. Left: independent errors, as a function of the number of voters.
+Right: $25$ voters whose errors are correlated (each voter copies the errors of
+a common leader with probability $c$); $20\,000$ simulated examples.}
+\label{fig:condorcet}
+\end{figure}
+
+\subsection{Second-order quantities: joint error and disagreement}
+
+Condorcet's example contains the key idea: what makes a vote good is not only
+the quality of each voter, but the fact that the voters do not all make their
+mistakes on the same examples. A single voter cannot tell us this; we need to
+look at \emph{pairs} of voters $(h,h')\sim Q^2=Q\otimes Q$ drawn independently
+from the posterior.
+
+\begin{definition}{Joint error and disagreement}{joint}
+The \textbf{joint error} (or \emph{tandem loss}) and the \textbf{disagreement} of $Q$ are
+\begin{align*}
+\eD(Q)&=\Esp{(h,h')\sim Q^2}{\P_{(x,y)\sim\D}\big(h(x)\neq y\ \wedge\ h'(x)\neq y\big)}=\E_\D\big[W_Q^2\big],\\
+\dD(Q)&=\Esp{(h,h')\sim Q^2}{\P_{x\sim\D_\X}\big(h(x)\neq h'(x)\big)}=\E_\D\big[2W_Q(1-W_Q)\big],
+\end{align*}
+and their empirical counterparts $\eS(Q)$, $\dS(Q)$ are defined on $S$.
+\end{definition}
+
+The expressions in terms of $W_Q$ follow from Fubini's theorem: for a fixed
+example $(x,y)$, two independent draws $h,h'\sim Q$ both err with probability
+$W_Q^2$, and exactly one of them errs with probability $2W_Q(1-W_Q)$, which,
+for binary voters, is exactly the probability that they disagree. The joint
+error is therefore the second moment of $W_Q$, and the Gibbs risk, the joint
+error and the disagreement are linked by a simple identity.
+
+\begin{proposition}{Decomposition of the Gibbs risk}{decomp}
+For any $Q$,
+\[
+\RD(\GQ)=\eD(Q)+\tfrac12\dD(Q),\qquad\text{and}\qquad
+0\leq\dD(Q)\leq2\RD(\GQ)\big(1-\RD(\GQ)\big).
+\]
+\end{proposition}
+\begin{proof}
+Pointwise, $W_Q=W_Q^2+\frac12\cdot2W_Q(1-W_Q)$; take expectations. For the
+inequality, $\eD(Q)=\E W_Q^2\geq(\E W_Q)^2=\RD(\GQ)^2$ by Jensen's inequality, hence
+$\dD(Q)=2(\RD(\GQ)-\eD(Q))\leq2\RD(\GQ)(1-\RD(\GQ))$.
+\end{proof}
+
+This decomposition says that, for a fixed Gibbs risk, a larger disagreement
+means a smaller joint error: the voters make their mistakes on \emph{different}
+examples, which is exactly what makes a vote effective. On the forest of
+\cref{fig:wq}, the disagreement is $0.236$ and the joint error is only
+$0.0457$. Note also that the disagreement does not depend on the labels: it can
+be estimated on unlabeled data, which are often more plentiful, an observation
+exploited in semi-supervised learning and domain adaptation
+\citep{germain2020pac}. With these second-order quantities in hand, we can
+revisit Markov's inequality.
+
+\subsection{The tandem bound}
+
+The first-order bound was loose because it only used the mean of $W_Q$.
+Applying Markov's inequality to $W_Q^2$ instead of $W_Q$ gives a bound based on
+the second moment, which sees the joint errors.
+
+\begin{theorem}{Tandem (second-order) bound \citep{masegosa2020second}}{tnd}
+For any $Q\in\M(\Hcal)$, $\RD(\BQ)\leq4\,\eD(Q)$.
+\end{theorem}
+\begin{proof}
+By Markov's inequality applied to the non-negative variable $W_Q^2$,
+$\P(W_Q\geq\frac12)=\P(W_Q^2\geq\frac14)\leq4\E W_Q^2=4\eD(Q)$.
+\end{proof}
+
+In words, wherever the vote errs, at least half of the weight is on the wrong
+side, so two voters drawn independently from $Q$ both err there with probability
+at least $\frac14$; the frequency of such joint errors therefore controls the
+risk of the vote. On the forest of
+\cref{fig:wq}, the tandem bound is $4\times0.0457=0.183$, almost twice smaller
+than the first-order bound. By Proposition~\ref{prop:decomp},
+$4\eD(Q)=2\RD(\GQ)-2\big(\dD(Q)-\RD(\GQ)\big)$, so the tandem bound improves on
+the first-order bound exactly when $\dD(Q)\geq\RD(\GQ)$, that is when the
+ensemble is diverse enough. In the worst case of identical voters, $\dD(Q)=0$ and
+the tandem bound is twice the first-order bound.
+
+To turn the tandem bound into a certificate, note that the joint error is the
+Gibbs risk of the \emph{pair voter} $(h,h')\mapsto$ ``both err'' under the
+posterior $Q^2$ on $\Hcal^2$. Applying Seeger's bound on $\Hcal^2$ with prior
+$P^2$, and using $\KL(Q^2\|P^2)=2\KL(Q\|P)$, we obtain the following corollary.
+
+\begin{corollary}{PAC-Bayesian tandem bound \citep{masegosa2020second}}{tnd_pb}
+With probability at least $1-\delta$ over $S\sim\D^m$, for all $Q\in\M(\Hcal)$,
+\begin{equation}\label{eq:tnd_pb}
+\RD(\BQ)\leq4\,\klup\Big(\eS(Q),\ \frac{2\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{m}\Big).
+\end{equation}
+\end{corollary}
+
+The price of the second-order information is a doubled KL term, and a factor
+$4$ instead of $2$ in front of the kl inversion. The tandem certificate
+therefore pays off when the ensemble is diverse and the sample is large enough
+for the complexity term to be small.
+
+\subsection{The C-bound}
+
+The first-order bound uses the first moment of $W_Q$, the tandem bound its
+second moment. Using both at once should do better, and this is what the
+C-bound achieves through the Chebyshev--Cantelli inequality
+(Lemma~\ref{lem:cantelli}).
+
+\begin{theorem}{C-bound \citep{lacasse2007pac,germain2015risk}}{cbound}
+For any $Q$ such that $\RD(\GQ)<\frac12$ (equivalently $\E_\D M_Q>0$),
+\begin{equation}\label{eq:cbound}
+\RD(\BQ)\leq\mathcal C_Q:=1-\frac{\big(\E_\D M_Q\big)^2}{\E_\D M_Q^2}
+=1-\frac{\big(1-2\RD(\GQ)\big)^2}{1-2\dD(Q)}.
+\end{equation}
+\end{theorem}
+\begin{proof}
+Let $\mu=\E M_Q>0$. By Cantelli's inequality with $a=\mu$,
+$\RD(\BQ)=\P(M_Q\leq0)=\P(M_Q-\mu\leq-\mu)\leq\frac{\Var M_Q}{\Var M_Q+\mu^2}
+=\frac{\E M_Q^2-\mu^2}{\E M_Q^2}$.
+Finally, $\E M_Q=1-2\E W_Q=1-2\RD(\GQ)$ and
+$\E M_Q^2=\E(1-2W_Q)^2=1-4\E W_Q+4\E W_Q^2=1-2\dD(Q)$ by Proposition~\ref{prop:decomp}.
+\end{proof}
+
+The first expression of the C-bound has a nice interpretation: it is small when
+the margin is large on average and has a small variance, i.e.\ when the vote is
+correct with a comfortable and stable majority. The second expression, in terms
+of the Gibbs risk and the disagreement, makes the classical intuition on ensembles
+precise; \cref{fig:cbound} shows its landscape. For a fixed Gibbs risk, the
+C-bound decreases when the disagreement increases: \emph{a good vote needs
+voters that are individually better than random and that disagree}. This is
+exactly what bagging and random forests try to achieve by randomizing the
+training of the trees, and what \citet{breiman2001random} described with the
+\emph{strength} and the \emph{correlation} of the trees. On the forest of
+\cref{fig:wq}, the C-bound is $0.143$ (with the unrounded values of the Gibbs
+risk and of the disagreement), the smallest of the three bounds. Is this always
+the case? The next subsection answers precisely.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.62\linewidth]{cbound_landscape}
+\caption{Value of the C-bound as a function of the Gibbs risk and the
+disagreement, on the feasible domain $\dD\leq2R(1-R)$. For a fixed Gibbs risk,
+increasing the disagreement decreases the bound: the C-bound formalizes the
+\emph{strength--diversity} trade-off of ensemble methods \citep{breiman2001random}.}
+\label{fig:cbound}
+\end{figure}
+
+\subsection{Which bound is the tightest?}
+
+The three oracle bounds only depend on the pair $(\RD(\GQ),\dD(Q))$, since
+$4\eD(Q)=4\RD(\GQ)-2\dD(Q)$. They can therefore be compared once and for all,
+and the comparison turns out to be remarkably simple.
+
+\begin{proposition}{Comparison of the oracle bounds}{compare}
+Let $R=\RD(\GQ)<\frac12$ and $d=\dD(Q)$. Then the C-bound is never larger than
+the tandem bound, $\mathcal C_Q\leq4\eD(Q)$, and
+\[
+d\geq R\ \Longrightarrow\ \mathcal C_Q\leq4\eD(Q)\leq2R,\qquad\qquad
+d\leq R\ \Longrightarrow\ 2R\leq\mathcal C_Q\leq4\eD(Q).
+\]
+The three bounds are equal on the line $d=R$.
+\end{proposition}
+\begin{proof}
+The inequality $\mathcal C_Q\leq 4\eD(Q)$ follows from Theorem~\ref{thm:cctnd}
+below: the tandem bound is the member $\mu=0$ of a family whose minimum is the
+C-bound. We have seen that $4\eD(Q)\leq2R$ if and only if $d\geq R$. For the
+C-bound, since $1-2R>0$ and $1-2d>0$,
+\[
+\mathcal C_Q\leq2R\iff\frac{(1-2R)^2}{1-2d}\geq1-2R\iff1-2R\geq1-2d\iff d\geq R.
+\]
+On the line $d=R$, all three expressions equal $2R$.
+\end{proof}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.58\linewidth]{bound_regions}
+\caption{The smallest of the three oracle bounds in the plane (Gibbs risk,
+disagreement). Above the line $d_Q=R(G_Q)$, the C-bound is the smallest; below,
+the first-order bound is. The tandem bound is never strictly the smallest.}
+\label{fig:bound_regions}
+\end{figure}
+
+In plain words: when two random voters disagree more often than an average
+voter errs, the C-bound is the best of the three; otherwise, the simple
+first-order bound wins. \Cref{fig:bound_regions} draws the two regions.
+
+The proposition explains the observations made on Condorcet's example:
+independent voters have a large
+disagreement, $d=2p(1-p)(1-1/n)$, which exceeds $p$ as soon as $n\geq5$ when
+$p=0.3$, so that the C-bound is the best; strongly correlated voters rarely
+disagree, and the first-order bound becomes the best. The proposition also shows
+that, as \emph{oracle} quantities, the C-bound dominates the tandem bound. The
+situation changes once the bounds have to be \emph{estimated} from data: the tandem
+bound needs a single kl inversion on one quantity, while the C-bound needs two,
+and the ratio in its definition amplifies the estimation errors. In practice
+the two certificates are often close, as we will see in \cref{chap:algos}.
+
+\paragraph{PAC-Bayesian C-bound.} Let us see how the C-bound is estimated.
+Since $\mathcal C_Q$ is increasing in
+$\RD(\GQ)$ on $[0,\frac12)$ and decreasing in $\dD(Q)$, an upper bound on
+the first and a lower bound on the second give an upper bound on $\mathcal C_Q$.
+With a union bound (confidence $\delta/2$ for each), with probability at least
+$1-\delta$, for all $Q$,
+\begin{equation}\label{eq:cbound_pb}
+\RD(\BQ)\leq1-\frac{\big(1-2\,\overline r\big)^2}{1-2\,\underline d},\qquad\text{with}
+\end{equation}
+\[
+\overline r=\klup\Big(\RS(\GQ),\tfrac{\KL(Q\|P)+\ln\frac{4\sqrt m}{\delta}}{m}\Big),\qquad
+\underline d=\kllow\Big(\dS(Q),\tfrac{2\KL(Q\|P)+\ln\frac{4\sqrt {m'}}{\delta}}{m'}\Big),
+\]
+provided $\overline r<\frac12$, where $m'$ is the number of (possibly unlabeled)
+examples used to estimate the disagreement. \citet{lacasse2007pac} and
+\citet{germain2015risk} give tighter versions that bound the pair
+$(\RD(\GQ),\dD(Q))$ jointly, and \citet{viallard2021self} derive C-bounds that
+can be minimized directly by gradient descent.
+
+\subsection{A unifying view: the Chebyshev--Cantelli family}\label{sec:cctnd}
+
+We have met three bounds, each obtained from $\P(W_Q\geq\frac12)$ with a
+moment inequality. Are they really different objects? \citet{wu2021chebyshev}
+noticed that the last two belong to a single parametric family.
+
+\begin{theorem}{Parametric second-order bound \citep{wu2021chebyshev}}{cctnd}
+For any $Q$ and any $\mu<\frac12$,
+\begin{equation}\label{eq:cctnd}
+\RD(\BQ)\leq\frac{\E_\D\big[(W_Q-\mu)^2\big]}{\big(\frac12-\mu\big)^2}
+=\frac{\eD(Q)-2\mu\RD(\GQ)+\mu^2}{\big(\frac12-\mu\big)^2}.
+\end{equation}
+For $\mu=0$ it is the tandem bound, and, when $\RD(\GQ)<\frac12$, its minimum over
+$\mu<\frac12$ is reached at $\mu^\star=\frac{\RD(\GQ)/2-\eD(Q)}{1/2-\RD(\GQ)}$ and
+equals the C-bound $\mathcal C_Q$.
+\end{theorem}
+\begin{proof}
+For $\mu<\frac12$, $\{W_Q\geq\frac12\}\subseteq\{(W_Q-\mu)^2\geq(\frac12-\mu)^2\}$;
+apply Markov's inequality. The minimization over $\mu$ is left as an exercise
+(TD, Exercise~8); it reproduces the classical proof of Cantelli's inequality.
+\end{proof}
+
+In words, instead of measuring how far $W_Q$ is from $0$, as the tandem bound
+does, we measure how far it is from a well-chosen centre $\mu$; the best centre
+gives back the C-bound. \Cref{fig:cctnd} draws this family on a random forest of $100$ trees trained on
+a simulated problem, for which the Gibbs risk is $0.247$, the disagreement
+$0.314$ and the joint error $0.090$. The curve starts from the tandem bound
+$0.359$ at $\mu=0$, decreases to the C-bound $0.310$ at $\mu^\star=0.13$, and
+blows up when $\mu$ approaches $\frac12$. The vote itself has a risk of $0.083$:
+even the best member of the family is loose, which is the price of using only
+two moments of $W_Q$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.66\linewidth]{cctnd}
+\caption{The Chebyshev--Cantelli family \eqref{eq:cctnd} as a function of $\mu$,
+for a random forest of $100$ trees on a simulated problem (oracle values
+computed on the test sample).}
+\label{fig:cctnd}
+\end{figure}
+
+If the minimum is the C-bound, why keep the whole family? The interest of the
+parametric form is statistical. The quantity
+$\E(W_Q-\mu)^2$ has a small variance when $\mu$ is well chosen, and it can be
+estimated with a PAC-Bayes-Bennett inequality that exploits this small
+variance. The resulting \emph{CCPBB} bound was the tightest of the bounds of this
+section in the experiments of \citet{wu2021chebyshev} when enough data are
+available. Related refinements exploit the fact that the excess losses involved
+take only three values \citep[split-kl inequality,][]{wu2022split}.
+
+\subsection{Margins and boosting}\label{sec:margins}
+
+All the bounds so far summarize the margin distribution by one or two moments.
+The \emph{margin theory} of boosting \citep{schapire1998boosting}, which we met
+in \cref{fig:adaboost}, uses the whole distribution instead, and
+Equation~\eqref{eq:mv_risk_W} is the bridge between the two viewpoints. For
+any $\theta>0$, $\RD(\BQ)=\P(M_Q\leq0)\leq\P(M_Q\leq\theta)$, and the classical
+margin bound for a finite class of voters states that, with probability at least
+$1-\delta$,
+\[
+\P_\D(M_Q\leq0)\leq\P_S(M_Q\leq\theta)+O\left(\sqrt{\frac{\ln|\Hcal|\,\ln m}{m\,\theta^2}+\frac{\ln(1/\delta)}{m}}\right).
+\]
+This explains why AdaBoost may keep improving after its training error has
+reached zero: it keeps increasing the margins, and the empirical term
+$\P_S(M_Q\leq\theta)$ decreases for every $\theta$.
+
+A PAC-Bayesian proof of such
+bounds is obtained by approximating $\BQ$ by a vote of $N$ voters drawn from $Q$
+\citep{langford2002pac,mcallester2003simplified}, and \citet{biggs2022margins}
+sharpened margin bounds for voting classifiers using Dirichlet posteriors. The
+C-bound can be read as a margin bound that uses the first two moments of the
+margin distribution instead of its whole empirical distribution function.
+
+\subsection{Back to the running example}
+
+We now have all the tools to return to the two questions raised by our forest
+in \cref{chap:intro}.
+
+\begin{running}
+We can now answer the first question of \cref{chap:intro}. On the test sample,
+the trees of our forest have a Gibbs risk of $0.190$ and a disagreement of
+$0.266$: two trees drawn at random disagree on more than a quarter of the digits,
+and they both err on only $5.7\%$ of them. Since the disagreement exceeds the
+Gibbs risk, Proposition~\ref{prop:compare} tells us that the C-bound is the
+smallest oracle bound, and indeed the first-order bound is $0.381$, the tandem
+bound $0.229$ and the C-bound $0.179$, for a vote whose risk is $0.044$. The
+vote is good \emph{because the trees are diverse}: they are individually
+mediocre, but their errors are spread over different digits.
+
+The second question, certifying the vote without a test set, receives a more
+modest answer. Estimating the three quantities on the out-of-bag examples (as in
+the running example of \cref{chap:bounds}), with $\delta=0.05$, gives the
+certificates $0.460$ (first order), $0.387$ (tandem) and $0.559$ (C-bound).
+They are valid, but far from the test risk: the factor $4$ of the tandem bound
+and the doubled KL term are expensive, and the C-bound suffers from its two kl
+inversions. Improving these certificates by \emph{learning} the weights of the
+trees is the program of Part~III.
+\end{running}
+
+\subsection{Summary and illustration on random forests}
+
+To close the section, \cref{fig:mv_diversity} puts all the pieces together on
+random forests of $100$ trees, where we vary the number of features tried at each split
+(\texttt{max\_features}), the main diversity parameter of the algorithm. With a
+single feature per split, the trees are weak (Gibbs risk $0.30$) but very diverse
+(disagreement $0.38$); with all $20$ features, they are stronger (Gibbs risk
+$0.17$) but much more similar (disagreement $0.19$). The risk of the vote is
+smallest in between, around $4$ to $8$ features, where it reaches $0.077$.
+
+The first-order bound only sees the strength of the trees and decreases monotonically,
+from $0.60$ to $0.34$, missing the optimum. The tandem bound and the C-bound see
+both strength and diversity: they are minimal at $8$ features, close to the
+best vote, with values $0.29$ and $0.28$. Since the disagreement always exceeds
+the Gibbs risk in this experiment, Proposition~\ref{prop:compare} predicts the
+order C-bound $\leq$ tandem $\leq$ first order, which is what we observe.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{mv_bounds_diversity}
+\caption{Random forests of 100 trees on a simulated problem, for an increasing
+number of features tried at each split (\texttt{max\_features}). Left: oracle
+values of the bounds computed on a large test sample. Right: stronger trees
+(small Gibbs risk) are also less diverse (small disagreement). The C-bound
+and the tandem bound track the risk of the vote much better than the
+first-order bound.}
+\label{fig:mv_diversity}
+\end{figure}
+
+The following table summarizes the bounds of the section: which moment of $W_Q$
+they use, and how PAC-Bayes estimates them.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.35}
+\small
+\begin{tabular}{llll}
+\toprule
+Bound & Oracle form & Moment used & PAC-Bayesian estimation \\
+\midrule
+First order & $2\RD(\GQ)$ & $\E W_Q$ & Seeger on $\RS(\GQ)$, $\KL$ \\
+Tandem & $4\eD(Q)$ & $\E W_Q^2$ & Seeger on $\eS(Q)$, $2\KL$ \\
+C-bound & $1-\frac{(1-2\RD(\GQ))^2}{1-2\dD(Q)}$ & $\E W_Q$, $\E W_Q^2$ & two kl inversions \\
+Chebyshev--Cantelli & $\frac{\eD-2\mu\RD(\GQ)+\mu^2}{(1/2-\mu)^2}$ & $\E(W_Q-\mu)^2$ & PAC-Bayes-Bennett \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{keypoints}
+The risk of a vote is the tail probability $\P(W_Q\geq\frac12)$ of the
+proportion of erring voters, whereas the Gibbs risk is its mean. The average
+quality of the voters is not enough to control this tail: one also needs to
+know how their errors are correlated, which is measured by the disagreement,
+through the identity $\RD(\GQ)=\eD(Q)+\frac12\dD(Q)$. The first-order bound
+$2\RD(\GQ)$ ignores the correlations, the tandem bound $4\eD(Q)$ and the C-bound
+take them into account, and the C-bound, which is the minimum of the
+Chebyshev--Cantelli family, is the smallest as soon as $\dD(Q)\geq\RD(\GQ)$.
+PAC-Bayes estimates the second-order quantities on pairs of voters, with a
+doubled KL term.
+\end{keypoints}
+
+\begin{quickchecks}
+\item Express the risk of the vote and the Gibbs risk in terms of the random variable $W_Q$.
+\item Why does the first-order bound ignore the benefit of voting?
+\item Which quantity of the ensemble can be estimated without labels?
+\item In which regime is the first-order bound smaller than the C-bound?
+\end{quickchecks}
+
+\begin{exercises}
+\begin{exercise}
+Give an example of three voters and a distribution on three points for which
+$\RD(\BQ)=0$ while $\RD(\GQ)=\frac13$. Compute the three oracle bounds.
+\end{exercise}
+\begin{exercise}
+Show that the C-bound is always smaller than $1$ when $\RD(\GQ)<\frac12$, and that it
+equals $4\RD(\GQ)(1-\RD(\GQ))$ when $\dD(Q)=0$. Compare with the first-order bound.
+\end{exercise}
+\begin{exercise}
+$(\star)$ Prove that the minimum over $\mu$ of the Chebyshev--Cantelli family equals the C-bound
+(TD, Exercise~8).
+\end{exercise}
+\begin{exercise}
+In Condorcet's model with $n$ independent voters of error $p$, compute $\eD(Q)$
+and $\dD(Q)$, and show that the C-bound decreases like $1/n$ while the tandem
+bound tends to $4p^2$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} True or false? Justify briefly. (a)~If $\RD(\GQ)<\frac12$, then
+$\RD(\BQ)<\frac12$. (b)~If $\dD(Q)=0$, all the voters in the support of $Q$ make the same
+predictions on almost every $x$. (c)~Estimating the joint error $\eD(Q)$ requires labels,
+but estimating the disagreement $\dD(Q)$ does not. (d)~For a fixed Gibbs risk, the
+tandem bound decreases when the disagreement increases.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} Three voters are evaluated on five equally likely examples
+$z_1,\dots,z_5$. Voter $h_1$ errs only on $z_1$, $h_2$ errs on $z_2$ and $z_4$, and $h_3$ errs
+on $z_2$ and $z_3$; the posterior is $Q=(0.4,0.35,0.25)$. Compute $W_Q(z_j)$ and $M_Q(z_j)$
+for each example, the risk of the vote, the Gibbs risk, $\eD(Q)$ and $\dD(Q)$ (check the
+identity of Proposition~\ref{prop:decomp}), and the three oracle bounds. Which one is the
+smallest, and is this consistent with Proposition~\ref{prop:compare}?
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} In Condorcet's model with $n=5$ independent voters of error $p=0.3$,
+compute the exact risk of the vote, $\eD(Q)$, $\dD(Q)$ and the three oracle bounds. Check
+the regime predicted by Proposition~\ref{prop:compare}.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} A posterior with $\KL(Q\|P)=1$ has an empirical Gibbs risk $0.15$ on
+$m=1000$ labelled examples and an empirical disagreement $0.25$ on $m'=1000$ examples.
+With $\delta=0.05$, compute $\overline r$, $\underline d$ and the PAC-Bayesian C-bound
+\eqref{eq:cbound_pb}, the first-order certificate \eqref{eq:fo_pb} and the tandem
+certificate \eqref{eq:tnd_pb} (the empirical joint error follows from
+Proposition~\ref{prop:decomp}, assuming the disagreement was measured on the same
+$1000$ labelled examples). Compare with the value of the C-bound computed at the empirical
+values. What changes if $m'=10\,000$ unlabeled examples are available?
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} For voters with values in $\{-1,+1\}$ and a fixed example $(x,y)$, show that
+$\P_{(h,h')\sim Q^2}\big(h(x)\neq h'(x)\big)=2W_Q(x,y)\big(1-W_Q(x,y)\big)$. Deduce that
+$\E_\D M_Q^2=1-2\dD(Q)$ and $\RD(\GQ)=\eD(Q)+\frac12\dD(Q)$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} In Condorcet's model with $n=2k+1$ independent voters of error $p<\frac12$,
+use Hoeffding's inequality (Lemma~\ref{lem:hoeffding}) to show that
+$\RD(\BQ)\leq e^{-2n(1/2-p)^2}$. Evaluate this bound for $p=0.3$ and $n\in\{5,25,101\}$, and compare
+it with the exact risks and with the C-bound.
+\end{exercise}
+\end{exercises}

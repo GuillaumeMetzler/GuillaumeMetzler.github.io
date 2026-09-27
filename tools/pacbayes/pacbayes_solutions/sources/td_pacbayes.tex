@@ -1,0 +1,474 @@
+\documentclass[11pt]{article}
+\usepackage{../common/pbstyle}
+\input{../common/sheethead}
+\renewcommand{\course}{Ensemble Methods -- TD PAC-Bayes}
+%% \soltrue is set by the solution wrapper (td_pacbayes_solutions.tex)
+\providecommand{\ifsol}{\iffalse}
+\usepackage{comment}
+\ifsol
+\newtcolorbox{solution}{enhanced,breakable,colback=pbteal!4,colframe=pbteal,boxrule=0.4pt,sharp corners,title={Solution},fonttitle=\bfseries\small,colbacktitle=pbteal!15,coltitle=black}
+\else
+\excludecomment{solution}
+\fi
+\newcounter{exo}
+\usepackage{needspace}
+\newenvironment{exo}[1]{\Needspace{8\baselineskip}\refstepcounter{exo}\medskip\noindent{\large\bfseries\color{pbblue}Exercise \theexo\ -- #1}\par\smallskip}{\par}
+
+\begin{document}
+\sloppy
+\sheethead{TD -- PAC-Bayesian Learning\ifsol\ -- Solutions\fi}{This tutorial accompanies Sections~2--7 of the lecture notes
+\emph{PAC-Bayesian Learning: a Theoretical Framework for Ensemble Methods}. The exercises are
+of increasing difficulty; those marked $(\star)$ are at Master level. Notation: $S\sim\D^m$,
+voters $h:\X\to\{-1,+1\}$, posterior $Q$, prior $P$, Gibbs classifier $\GQ$, majority vote $\BQ$,
+$W_Q(x,y)=\E_{h\sim Q}\ind{h(x)\neq y}$, joint error $e_Q=\E W_Q^2$, disagreement $d_Q$.}
+
+%% =====================================================================
+\begin{exo}{The Kullback--Leibler divergence}\label{exo:kl}
+Let $\Hcal=\{h_1,\dots,h_n\}$ be finite and $P,Q$ two distributions on $\Hcal$ with $P_i>0$.
+\begin{enumerate}
+\item Using Jensen's inequality, show that $\KL(Q\|P)\geq0$, with equality iff $Q=P$.
+\item Assume $P$ uniform. Show that $\KL(Q\|P)=\ln n-H(Q)$ where $H(Q)=-\sum_iQ_i\ln Q_i$. What are the
+      minimal and maximal values of $\KL(Q\|P)$? Compute it when $Q$ is uniform over $k\leq n$ voters.
+\item Show that $\KL(Q\otimes Q\,\|\,P\otimes P)=2\KL(Q\|P)$.
+\item Show that $\KL\big(\mathcal N(\mu_1,\sigma^2I_d)\,\|\,\mathcal N(\mu_0,\sigma^2I_d)\big)=\frac{\|\mu_1-\mu_0\|^2}{2\sigma^2}$.
+\item $(\star)$ Binary kl. Fix $q\in[0,1]$. Show that $p\mapsto\kl(q\|p)$ is convex on $(0,1)$, minimal at $p=q$, and
+      prove Pinsker's inequality $\kl(q\|p)\geq2(q-p)^2$ by studying $g(p)=\kl(q\|p)-2(q-p)^2$.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item \emph{Idea: $-\KL$ is the expectation of a logarithm, and $\ln$ is concave.} Let $I=\{i:Q_i>0\}$ be the
+      support of $Q$. By definition, $-\KL(Q\|P)=\sum_{i\in I}Q_i\ln\frac{P_i}{Q_i}$. Since the $Q_i$, $i\in I$, are
+      weights summing to one and $\ln$ is concave, Jensen's inequality gives
+      \[-\KL(Q\|P)\leq\ln\Big(\sum_{i\in I}Q_i\frac{P_i}{Q_i}\Big)=\ln\Big(\sum_{i\in I}P_i\Big)\leq\ln1=0.\]
+      \emph{Equality case.} Jensen's inequality for a strictly concave function is an equality iff the variable is
+      constant: $P_i/Q_i=c$ for all $i\in I$. The second inequality is an equality iff $\sum_{i\in I}P_i=1$, i.e.\
+      $I=\Hcal$ (since all $P_i>0$). Then $c=\sum_iP_i/\sum_iQ_i=1$ and $Q=P$. Conversely $\KL(P\|P)=0$.
+\item With $P_i=\frac1n$: $\KL(Q\|P)=\sum_iQ_i\ln(nQ_i)=\ln n\sum_iQ_i+\sum_iQ_i\ln Q_i=\ln n-H(Q)$.
+      The entropy satisfies $H(Q)\geq0$ (each term $-Q_i\ln Q_i\geq0$), with equality for a Dirac, and
+      $H(Q)\leq\ln n$ (this is question~1 applied to $\KL(Q\|\text{uniform})\geq0$), with equality for the uniform
+      distribution. Hence $0\leq\KL(Q\|P)\leq\ln n$: the KL is $0$ when the posterior is the prior and $\ln n$ when it
+      selects a single voter (the Occam price). For $Q$ uniform on $k$ voters, $H(Q)=k\cdot\frac1k\ln k=\ln k$ and
+      $\KL=\ln\frac nk$: selecting a tenth of the voters costs $\ln10\approx2.3$ nats, whatever $n$.
+\item Write $(Q\otimes Q)_{ij}=Q_iQ_j$. Then $\ln\frac{Q_iQ_j}{P_iP_j}=\ln\frac{Q_i}{P_i}+\ln\frac{Q_j}{P_j}$, so
+      \begin{align*}\KL(Q^2\|P^2)&=\sum_{i,j}Q_iQ_j\ln\frac{Q_i}{P_i}+\sum_{i,j}Q_iQ_j\ln\frac{Q_j}{P_j}\\
+      &=\sum_iQ_i\ln\frac{Q_i}{P_i}+\sum_jQ_j\ln\frac{Q_j}{P_j}=2\KL(Q\|P),\end{align*}
+      using $\sum_jQ_j=1$ in the first sum and $\sum_iQ_i=1$ in the second. This is why second-order bounds
+      (tandem, disagreement) pay a doubled KL.
+\item The two densities have the same normalizing constant, so the log-ratio is
+      $\ln\frac{q(\theta)}{p(\theta)}=\frac{\|\theta-\mu_0\|^2-\|\theta-\mu_1\|^2}{2\sigma^2}$. Write
+      $\theta=\mu_1+\sigma\varepsilon$ with $\varepsilon\sim\mathcal N(0,I_d)$ under $Q$. Then
+      $\|\theta-\mu_1\|^2=\sigma^2\|\varepsilon\|^2$ and
+      $\|\theta-\mu_0\|^2=\|\mu_1-\mu_0\|^2+2\sigma\langle\varepsilon,\mu_1-\mu_0\rangle+\sigma^2\|\varepsilon\|^2$. The
+      terms in $\|\varepsilon\|^2$ cancel, and $\E\langle\varepsilon,\mu_1-\mu_0\rangle=0$, so
+      $\KL=\E_Q\ln\frac qp=\frac{\|\mu_1-\mu_0\|^2}{2\sigma^2}$. Moving the centre of a Gaussian posterior costs the
+      squared distance travelled, measured in units of the variance.
+\item For $p\in(0,1)$, $\partial_p\kl(q\|p)=-\frac qp+\frac{1-q}{1-p}=\frac{-q(1-p)+p(1-q)}{p(1-p)}=\frac{p-q}{p(1-p)}$,
+      which is negative for $p<q$ and positive for $p>q$: the function decreases then increases, and is minimal at
+      $p=q$ where it vanishes. Moreover $\partial_p^2\kl(q\|p)=\frac q{p^2}+\frac{1-q}{(1-p)^2}>0$ (unless $q\in\{0,1\}$,
+      where it is still $\geq0$): the function is convex.
+      \emph{Pinsker.} Let $g(p)=\kl(q\|p)-2(q-p)^2$. Then $g(q)=0$ and
+      \[g'(p)=\frac{p-q}{p(1-p)}-4(p-q)=(p-q)\Big(\frac{1}{p(1-p)}-4\Big).\]
+      Since $p(1-p)\leq\frac14$, the bracket is non-negative, so $g'$ has the sign of $p-q$: $g$ decreases on $(0,q)$,
+      increases on $(q,1)$, and its minimum is $g(q)=0$. Hence $\kl(q\|p)\geq2(q-p)^2$. The inequality is tight
+      when $p(1-p)\approx\frac14$, i.e.\ around $p=\frac12$, which is why the kl and Hoeffding bounds coincide there.
+\end{enumerate}
+\end{solution}
+
+%% =====================================================================
+\begin{exo}{Change of measure and Gibbs posterior}\label{exo:dv}
+Let $\phi:\Hcal\to\R$ and $P$ a distribution on a finite set $\Hcal$. Define $Q_\phi(h)=\frac{P(h)e^{\phi(h)}}{\E_{P}e^{\phi}}$.
+\begin{enumerate}
+\item Show that for any $Q$, $\KL(Q\|Q_\phi)=\KL(Q\|P)-\E_Q\phi+\ln\E_Pe^\phi$.
+\item Deduce the change of measure inequality $\E_Q\phi\leq\KL(Q\|P)+\ln\E_Pe^\phi$ and the variational formula
+      $\ln\E_Pe^{\phi}=\max_Q\{\E_Q\phi-\KL(Q\|P)\}$.
+\item Let $\lambda>0$. Show that the minimizer of $Q\mapsto\RS(\GQ)+\frac{1}{\lambda m}\KL(Q\|P)$ is the Gibbs posterior
+      $Q_\lambda(h)\propto P(h)e^{-\lambda m\RS(h)}$, and give the minimal value.
+\item Describe $Q_\lambda$ when $\lambda\to0$ and $\lambda\to+\infty$. Interpret $\lambda$.
+\item Recover $Q_\lambda$ directly with a Lagrange multiplier for the constraint $\sum_hQ(h)=1$.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item By definition of $Q_\phi$, $\ln\frac{Q(h)}{Q_\phi(h)}=\ln\frac{Q(h)}{P(h)}-\phi(h)+\ln\E_Pe^\phi$ (the last term does
+      not depend on $h$). Taking the expectation under $Q$:
+      $\KL(Q\|Q_\phi)=\KL(Q\|P)-\E_Q\phi+\ln\E_Pe^\phi$.
+\item By Exercise~\ref{exo:kl}, $\KL(Q\|Q_\phi)\geq0$, hence $\E_Q\phi\leq\KL(Q\|P)+\ln\E_Pe^\phi$ for every $Q$: this is
+      the change of measure inequality. It is an equality iff $\KL(Q\|Q_\phi)=0$, i.e.\ iff $Q=Q_\phi$. Therefore
+      $\E_Q\phi-\KL(Q\|P)\leq\ln\E_Pe^\phi$ for all $Q$, with equality at $Q_\phi$: the maximum over $Q$ is reached
+      and equals $\ln\E_Pe^\phi$. \emph{Interpretation:} the left-hand side of the change of measure concerns a
+      posterior that may depend on the data, the right-hand side only involves the prior; the price of the
+      transfer is exactly the KL.
+\item Apply question~2 to $\phi=-\lambda m\RS$ (a function of $h$ once $S$ is fixed):
+      $-\lambda m\,\E_Q\RS-\KL(Q\|P)\leq\ln\E_Pe^{-\lambda m\RS}$, i.e., dividing by $-\lambda m<0$,
+      \[\RS(\GQ)+\frac{\KL(Q\|P)}{\lambda m}\geq-\frac1{\lambda m}\ln\E_{h\sim P}e^{-\lambda m\RS(h)},\]
+      with equality iff $Q=Q_\phi$, i.e.\ $Q(h)\propto P(h)e^{-\lambda m\RS(h)}$. The minimal value is the right-hand side,
+      a ``soft minimum'' of the empirical risks (it tends to $\min_h\RS(h)$ when $\lambda\to\infty$ on a finite class).
+\item When $\lambda\to0$, $e^{-\lambda m\RS(h)}\to1$ for every $h$ and $Q_\lambda\to P$: the data are ignored.
+      When $\lambda\to\infty$, divide numerator and denominator by $e^{-\lambda m r^\star}$ with $r^\star=\min_h\RS(h)$:
+      the weight of every $h$ with $\RS(h)>r^\star$ tends to $0$, and $Q_\lambda$ converges to $P$ restricted to the
+      empirical risk minimizers and renormalized. $\lambda$ is an inverse temperature: it sets how much a
+      difference of one training error changes the relative weights (by a factor $e^{\lambda}$).
+\item The objective $F(Q)=\sum_hQ(h)\RS(h)+\frac1{\lambda m}\sum_hQ(h)\ln\frac{Q(h)}{P(h)}$ is strictly convex
+      ($x\mapsto x\ln x$ is strictly convex). With the Lagrangian $\mathcal L(Q,\nu)=F(Q)+\nu(\sum_hQ(h)-1)$,
+      \[\frac{\partial\mathcal L}{\partial Q(h)}=\RS(h)+\frac{1}{\lambda m}\Big(\ln\frac{Q(h)}{P(h)}+1\Big)+\nu=0
+      \iff Q(h)=P(h)\,e^{-\lambda m\RS(h)}\,e^{-1-\lambda m\nu}.\]
+      The constant $e^{-1-\lambda m\nu}$ is fixed by $\sum_hQ(h)=1$, which gives the Gibbs posterior. The positivity
+      constraints are automatically satisfied, and by strict convexity this stationary point is the unique minimum.
+\end{enumerate}
+\end{solution}
+
+%% =====================================================================
+\begin{exo}{From the general theorem to classical bounds}\label{exo:bounds}
+Recall the general theorem: for convex $\Delta$, w.p.\ $\geq1-\delta$, for all $Q$,
+$\Delta(\RS(\GQ),\RD(\GQ))\leq\frac1m[\KL(Q\|P)+\ln\frac{1}{\delta}\E_{S'}\E_{h\sim P}e^{m\Delta(\widehat R_{S'}(h),\RD(h))}]$.
+\begin{enumerate}
+\item Explain precisely where each of the following is used in the proof: convexity of $\Delta$, the change of measure,
+      Markov's inequality, the independence of $P$ from $S$.
+\item \emph{(Hoeffding-type bound).} Take $\Delta(q,p)=\lambda(p-q)$ for a fixed $\lambda>0$. Using Hoeffding's lemma, show that
+      w.p.\ $\geq1-\delta$, for all $Q$: $\RD(\GQ)\leq\RS(\GQ)+\frac{\KL(Q\|P)+\ln\frac1\delta}{\lambda m}+\frac\lambda8$.
+\item Minimize the right-hand side in $\lambda$. Why is it not allowed to plug this value into the bound? Propose a
+      correct way to optimize $\lambda$ and give the resulting price.
+\item \emph{(Catoni's bound).} Let $C>0$ and $\mathcal F_C(p)=-\ln(1-p(1-e^{-C}))$. Show that for a fixed voter with risk $p$ and
+      the 0-1 loss, $\E_{S'}e^{-Cm\widehat R_{S'}(h)}=(1-p(1-e^{-C}))^m$. Deduce Catoni's bound.
+\item Numerical application: $m=1000$, $\delta=0.05$, $\RS(\GQ)=0.1$, $\KL(Q\|P)=5$. Compute McAllester's bound
+      $\RS+\sqrt{(\KL+\ln\frac{2\sqrt m}\delta)/(2m)}$ and the Hoeffding-type bound for $\lambda\in\{0.1,0.2\}$.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item The proof has three steps (Section 3.2 of the notes).
+      \emph{Convexity of $\Delta$} is used in the first step (Jensen): the risks of $\GQ$ are averages over $Q$ of the
+      risks of the voters, and $\Delta(\E_Q\RS(h),\E_Q\RD(h))\leq\E_Q\Delta(\RS(h),\RD(h))$. This reduces the problem to
+      single voters.
+      \emph{The change of measure} is the second step: $\E_Q[m\Delta]\leq\KL(Q\|P)+\ln\E_Pe^{m\Delta}$. It removes $Q$
+      from the random part of the inequality; since it holds for all $Q$ at once, so will the final bound.
+      \emph{Markov's inequality} is the third and only probabilistic step: the non-negative variable
+      $Z(S)=\E_Pe^{m\Delta(\RS(h),\RD(h))}$ satisfies $Z(S)\leq\E_{S'}Z(S')/\delta$ with probability $\geq1-\delta$.
+      \emph{Independence of $P$ and $S$} is used inside this step, to exchange $\E_{S'}$ and $\E_{h\sim P}$ (Fubini):
+      for each fixed $h$, $\widehat R_{S'}(h)$ is an average of i.i.d.\ variables, whose exponential moment can be
+      computed. If $P$ depended on $S'$, this exchange would be meaningless.
+\item Here $\Delta(q,p)=\lambda(p-q)$ is linear, hence convex. For a fixed $h$, $\widehat R_{S'}(h)=\frac1m\sum_i\ell_i$ with
+      i.i.d.\ $\ell_i\in[0,1]$ of mean $\RD(h)$, so by independence
+      \[\E_{S'}e^{m\lambda(\RD(h)-\widehat R_{S'}(h))}=\prod_{i=1}^m\E\,e^{\lambda(\RD(h)-\ell_i)}\leq\big(e^{\lambda^2/8}\big)^m,\]
+      by Hoeffding's lemma (a centred variable with range $1$ has $\E e^{sX}\leq e^{s^2/8}$). Hence
+      $\mathcal I_\Delta(m)\leq e^{m\lambda^2/8}$, and the theorem gives
+      $\lambda(\RD(\GQ)-\RS(\GQ))\leq\frac1m\big[\KL(Q\|P)+\ln\frac1\delta\big]+\frac{\lambda^2}8$. Dividing by $\lambda$ gives the result.
+\item Let $A=\frac{\KL(Q\|P)+\ln(1/\delta)}{m}$. The function $\lambda\mapsto\frac A\lambda+\frac\lambda8$ is minimal at
+      $\lambda^\star=\sqrt{8A}$, where it equals $\sqrt{A/2}$: we recover a McAllester-type bound
+      $\RS(\GQ)+\sqrt{\frac{\KL+\ln(1/\delta)}{2m}}$. \emph{Why it is forbidden:} $\lambda$ is a parameter of $\Delta$, i.e.\ of
+      the probabilistic event on which the bound holds; this event must be fixed before drawing $S$. But
+      $\lambda^\star$ depends on $\KL(Q\|P)$, hence on $Q$ and on $S$. Using it amounts to choosing, after seeing the
+      data, among infinitely many events, each of probability $\geq1-\delta$: nothing guarantees that the chosen one
+      holds. \emph{Correct way:} fix a grid $\lambda_1<\dots<\lambda_k$ in advance, apply the bound to each $\lambda_j$ with
+      confidence $\delta/k$ (union bound): with probability $\geq1-\delta$ all $k$ bounds hold, and we can take the best
+      one. The price is $\frac{\ln k}{\lambda m}$ (i.e.\ $\ln k$ added to $\ln\frac1\delta$) plus the error due to the
+      discretization; a geometric grid with ratio $2$ covering $[10^{-3},1]$ has $k=10$ points and costs $\ln10\approx2.3$ nats.
+\item For the 0-1 loss, $m\widehat R_{S'}(h)\sim\mathrm{Bin}(m,p)$ with $p=\RD(h)$, whose moment generating function is
+      $\E e^{sB}=(1-p+pe^s)^m$. At $s=-C$: $\E_{S'}e^{-Cm\widehat R_{S'}(h)}=(1-p+pe^{-C})^m=(1-p(1-e^{-C}))^m=e^{-m\mathcal F_C(p)}$.
+      Take $\Delta(q,p)=\mathcal F_C(p)-Cq$ (convex: $\mathcal F_C$ is convex, being $-\ln$ of an affine decreasing function,
+      and $-Cq$ is linear). Then $\E_{S'}e^{m\Delta(\widehat R_{S'}(h),p)}=e^{m\mathcal F_C(p)}e^{-m\mathcal F_C(p)}=1$, so
+      $\mathcal I_\Delta(m)=1$ and, with probability $\geq1-\delta$, for all $Q$:
+      $\mathcal F_C(\RD(\GQ))\leq C\RS(\GQ)+\frac{\KL(Q\|P)+\ln(1/\delta)}m$. Since $\mathcal F_C$ is increasing with inverse
+      $\mathcal F_C^{-1}(u)=\frac{1-e^{-u}}{1-e^{-C}}$, we obtain
+      $\RD(\GQ)\leq\frac{1}{1-e^{-C}}\big[1-\exp\big(-C\RS(\GQ)-\frac{\KL+\ln(1/\delta)}m\big)\big]$. (For losses in $[0,1]$
+      that are not binary, the equality becomes an inequality by convexity of $u\mapsto e^{-Cu}$.)
+\item $\ln\frac{2\sqrt{1000}}{0.05}=\ln1264.9\approx7.14$, so McAllester's bound is
+      $0.1+\sqrt{\frac{5+7.14}{2000}}=0.1+0.078=0.178$. For the Hoeffding-type bound, $\ln\frac1{0.05}\approx3.00$ and
+      $\KL+\ln\frac1\delta=8.00$. With $\lambda=0.1$: $0.1+\frac{8.00}{100}+\frac{0.1}8=0.1+0.080+0.0125=0.1925$. With
+      $\lambda=0.2$: $0.1+\frac{8.00}{200}+0.025=0.165$. The optimal value would be $\lambda^\star=\sqrt{8\times0.008}=0.253$,
+      giving $0.1+\sqrt{0.004}=0.163$. Remember that $\lambda=0.2$ is legitimate only if it was chosen before seeing the
+      data; if it was selected among $\{0.1,0.2\}$ after computing both bounds, each must be computed with $\delta/2$,
+      which gives $0.1+\frac{5+\ln40}{200}+0.025=0.1+0.0434+0.025\approx0.168$ for $\lambda=0.2$.
+\end{enumerate}
+\end{solution}
+
+%% =====================================================================
+\begin{exo}{Occam's razor as a PAC-Bayesian bound}\label{exo:occam}
+\begin{enumerate}
+\item Let $\Hcal$ be countable and $Q=\delta_{h}$ a Dirac on $h\in\Hcal$. Compute $\KL(\delta_h\|P)$. What does Seeger's bound give
+      for a single voter? Compare with the Occam bound of the lecture notes.
+\item Why can we not use Dirac posteriors when $\Hcal$ is uncountable (e.g.\ linear classifiers with a Gaussian prior)?
+\item Let $\Hcal=\{h_1,h_2,\dots\}$ be countable and $P(h_k)=\frac{6}{\pi^2k^2}$. Check that $P$ is a probability and give
+      the complexity term of $h_k$. Interpret this prior in terms of \emph{description length}.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item $\KL(\delta_h\|P)=\sum_{h'}\delta_h(h')\ln\frac{\delta_h(h')}{P(h')}=1\cdot\ln\frac1{P(h)}$. Seeger's bound with
+      $Q=\delta_h$ (for which $\RS(G_{\delta_h})=\RS(h)$) gives, simultaneously for all $h$,
+      \[\RD(h)\leq\klup\Big(\RS(h),\frac{\ln\frac1{P(h)}+\ln\frac{2\sqrt m}\delta}{m}\Big).\]
+      The Occam bound of the notes has $\ln\frac1\delta$ instead of $\ln\frac{2\sqrt m}\delta$: it is slightly tighter
+      because it only covers Dirac posteriors (a union bound over countably many events), whereas the PAC-Bayesian
+      bound covers all posteriors simultaneously. For $m=1000$ the difference is $\ln(2\sqrt{1000})\approx4.1$ nats.
+\item If $P$ has a density (e.g.\ a Gaussian on $\R^d$), then $P(\{h\})=0$ for every $h$, and $\delta_h$ is not
+      absolutely continuous with respect to $P$: $\KL(\delta_h\|P)=+\infty$ and the bound is void. One must use
+      ``spread'' posteriors, e.g.\ $\mathcal N(\mathbf w,\sigma^2I)$ around the chosen classifier; the bound then
+      certifies the Gibbs classifier around $\mathbf w$, and the margin or the majority vote relates it to $\mathbf w$
+      itself (Exercise~\ref{exo:linear}).
+\item $\sum_{k\geq1}\frac1{k^2}=\frac{\pi^2}6$, so $\sum_kP(h_k)=1$ and $P$ is a probability. The complexity of $h_k$ is
+      $\ln\frac1{P(h_k)}=2\ln k+\ln\frac{\pi^2}6\approx2\ln k+0.50$. \emph{Description length:} by Kraft's inequality, any
+      prefix code assigning $\ell(h)$ nats to $h$ defines a sub-probability $P(h)=e^{-\ell(h)}$, and conversely. The
+      prior thus encodes a way of describing hypotheses; the bound says that a hypothesis is cheap if it has a short
+      description \emph{chosen before seeing the data}. Here the index $k$ is described with about $2\ln k$ nats, so
+      hypotheses listed early are favoured: this is Occam's razor made quantitative.
+\end{enumerate}
+\end{solution}
+
+%% =====================================================================
+\begin{exo}{Bounds on the risk of the majority vote}\label{exo:mv}
+We assume voters in $\{-1,+1\}$, 0-1 loss, and count ties as errors.
+\begin{enumerate}
+\item Show that $\RD(\BQ)=\P(W_Q\geq\frac12)$ and $\RD(\GQ)=\E W_Q$. Deduce $\RD(\BQ)\leq2\RD(\GQ)$. Give an
+      example of distribution of $W_Q$ for which this inequality is an equality.
+\item Show that $e_Q=\E[W_Q^2]$, $d_Q=\E[2W_Q(1-W_Q)]$, and $\RD(\GQ)=e_Q+\frac12d_Q$. Show also that
+      $d_Q\leq2\RD(\GQ)(1-\RD(\GQ))$.
+\item Prove the tandem bound $\RD(\BQ)\leq4e_Q$. Show that it is better than the first-order bound iff $d_Q\geq\RD(\GQ)$.
+\item For $\mu<\frac12$, show that $\RD(\BQ)\leq\frac{\E(W_Q-\mu)^2}{(1/2-\mu)^2}$. Find the optimal $\mu^\star$ and show that
+      the optimal value is $\frac{\Var W_Q}{\Var W_Q+(1/2-\E W_Q)^2}$ (Cantelli's inequality).
+\item Deduce the C-bound $\RD(\BQ)\leq1-\frac{(1-2\RD(\GQ))^2}{1-2d_Q}$ (when $\RD(\GQ)<\frac12$).
+\item \emph{(Condorcet).} $Q$ is uniform over $n$ voters erring independently with probability $p$. Compute $\RD(\GQ)$,
+      $e_Q$, $d_Q$ as functions of $n$ and $p$. For $p=0.3$, compute the exact risk of the vote and the three bounds
+      for $n=3$, then the C-bound for $n=25$ and its limit when $n\to\infty$. Comment.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item For a fixed $(x,y)$, $y\,\E_Qh(x)=\E_Q[yh(x)]=\E_Q[1-2\ind{h(x)\neq y}]=1-2W_Q(x,y)$, because $yh(x)=1$ when
+      $h$ is right and $-1$ when it errs. The vote errs (ties counted as errors) iff $y\,\E_Qh(x)\leq0$, i.e.\ iff
+      $W_Q(x,y)\geq\frac12$. Taking the probability over $(x,y)\sim\D$: $\RD(\BQ)=\P(W_Q\geq\frac12)$. By Fubini,
+      $\E_\D W_Q=\E_Q\E_\D\ind{h(x)\neq y}=\E_Q\RD(h)=\RD(\GQ)$. Markov's inequality applied to $W_Q\geq0$ gives
+      $\P(W_Q\geq\frac12)\leq\frac{\E W_Q}{1/2}=2\RD(\GQ)$.
+      \emph{Equality case:} Markov is tight when $W_Q$ only takes the values $0$ and $\frac12$. Example: two voters
+      with weight $\frac12$ each, which never err at the same time, and such that on a fraction $r$ of the points
+      exactly one of them errs. Then $W_Q=\frac12$ on these points, the vote errs on them (tie), $\RD(\BQ)=r$ and
+      $\RD(\GQ)=\frac r2$.
+\item For fixed $(x,y)$, draw $h,h'\sim Q$ independently. The events ``$h$ errs'' and ``$h'$ errs'' are independent
+      with probability $W_Q$ each, so both err with probability $W_Q^2$, and exactly one errs with probability
+      $2W_Q(1-W_Q)$; for binary voters, $h$ and $h'$ disagree iff exactly one of them errs. Averaging over $\D$ (Fubini):
+      $e_Q=\E W_Q^2$ and $d_Q=\E[2W_Q(1-W_Q)]$. Pointwise $W_Q=W_Q^2+\frac12\cdot2W_Q(1-W_Q)$, hence
+      $\RD(\GQ)=e_Q+\frac12d_Q$. Finally Jensen (or $\Var W_Q\geq0$) gives $e_Q=\E W_Q^2\geq(\E W_Q)^2=\RD(\GQ)^2$,
+      so $d_Q=2(\RD(\GQ)-e_Q)\leq2\RD(\GQ)(1-\RD(\GQ))$, with equality iff $W_Q$ is almost surely constant.
+\item $\P(W_Q\geq\frac12)=\P(W_Q^2\geq\frac14)\leq\frac{\E W_Q^2}{1/4}=4e_Q$ (Markov applied to $W_Q^2$). Using question~2,
+      $4e_Q=4\RD(\GQ)-2d_Q$, so $4e_Q\leq2\RD(\GQ)\iff2\RD(\GQ)\leq2d_Q\iff d_Q\geq\RD(\GQ)$: the tandem bound improves on
+      the first-order bound exactly when the voters disagree more often than an average voter errs.
+\item For $\mu<\frac12$ and $W_Q\geq\frac12$, we have $W_Q-\mu\geq\frac12-\mu>0$, hence $(W_Q-\mu)^2\geq(\frac12-\mu)^2$: the
+      event $\{W_Q\geq\frac12\}$ is included in $\{(W_Q-\mu)^2\geq(\frac12-\mu)^2\}$ and Markov gives the bound. Write $R=\E W$,
+      $e=\E W^2$, $v=e-R^2$ and $f(\mu)=\frac{e-2\mu R+\mu^2}{(1/2-\mu)^2}$. Then
+      \[f'(\mu)=\frac{2(\mu-R)(\frac12-\mu)+2(e-2\mu R+\mu^2)}{(1/2-\mu)^3}=\frac{2\big(e-\frac R2-\mu(\frac12-R)\big)}{(1/2-\mu)^3},\]
+      which vanishes at $\mu^\star=\frac{R/2-e}{1/2-R}$ (when $R<\frac12$), is negative before and positive after: $\mu^\star$ is
+      the minimum. To compute $f(\mu^\star)$, note that $\mu^\star-R=\frac{R/2-e-R/2+R^2}{1/2-R}=\frac{-v}{1/2-R}$ and
+      $\frac12-\mu^\star=\frac{1/4-R/2-R/2+e}{1/2-R}=\frac{v+(1/2-R)^2}{1/2-R}$. The numerator is
+      $e-2\mu^\star R+\mu^{\star2}=(\mu^\star-R)^2+v=\frac{v^2}{(1/2-R)^2}+v=\frac{v\,(v+(1/2-R)^2)}{(1/2-R)^2}$, so
+      \[f(\mu^\star)=\frac{v\,(v+(1/2-R)^2)}{(1/2-R)^2}\cdot\frac{(1/2-R)^2}{(v+(1/2-R)^2)^2}=\frac{v}{v+(1/2-R)^2},\]
+      which is Cantelli's inequality for $W_Q$ with $a=\frac12-R$.
+\item With $M=1-2W_Q$ (the margin), $\Var M=4v$ and $\E M=1-2R$, so $\frac{v}{v+(1/2-R)^2}=\frac{4v}{4v+(1-2R)^2}=\frac{\Var M}{\E M^2}=1-\frac{(\E M)^2}{\E M^2}$.
+      Finally $\E M=1-2\RD(\GQ)$ and $\E M^2=1-4\E W+4\E W^2=1-4\RD(\GQ)+4e_Q=1-2d_Q$ (question~2). Hence
+      $\RD(\BQ)\leq1-\frac{(1-2\RD(\GQ))^2}{1-2d_Q}$: the C-bound is the best member of the family of question~4.
+\item $nW_Q\sim\mathrm{Bin}(n,p)$ since each voter errs independently with probability $p$. Hence $\RD(\GQ)=\E W=p$,
+      $e_Q=\E W^2=\Var W+p^2=\frac{p(1-p)}n+p^2$, and $d_Q=2(p-e_Q)=2p(1-p)(1-\frac1n)$.
+      For $p=0.3$ and $n=3$, the vote errs iff at least $2$ voters err: $\RD(\BQ)=3p^2(1-p)+p^3=0.189+0.027=0.216$. The
+      bounds are: first order $2p=0.6$; $e_Q=0.09+0.07=0.16$, so tandem $=0.64$; $d_Q=2\times0.21\times\frac23=0.28$, so
+      C-bound $=1-\frac{(0.4)^2}{1-0.56}=1-\frac{0.16}{0.44}\approx0.636$. For $n=25$: $d_Q=0.42\times0.96=0.4032$,
+      $1-2d_Q=0.1936$ and C-bound $=1-\frac{0.16}{0.1936}\approx0.174$, while the true risk is about $0.018$. When $n\to\infty$,
+      $1-2d_Q\to1-4p(1-p)=(1-2p)^2$ and the C-bound tends to $0$, like the true risk, at the rate $\frac{4p(1-p)}{n(1-2p)^2}$.
+      \emph{Comment:} with $3$ voters, $d_Q=0.28<p=0.3$, and the second-order bounds are worse than the first-order
+      one (Proposition 5.7 of the notes); with many independent voters, only the second-order bounds, and
+      especially the C-bound, capture the benefit of the vote. The tandem bound tends to $4p^2=0.36$ and never goes
+      to $0$.
+\end{enumerate}
+\end{solution}
+
+%% =====================================================================
+\begin{exo}{Linear classifiers with a Gaussian posterior}\label{exo:linear}
+Voters $h_{\mathbf v}(x)=\sign\langle\mathbf v,x\rangle$, prior $P=\mathcal N(\mathbf 0,I_d)$, posterior $Q_{\mathbf w}=\mathcal N(\mathbf w,I_d)$.
+\begin{enumerate}
+\item Show that $\BQ(x)=\sign\langle\mathbf w,x\rangle$.
+\item Show that $\P_{\mathbf v\sim Q_{\mathbf w}}\big(h_{\mathbf v}(x)\neq y\big)=\Phi\big(-\frac{y\langle\mathbf w,x\rangle}{\|x\|}\big)$ where $\Phi$ is the standard
+      Gaussian CDF. Give $\RS(G_{Q_{\mathbf w}})$ and $\KL(Q_{\mathbf w}\|P)$.
+\item Show that, for a fixed $C$, minimizing Catoni's bound over $\mathbf w$ amounts to minimizing
+      $C\sum_i\Phi(-y_i\langle\mathbf w,x_i\rangle/\|x_i\|)+\frac12\|\mathbf w\|^2$. Compare with the SVM.
+\item For $\mathbf w=s\mathbf u$ with $\|\mathbf u\|=1$, describe the evolution of $\RS(G_{Q_{s\mathbf u}})$ and of the KL when $s$ grows.
+      Relate to the notion of margin.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item Fix $x$. Under $Q_{\mathbf w}$, $\langle\mathbf v,x\rangle$ is Gaussian with mean $\langle\mathbf w,x\rangle$ and variance
+      $x^\top I_dx=\|x\|^2$. Hence $\P(\langle\mathbf v,x\rangle>0)=\Phi\big(\frac{\langle\mathbf w,x\rangle}{\|x\|}\big)$ and
+      $\E_Q\sign\langle\mathbf v,x\rangle=2\Phi\big(\frac{\langle\mathbf w,x\rangle}{\|x\|}\big)-1$, which is positive iff
+      $\langle\mathbf w,x\rangle>0$ (as $\Phi(0)=\frac12$ and $\Phi$ is increasing). Therefore $\BQ(x)=\sign\langle\mathbf w,x\rangle$:
+      the vote of infinitely many noisy linear classifiers is the linear classifier at their centre.
+\item Similarly $y\langle\mathbf v,x\rangle\sim\mathcal N(y\langle\mathbf w,x\rangle,\|x\|^2)$ (as $y^2=1$), so
+      $\P_{\mathbf v}(h_{\mathbf v}(x)\neq y)=\P(y\langle\mathbf v,x\rangle\leq0)=\Phi\big(-\frac{y\langle\mathbf w,x\rangle}{\|x\|}\big)$.
+      Averaging over the sample, $\RS(G_{Q_{\mathbf w}})=\frac1m\sum_i\Phi\big(-\frac{y_i\langle\mathbf w,x_i\rangle}{\|x_i\|}\big)$: a
+      smooth \emph{probit} loss of the normalized margin $\frac{y_i\langle\mathbf w,x_i\rangle}{\|x_i\|}$. By
+      Exercise~\ref{exo:kl}.4 with $\sigma=1$, $\KL(Q_{\mathbf w}\|P)=\frac12\|\mathbf w\|^2$.
+\item Catoni's bound reads $\RD(\GQ)\leq\mathcal F_C^{-1}\big(C\RS(\GQ)+\frac{\KL(Q\|P)+\ln(1/\delta)}m\big)$, and
+      $\mathcal F_C^{-1}$ is increasing: for fixed $C$ and $\delta$, minimizing the bound over $\mathbf w$ amounts to minimizing
+      $C\RS(G_{Q_{\mathbf w}})+\frac{\|\mathbf w\|^2}{2m}$, i.e.\ (multiplying by $m$)
+      $C\sum_i\Phi\big(-\frac{y_i\langle\mathbf w,x_i\rangle}{\|x_i\|}\big)+\frac12\|\mathbf w\|^2$. The soft-margin SVM minimizes
+      $C\sum_i\max(0,1-y_i\langle\mathbf w,x_i\rangle)+\frac12\|\mathbf w\|^2$: the regularizer is the same (it is the KL to the
+      prior), and the hinge loss is replaced by the probit loss. Two differences: the probit loss is bounded (a badly
+      misclassified point costs at most $1$, which gives robustness to label noise) but not convex; and it uses the
+      normalized margin.
+\item For $\mathbf w=s\mathbf u$, the loss of point $i$ is $\Phi(-s\gamma_i)$ with $\gamma_i=\frac{y_i\langle\mathbf u,x_i\rangle}{\|x_i\|}$.
+      When $s$ grows, it decreases to $0$ for well-classified points ($\gamma_i>0$), the faster the larger $\gamma_i$, and
+      increases to $1$ for misclassified points; at $s=0$ all losses equal $\frac12$. Meanwhile the KL grows as $\frac{s^2}2$.
+      If all points have a normalized margin at least $\gamma$, choosing $s\approx\frac{c}{\gamma}$ makes the empirical Gibbs
+      risk at most $\Phi(-c)$ at a KL cost of $\frac{c^2}{2\gamma^2}$: large margins allow small KL, which is the
+      PAC-Bayesian margin bound (Langford and Shawe-Taylor, 2002). The trade-off in $s$ is the one of Figure~31 of the notes (PBGD).
+\end{enumerate}
+\end{solution}
+
+%% =====================================================================
+\begin{exo}{$(\star)$ The PAC-Bayes-$\lambda$ bound and its minimization}\label{exo:lambda}
+\begin{enumerate}
+\item Prove the refined Pinsker inequality $\kl(q\|p)\geq\frac{(p-q)^2}{2p}$ for $q<p$.
+\item Starting from Seeger's bound, show that w.p.\ $\geq1-\delta$, for all $Q$ and all $\lambda\in(0,2)$ simultaneously,
+      $\RD(\GQ)\leq\frac{\RS(\GQ)}{1-\lambda/2}+\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}\delta}{\lambda(1-\lambda/2)m}$.
+      Why is no union bound over $\lambda$ needed here, contrary to Exercise~\ref{exo:bounds}?
+\item For a fixed $Q$, compute the optimal $\lambda$. For a fixed $\lambda$, compute the optimal $Q$ on a finite set of voters.
+      Write the alternating minimization algorithm.
+\item Explain why the posterior returned by this algorithm on a random forest may give a \emph{worse} majority vote than the uniform one.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item Let $0\leq q<p\leq1$ and $g(u)=\kl(u\|p)-\frac{(p-u)^2}{2p}$ for $u\in[0,p]$. Then $g(p)=0$ and
+      $g'(u)=\ln\frac{u(1-p)}{p(1-u)}+\frac{p-u}{p}$. Using $\ln t\leq t-1$ with $t=\frac{u(1-p)}{p(1-u)}$:
+      $\ln\frac{u(1-p)}{p(1-u)}\leq\frac{u(1-p)-p(1-u)}{p(1-u)}=\frac{u-p}{p(1-u)}\leq\frac{u-p}{p}$, the last step because
+      $u-p<0$ and $0<1-u\leq1$. Hence $g'(u)\leq0$: $g$ is non-increasing on $(0,p)$ and $g(q)\geq g(p)=0$ (see also
+      Appendix A.3 of the notes).
+\item Let $\hat q=\RS(\GQ)$, $p=\RD(\GQ)$ and $\varepsilon=\frac1m[\KL(Q\|P)+\ln\frac{2\sqrt m}\delta]$. On the event of Seeger's bound,
+      $\kl(\hat q\|p)\leq\varepsilon$. If $p\leq\hat q$ the claimed bound is trivial. Otherwise the refined Pinsker inequality
+      gives $\frac{(p-\hat q)^2}{2p}\leq\varepsilon$, i.e.\ $p-\hat q\leq\sqrt{2p\varepsilon}$. For any $\lambda>0$, the
+      arithmetic--geometric inequality $\sqrt{ab}\leq\frac{a+b}2$ with $a=\lambda p$, $b=\frac{2\varepsilon}\lambda$ gives
+      $\sqrt{2p\varepsilon}\leq\frac{\lambda p}2+\frac\varepsilon\lambda$. Hence $p(1-\frac\lambda2)\leq\hat q+\frac\varepsilon\lambda$, and for
+      $\lambda\in(0,2)$ we can divide by $1-\frac\lambda2>0$. \emph{Why no union bound:} all these inequalities are
+      deterministic consequences of the \emph{single} event of Seeger's bound; $\lambda$ appears only in the algebra,
+      not in the probabilistic statement. In Exercise~\ref{exo:bounds}, on the contrary, $\lambda$ defined the function
+      $\Delta$, hence the event itself.
+\item \emph{Optimal $\lambda$ for fixed $Q$.} Let $B(\lambda)=\frac{\hat q}{1-\lambda/2}+\frac{\varepsilon}{\lambda(1-\lambda/2)}$. Setting
+      $B'(\lambda)=0$ leads to $\frac{\hat q}{2}\lambda^2=\varepsilon(1-\lambda)$, i.e.\ $\hat q\lambda^2+2\varepsilon\lambda-2\varepsilon=0$, whose
+      positive root is $\lambda^\star=\frac{-\varepsilon+\sqrt{\varepsilon^2+2\hat q\varepsilon}}{\hat q}=\frac{2}{\sqrt{2\hat q/\varepsilon+1}+1}$.
+      \emph{Optimal $Q$ for fixed $\lambda$.} The bound is an increasing affine function of
+      $\RS(\GQ)+\frac{\KL(Q\|P)}{\lambda m}$, minimized by the Gibbs posterior $Q(h)\propto P(h)e^{-\lambda m\RS(h)}$
+      (Exercise~\ref{exo:dv}). \emph{Algorithm:} $\lambda\leftarrow1$; repeat $Q\leftarrow$ Gibbs posterior at $\lambda$, then
+      $\lambda\leftarrow\lambda^\star(Q)$, until $\lambda$ stabilizes; return $Q$ and the certificate computed with the kl form. Each
+      step decreases the bound, which is therefore non-increasing along the iterations (and converges to the global
+      minimum under the conditions of Thiemann et al., 2017).
+\item The bound only involves the \emph{average} OOB loss $\rho^\top\widehat L$ and the KL. It therefore puts the weight
+      on the few trees with the smallest OOB loss, which tend to be similar (they are grown on similar bootstrap
+      samples and make similar errors). The effective number of trees collapses (to about $2$ on \texttt{digits}),
+      the disagreement vanishes, and the vote loses the benefit of averaging: its risk approaches that of a single
+      good tree ($0.150$ instead of $0.044$ on \texttt{digits}, Table 2 of the notes). The bound is excellent for the
+      Gibbs classifier, but it is the wrong objective for the vote.
+\end{enumerate}
+\end{solution}
+
+%% =====================================================================
+\begin{exo}{$(\star)$ Out-of-bag samples}\label{exo:oob}
+Consider bagging with bootstrap samples of size $k$ drawn with replacement among the $m$ training examples.
+\begin{enumerate}
+\item Compute the probability that a given example is out-of-bag for a given tree; give its limit when $m\to\infty$ for
+      $k=m$ and for $k=m/2$. Same question for being out-of-bag for two given trees.
+\item Explain why the OOB loss $\widehat L_t$ of tree $t$ is an unbiased estimate of $\RD(h_t)$ given $S_t$, and why a uniform
+      prior over the \emph{indices} of the trees is a legitimate PAC-Bayesian prior although the trees depend on $S$.
+\item Show that if $\E e^{N\kl(\hat p_N\|p)}\leq2\sqrt N$ for all $N$, then for $n_0\leq N$, $\E e^{n_0\kl(\hat p_N\|p)}\leq2\sqrt{n_0}$.
+      Why is this useful?
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item A bootstrap sample of size $k$ draws $k$ indices uniformly and independently in $\{1,\dots,m\}$. A given example
+      is never drawn with probability $(1-\frac1m)^k$. Since $(1-\frac1m)^m\to e^{-1}$, this tends to
+      $e^{-1}\approx0.368$ for $k=m$ and to $e^{-1/2}\approx0.607$ for $k=m/2$. For two trees with independent bootstrap
+      samples, the example is out-of-bag for both with probability $(1-\frac1m)^{2k}\to e^{-2}\approx0.135$ ($k=m$) or
+      $e^{-1}\approx0.368$ ($k=m/2$). Halving the bootstrap size thus almost triples the size of the pairwise OOB sets
+      used by the tandem bound, at the price of slightly weaker trees.
+\item Condition on the bootstrap sample $S_t$ (and on the internal randomness of the tree). Then $h_t$ is a fixed
+      function, and the OOB examples, which were not used to build it, are still i.i.d.\ from $\D$ and independent of
+      $h_t$ (they are the examples of $S$ whose index was not drawn; given the drawn indices, their values are
+      independent of $S_t$). Hence $\E[\widehat L_t\,|\,S_t]=\RD(h_t)$, and Maurer's lemma applies to $\widehat L_t$
+      conditionally on $S_t$. The prior is placed on the \emph{indices} $t\in\{1,\dots,n\}$, not on the trees themselves:
+      the uniform distribution on indices is fixed before seeing the data. The dependence of $h_t$ on $S$ only enters the
+      third step of the proof, where, for each index $t$, the conditional concentration of $\widehat L_t$ is used.
+\item Write $e^{n_0\kl(\hat p_N\|p)}=\big(e^{N\kl(\hat p_N\|p)}\big)^{n_0/N}$. Since $n_0\leq N$, $x\mapsto x^{n_0/N}$ is concave,
+      and Jensen gives $\E e^{n_0\kl}\leq\big(\E e^{N\kl}\big)^{n_0/N}\leq(2\sqrt N)^{n_0/N}=\exp\big(n_0\frac{\ln(2\sqrt N)}{N}\big)$.
+      The function $N\mapsto\frac{\ln(2\sqrt N)}N$ is decreasing for $N\geq1$ (its derivative is $\frac{1/2-\ln(2\sqrt N)}{N^2}<0$),
+      so for $N\geq n_0$ this is at most $\exp\big(n_0\frac{\ln(2\sqrt{n_0})}{n_0}\big)=2\sqrt{n_0}$. \emph{Usefulness:} the OOB sets
+      have different sizes; this lemma allows us to use a single sample size $n_0=\min_t|T_t|$ in the complexity term
+      while still computing each loss $\widehat L_t$ on \emph{all} the OOB examples of tree $t$.
+\end{enumerate}
+\end{solution}
+
+
+%% =====================================================================
+\begin{exo}{$(\star)$ Self-bounding learning}\label{exo:selfbounding}
+Let $\mathcal B(Q,S,\delta)$ be a bound such that $\P_S(\forall Q,\ \RD(Q)\leq\mathcal B(Q,S,\delta))\geq1-\delta$.
+\begin{enumerate}
+\item Let $Q_S$ be the posterior returned by any algorithm run on $S$. Show that $\P_S(\RD(Q_S)\leq\mathcal B(Q_S,S,\delta))\geq1-\delta$.
+      Why does this fail for a bound that holds only for a \emph{fixed} predictor (e.g.\ Hoeffding's inequality)?
+\item You build $K=5$ random forests with tree depths $1,2,4,8$ and unlimited, and compute for each of them the OOB tandem
+      certificate. How must you modify the certificates to be allowed to keep the forest with the smallest one?
+      What is the cost in the complexity term?
+\item Among the following choices, which are free, which require a union bound, which are forbidden?
+      (a) the temperature $\lambda$ of a Gibbs posterior; (b) the parameter $C$ of Catoni's bound; (c) the variance of a
+      Gaussian prior chosen on a grid of 10 values; (d) the centre of a Gaussian prior learned on the sample used in the
+      bound; (e) the number of gradient iterations when minimizing the bound.
+\item Let $p=\klup(q,\varepsilon)$. Show that $\frac{\partial p}{\partial\varepsilon}=\frac{p(1-p)}{p-q}$ and
+      $\frac{\partial p}{\partial q}=\frac{p(1-p)}{p-q}\ln\frac{p(1-q)}{q(1-p)}$. Deduce the gradient of the first-order
+      certificate $2\,\klup\big(\rho^\top\widehat L,\frac{\KL(\rho\|\pi)+c}{n}\big)$ with respect to $\rho$.
+\item Why is the test-set bound usually tighter than a self-bounding certificate for a random forest? Give one
+      advantage of the self-bounding approach.
+\end{enumerate}
+\end{exo}
+
+\begin{solution}
+\begin{enumerate}
+\item Let $E=\{S:\forall Q,\ \RD(Q)\leq\mathcal B(Q,S,\delta)\}$, with $\P(E)\geq1-\delta$. For $S\in E$ the inequality holds for
+      every posterior, in particular for $Q_S$, whatever the way it was computed. Hence
+      $\{S:\RD(Q_S)\leq\mathcal B(Q_S,S,\delta)\}\supseteq E$ and has probability $\geq1-\delta$. For a fixed-predictor bound,
+      there is one event $E_h$ per predictor, each of probability $\geq1-\delta$, but their intersection can have a much
+      smaller probability. The learning algorithm, which looks at $S$, may precisely choose a predictor for which
+      $E_h$ fails: among $1000$ random classifiers of risk $0.5$ evaluated on $100$ examples, the one with the smallest
+      empirical risk violates the naive Hoeffding bound in $99.8\%$ of the runs (Figure 10 of the notes).
+\item Keeping the smallest certificate is a data-dependent choice among $K=5$ bounds. By the union bound
+      (Proposition 6.3 of the notes), if each certificate is computed with confidence $\delta/5$, all five hold
+      simultaneously with probability $\geq1-\delta$, and so does the smallest one. For the tandem bound, the complexity
+      term $\frac{2\KL+\ln(2\sqrt{n_0}/\delta)}{n_0}$ becomes $\frac{2\KL+\ln(2\sqrt{n_0}/\delta)+\ln5}{n_0}$: the price is
+      $\ln5\approx1.6$ nats, i.e.\ $0.004$ in the complexity term for $n_0=400$.
+\item (a) \emph{Free}: a temperature only indexes a family of posteriors compared with the same prior in the same
+      bound. (b) \emph{Union bound}: $C$ defines the function $\Delta$, hence the event; use a grid fixed in advance with
+      $\delta/k$. (c) \emph{Union bound}: each variance defines a different prior, hence a different bound; cost $\ln10$.
+      (d) \emph{Forbidden}: the prior would depend on the sample used in the bound, and step 3 of the proof fails; it
+      becomes legitimate if the centre is learned on a separate part $S_1$ and the bound computed on $S_2$
+      (Proposition 6.5). (e) \emph{Free}: any stopping rule produces a posterior, and the bound holds for all posteriors.
+\item Let $F(q,p)=\kl(q\|p)-\varepsilon$, so that $F(q,\klup(q,\varepsilon))=0$. We have $F_q=\partial_q\kl(q\|p)=\ln\frac{q(1-p)}{p(1-q)}$
+      and $F_p=\frac{p-q}{p(1-p)}\neq0$ (since $p>q$ when $\varepsilon>0$). By the implicit function theorem,
+      $\frac{\partial p}{\partial\varepsilon}=-\frac{F_\varepsilon}{F_p}=\frac1{F_p}=\frac{p(1-p)}{p-q}$ and
+      $\frac{\partial p}{\partial q}=-\frac{F_q}{F_p}=\frac{p(1-p)}{p-q}\ln\frac{p(1-q)}{q(1-p)}$. For the first-order certificate
+      $B(\rho)=2\,\klup(q(\rho),\varepsilon(\rho))$ with $q(\rho)=\rho^\top\widehat L$ and $\varepsilon(\rho)=\frac{\KL(\rho\|\pi)+c}n$,
+      we have $\nabla_\rho q=\widehat L$ and $\nabla_\rho\varepsilon=\frac1n\big(\ln\frac\rho\pi+\mathbf1\big)$, so by the chain rule
+      \[\nabla_\rho B=2\Big[\frac{\partial p}{\partial q}\,\widehat L+\frac{\partial p}{\partial\varepsilon}\,\frac1n\Big(\ln\frac\rho\pi+\mathbf 1\Big)\Big].\]
+      (With a softmax parametrization $\rho=\mathrm{softmax}(\theta)$, multiply by the Jacobian: $\nabla_\theta B=\rho\odot(g-\rho^\top g)$.)
+      Numerically, at $q=0.1$, $\varepsilon=0.05$, $p\approx0.220$: $\partial_\varepsilon p\approx1.43$ and $\partial_qp\approx1.33$.
+\item The test-set bound certifies the vote itself, with a single kl inversion, no KL term, and no factor $2$ or $4$
+      coming from the Gibbs-to-vote relation; on a random forest this relation is the main source of looseness. In
+      exchange, the test examples are not used for learning, and a new split is needed for model selection. The
+      self-bounding approach uses all the data, provides a learning objective with a guarantee, and allows model
+      selection at the price of $\ln K$; with data-dependent priors it can be competitive when enough data are
+      available.
+\end{enumerate}
+\end{solution}
+
+\end{document}

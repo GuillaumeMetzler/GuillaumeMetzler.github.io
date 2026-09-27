@@ -1,0 +1,362 @@
+%% ======================================================================
+\section{Posteriors, priors and the computation of the bounds}
+\label{chap:posteriors}
+%% ======================================================================
+
+\begin{objectives}
+\guiding{Since the bounds hold for every prior and every posterior, which ones
+should we choose, and how do we evaluate the bound in practice?}
+The bounds of \cref{chap:bounds} hold for any prior and any posterior. This
+section explains how to choose them. We show that the posterior minimizing a
+linear bound is the Gibbs posterior, a soft selection of the good voters that
+also contains Bayesian inference as a special case, and we run it on a real
+dataset. We then discuss the choice of the prior, which is the main lever to
+obtain tight certificates, and we measure on an experiment how to split the data
+between the prior and the bound. We finally explain how to compute a bound
+when the Gibbs risk has no closed form, and how PAC-Bayes can say something about
+deterministic predictors.
+\end{objectives}
+
+\subsection{The optimal posterior: Gibbs posterior and Bayesian inference}
+\label{sec:gibbs_posterior}
+
+A bound that holds for every posterior invites an obvious question: which
+posterior makes it smallest? For linear bounds the answer is explicit. The
+bounds \eqref{eq:catoni_hoeffding} and \eqref{eq:lambda} depend on
+$Q$ only through the objective
+\begin{equation}\label{eq:objective_linear}
+\RS(\GQ)+\frac{\KL(Q\|P)}{\lambda m}
+=\Esp{h\sim Q}{\RS(h)}+\frac{1}{\lambda m}\KL(Q\|P),
+\end{equation}
+which balances the fit of the posterior to the data against its distance to the
+prior; the parameter $\lambda$ plays the role of an inverse temperature. We
+already know how to minimize such an objective: this is exactly the variational formula
+\eqref{eq:gibbs_variational} of \cref{chap:tools}.
+
+\begin{proposition}{Gibbs posterior \citep{catoni2007pac,zhang2006information}}{gibbs_post}
+The minimizer over $\M(\Hcal)$ of \eqref{eq:objective_linear} is the
+\textbf{Gibbs posterior}
+\begin{equation}\label{eq:gibbs_post}
+Q_\lambda(h)=\frac{P(h)\,e^{-\lambda m\RS(h)}}{\Esp{h'\sim P}{e^{-\lambda m\RS(h')}}},
+\end{equation}
+and the minimal value is $-\frac{1}{\lambda m}\ln\E_{h\sim P}\,e^{-\lambda m\RS(h)}$.
+\end{proposition}
+\begin{proof}
+Apply the variational formula \eqref{eq:gibbs_variational} to
+$\phi(h)=-\lambda m\RS(h)$: $\sup_Q\{-\lambda m\E_Q\RS-\KL(Q\|P)\}=\ln\E_Pe^{-\lambda m\RS}$,
+with the supremum attained at $Q_\phi=Q_\lambda$. Multiply by $-\frac1{\lambda m}$.
+\end{proof}
+
+In words, the Gibbs posterior starts from the prior and reweights it
+exponentially according to the empirical risk: a voter that makes $k$ more
+training errors than another sees its relative weight divided by $e^{\lambda k}$.
+The temperature controls how sharp this selection is. When $\lambda\to0$, the
+posterior stays equal to the prior: there is no complexity to pay, but nothing
+is learned. When
+$\lambda\to\infty$, the posterior concentrates on the empirical risk minimizers;
+for a finite class with the uniform prior, its KL tends to $\ln|\Hcal|$ minus
+the logarithm of the number of minimizers, and we recover the Occam bound.
+\Cref{fig:prior_posterior} shows this transition on a family of threshold
+classifiers $h_\theta(x)=\sign(x-\theta)$ with a Gaussian prior on $\theta$: as
+$\lambda$ grows, the posterior moves from the prior towards the interval of
+thresholds that minimize the empirical risk.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{prior_posterior}
+\caption{Gibbs posteriors on a family of threshold classifiers
+$h_\theta(x)=\sign(x-\theta)$ with a Gaussian prior on $\theta$. As
+$\lambda$ increases, the posterior concentrates on the empirical risk minimizers;
+for small $\lambda$ it stays close to the prior.}
+\label{fig:prior_posterior}
+\end{figure}
+
+\begin{example}[The Gibbs posterior on decision stumps]
+Let us see the temperature at work on the \texttt{breast cancer} dataset. We build
+$300$ decision stumps (one feature, one threshold, one orientation). Their
+thresholds are the quantiles of the features computed on $100$ examples that
+are then set aside, so that the set of voters, and hence the uniform prior, is
+independent of the $m=120$ examples on which the bound is computed. We then
+compute $Q_\lambda$ for $80$ values of $\lambda$ between $10^{-3}$ and $10^2$,
+and Seeger's bound for each of them.
+
+The right panel of \cref{fig:temperature} shows the trade-off. For small
+$\lambda$, the posterior is uniform, its empirical Gibbs risk is $0.5$ (each
+stump comes with its opposite), and the bound is vacuous. As $\lambda$ grows,
+the empirical risk drops quickly while the KL increases slowly. The bound
+reaches its minimum $0.256$ for $\lambda\approx1.3$, where the empirical Gibbs
+risk is $0.084$ and $\KL(Q_\lambda\|P)=5.5$ nats; the Gibbs risk measured on the
+$349$ test examples is $0.114$, well below the certificate. Beyond this point,
+the KL keeps increasing towards $\ln 300\approx5.7$ while the empirical risk no
+longer decreases.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{gibbs_temperature}
+\caption{Gibbs posterior over $300$ decision stumps on the \texttt{breast cancer}
+dataset (thresholds at quantiles computed on $100$ separate examples, uniform
+prior, bound computed on $m=120$ other examples). Left: posterior weights
+for three temperatures. Right: as $\lambda$ grows, the empirical Gibbs risk
+decreases while $\KL(Q_\lambda\|P)$ increases, up to $\ln|\Hcal|$ (Occam);
+Seeger's bound is minimized for an intermediate temperature.}
+\label{fig:temperature}
+\end{figure}
+
+With only $m=120$ examples, a certificate of $0.256$ may seem loose. It is
+however a \emph{guarantee}, valid with probability $0.95$ and obtained without
+any test set. The example also shows that the Gibbs posterior is essentially as
+good as the best stump in terms of certificate, while being more stable. What
+it certifies, though, is a stump drawn at random; we will see in \cref{chap:mv}
+how to certify the \emph{vote} of these stumps instead.
+
+\begin{running}
+The same recipe applies to the $100$ trees of our forest, with their
+out-of-bag errors in place of the empirical risks. Choosing the temperature by
+the procedure of \cref{sec:algo_fo}, the Gibbs posterior lowers Seeger's
+certificate on the Gibbs risk from $0.230$ (uniform weights) to $0.193$. This
+looks like progress, but there is a catch, which we will only understand in
+\cref{chap:mv}: the Gibbs posterior puts almost all its weight on the two best
+trees, and the test risk of the \emph{vote} jumps from $0.044$ to $0.150$. A
+better Gibbs classifier does not always make a better vote.
+\end{running}
+
+\paragraph{Link with Bayesian inference.}
+The Gibbs posterior is not only an algorithmic device: it contains Bayesian
+inference as a special case. Take a probabilistic model $p(y\,|\,x,\theta)$
+indexed by $\theta\in\Hcal$, and the (unbounded) negative log-likelihood loss
+$\ell(\theta,(x,y))=-\ln p(y\,|\,x,\theta)$. For $\lambda=1$, the Gibbs posterior is
+\[
+Q_1(\theta)\propto P(\theta)\,e^{-\sum_{i=1}^m\ell(\theta,(x_i,y_i))}=P(\theta)\prod_{i=1}^mp(y_i\,|\,x_i,\theta),
+\]
+which is exactly the Bayesian posterior. \citet{germain2016pac} exploited this
+correspondence to obtain PAC-Bayesian guarantees for Bayesian inference, and to
+show that minimizing the bound amounts to maximizing the \emph{marginal
+likelihood} $\E_{\theta\sim P}\prod_i p(y_i|x_i,\theta)$, which justifies model
+selection by the evidence. Since the log-loss is unbounded, the bound requires
+additional assumptions on the tails of the loss (sub-Gaussian or sub-gamma).
+Other values of $\lambda$ give \emph{tempered}, or ``generalized'', posteriors,
+and \citet{alquier2016properties} study variational approximations of Gibbs
+posteriors when they cannot be computed exactly.
+
+The formulas coincide, but the two frameworks read them differently. In the
+Bayesian view the prior encodes beliefs
+and the posterior is the result of conditioning, whereas in PAC-Bayes the prior
+is a reference measure, the posterior is any distribution we like, and the
+guarantee does not require the model to be correct.
+
+\begin{intuition}
+PAC-Bayes explains \emph{why} averaging with exponential weights is a good idea:
+it is the optimal way to trade empirical risk against a KL penalty. In a
+finite ensemble (\cref{chap:algos}), the Gibbs posterior simply assigns to
+each voter a weight proportional to $P(h)\,e^{-\lambda m\RS(h)}$, a soft version
+of ``keep the best voters''.
+\end{intuition}
+
+\subsection{Choosing the prior}\label{sec:prior}
+
+The Gibbs posterior tells us how to choose $Q$ once $P$ is given. But the
+prior matters just as much, since the whole complexity term is measured
+relative to it. The only rule is that the prior must not depend on the sample
+used to evaluate the bound; otherwise it can be anything. Since the bound pays
+$\KL(Q\|P)$, it is tight only if the prior already puts mass where the
+posterior will be. Much of the art of PAC-Bayes thus consists in finding priors
+that are independent of the sample and yet well informed. We review the main
+strategies, from the most naive to the most data-efficient.
+
+The simplest priors are \emph{data-independent}: the uniform distribution on a
+finite set of voters, a Gaussian $\mathcal N(0,\sigma^2 I)$ on the weights of
+linear classifiers or neural networks, or the Fourier transform of a kernel for
+random features \citep{letarte2019pseudo}. Their parameters, such as the scale
+$\sigma$, can be selected on a grid at the price of a union bound. They are
+often too vague, however: nothing tells them in which region of $\Hcal$ the
+good hypotheses lie.
+
+To make the prior better informed without breaking the rules, a more effective strategy is to learn the prior on a part of the data that is
+not used in the bound \citep{ambroladze2006tighter,parrado2012pac}. The sample is
+split into $S=S_{\text{prior}}\cup S_{\text{bound}}$; the prior is learned on
+$S_{\text{prior}}$, for instance a Gaussian centred at an SVM trained on it,
+and the bound is computed on $S_{\text{bound}}$ only, with $m=|S_{\text{bound}}|$.
+This is the approach behind the tightest certificates known for neural networks
+\citep{dziugaite2017computing,perez2021tighter}. The split involves a trade-off:
+a larger $S_{\text{prior}}$ gives a better prior, hence a smaller KL, but it
+leaves fewer examples to compute the bound. How should we balance the two?
+
+\begin{example}[How much data for the prior?]
+We measure this trade-off on \texttt{breast cancer} (\cref{fig:ddprior}). A
+fraction of the data is used to build a set of $200$ shallow decision trees on
+bootstrap samples. The uniform distribution over these trees plays the role of
+the prior, which is legitimate since it only depends on $S_{\text{prior}}$. The
+remaining examples are split into a sample $S_{\text{bound}}$ ($70\%$), on which
+we minimize Seeger's bound over Gibbs posteriors, and a test sample ($30\%$).
+
+When only $5\%$ of the data are used for the prior, the trees are weak, but the
+bound is computed on $378$ examples and the certificate is $0.142$. Increasing
+the fraction to $10$--$30\%$ improves the trees (the test Gibbs risk decreases
+from $0.080$ to $0.067$) and the certificate stays around $0.135$. Beyond $50\%$,
+the trees keep improving but the bound is computed on too few examples: with
+$85\%$ of the data for the prior, only $60$ examples remain, and the certificate
+degrades to $0.225$ although the voters are the best ones. On this dataset, a
+fifth to a third of the data for the prior is a good compromise. The best
+proportion depends on the problem; like any hyperparameter of the certificate,
+it must be fixed in advance or selected on a grid with a union bound.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{ddprior_split}
+\caption{Splitting the data between the construction of the voters (prior) and
+the computation of the bound, on \texttt{breast cancer} (mean and standard
+deviation over $5$ splits; $m$ is the size of the sample used by the bound).}
+\label{fig:ddprior}
+\end{figure}
+
+Any split, however well chosen, sacrifices part of the sample. Two further ideas
+avoid this waste altogether. In bagging, each voter is
+trained on a subsample and can be evaluated on its out-of-bag examples; this
+\emph{split construction} lets every example serve both for building some
+voters and for evaluating the others \citep{thiemann2017strongly,lorenzen2019pac},
+and it is the backbone of the self-bounding algorithms of \cref{sec:oob}.
+Finally, the prior may depend on the distribution $\D$ without depending on the
+sample, for instance $P\propto e^{-\beta\RD(h)}$; the bound then involves unknown
+quantities which can be controlled \citep{catoni2007pac}. \citet{dziugaite2018data}
+go one step further and learn the prior from $S$ itself, using differential
+privacy to limit how much it depends on each example.
+
+Once the prior and the posterior are chosen, one practical step remains:
+evaluating the bound numerically.
+
+\subsection{Computing the bound in practice}
+
+A certificate is only useful if we can compute it. When $\Hcal$ is a finite ensemble of $n$ voters, $\RS(\GQ)=\sum_hQ(h)\RS(h)$ and
+$\KL(Q\|P)$ are finite sums, and computing a bound only requires one kl
+inversion. When $\Hcal$ is infinite, for instance with a Gaussian posterior on the
+weights of a neural network, the empirical Gibbs risk is an integral that may
+not have a closed form. \citet{langford2001not} and \citet{dziugaite2017computing}
+estimate it by Monte Carlo: they draw $h_1,\dots,h_N\sim Q$ independently and
+apply a second kl inversion. This is legitimate because, conditionally on $S$,
+the $\RS(h_j)$ are i.i.d.\ variables in $[0,1]$ with mean $\RS(\GQ)$. With
+probability at least $1-\delta'$ over the draws,
+\[
+\RS(\GQ)\leq\klup\Big(\frac1N\sum_{j=1}^N\RS(h_j),\ \frac{\ln(2/\delta')}{N}\Big),
+\]
+and plugging this upper bound into Seeger's bound gives a certificate valid with
+probability at least $1-\delta-\delta'$. In other words, sampling costs us a
+little confidence and a slightly larger bound, but never the validity of the
+certificate.
+
+\begin{example}[Certifying a Gaussian posterior by sampling]
+How large is this extra cost? We take a linear classifier $\mathbf w$ learned by a linear SVM on
+\texttt{breast cancer} ($m=398$ training examples, standardized features),
+rescaled to $\|\mathbf w\|=8$, and the posterior $Q=\mathcal N(\mathbf w,I)$
+with prior $P=\mathcal N(\mathbf 0,I)$, so that $\KL(Q\|P)=\|\mathbf w\|^2/2=32$. For this
+family, the empirical Gibbs risk has a closed form (\cref{sec:linear}), equal to
+$0.076$, and Seeger's bound gives $0.245$. \Cref{fig:montecarlo} shows the
+certificate obtained when the Gibbs risk is instead estimated from $N$
+sampled classifiers, with $\delta=\delta'=0.025$. With $N=100$ samples, the
+certificate is $0.375$, and it reaches $0.26$ for $N=10^4$: the price of the
+Monte Carlo estimation decreases quickly with $N$, and a few thousand samples are
+enough in practice.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.66\linewidth]{montecarlo}
+\caption{Certificate of a Gaussian posterior on linear classifiers
+(\texttt{breast cancer}), when the empirical Gibbs risk is computed exactly
+(dashed) or estimated with $N$ sampled classifiers and a second kl inversion.}
+\label{fig:montecarlo}
+\end{figure}
+
+\subsection{From stochastic to deterministic predictors}
+
+Everything so far certifies a \emph{stochastic} predictor. A PAC-Bayesian
+bound controls the \emph{average} risk of a randomly drawn voter, whereas in
+practice we usually deploy a single deterministic predictor. There are three
+ways to bridge this gap. The first one, which is the object of \cref{chap:mv},
+is to bound the risk of the majority vote $\BQ$ using the Gibbs risk and
+second-order quantities describing the correlations between voters. The second
+one exploits a margin: if $Q$ is concentrated around a hypothesis $h$ with
+a large margin, then $h$ and the Gibbs classifier make similar predictions, and
+the bound on the latter transfers to the former up to a margin term
+\citep{langford2002pac,mcallester2003simplified,biggs2022margins}. The third one
+consists in \emph{disintegrated} bounds, which hold with high probability for a
+single hypothesis $h\sim Q$ drawn once, rather than on average over $Q$
+\citep{blanchard2007occam,rivasplata2020pac,viallard2024general}; we come back to
+them in \cref{chap:advances}. For ensemble methods the first route is the
+natural one, and it is the subject of the next section.
+
+\begin{keypoints}
+Linear bounds are minimized by the Gibbs posterior $Q_\lambda\propto P\,e^{-\lambda m\RS}$,
+a soft selection of the good voters whose temperature trades fit against
+complexity, and which contains the Bayesian posterior as a special case. The
+prior is the main lever for tight bounds: it can be learned from data, provided
+those data are not used by the bound, and on our example a fifth to a third of the
+sample was a good investment. When the Gibbs risk is not computable exactly, a
+Monte Carlo estimate and a second kl inversion give a valid certificate at a
+small extra cost.
+\end{keypoints}
+
+\begin{quickchecks}
+\item What happens to the Gibbs posterior when $\lambda\to0$, and when $\lambda\to\infty$?
+\item Why can a prior learned on part of the data be legitimate, and on which part must the bound then be computed?
+\item Why does a Monte Carlo estimate of the Gibbs risk require a second kl inversion?
+\item Name three ways to obtain a guarantee for a deterministic predictor from a PAC-Bayesian bound.
+\end{quickchecks}
+
+\begin{exercises}
+\begin{exercise}
+For a finite class and a uniform prior, show that $\KL(Q_\lambda\|P)\to\ln\frac{|\Hcal|}{k}$ when
+$\lambda\to\infty$, where $k$ is the number of empirical risk minimizers.
+\end{exercise}
+\begin{exercise}
+Explain why using the same sample to learn the centre of a Gaussian prior and to
+compute the empirical term of the bound is not allowed. What happens if we do it anyway?
+\end{exercise}
+\begin{exercise}
+In the Monte Carlo certificate, how should $\delta$ and $\delta'$ be split to
+minimize the final bound when $N=100$? when $N=10^4$?
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} (a)~What is the Gibbs posterior $Q_\lambda$ when all the voters
+have the same empirical risk? (b)~With the uniform prior, voter $h$ makes $3$ more
+training errors than voter $h'$; what is the ratio $Q_\lambda(h)/Q_\lambda(h')$? (c)~True or
+false: a prior $P\propto e^{-\beta\RD(h)}$, which depends on $\D$, is forbidden.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} Four voters have empirical risks $0.10$, $0.12$, $0.15$ and $0.30$ on
+$m=100$ examples, and the prior is uniform. For $\lambda\in\{0.1,0.5,2\}$, compute the Gibbs
+posterior $Q_\lambda$, its empirical Gibbs risk, $\KL(Q_\lambda\|P)$ and Seeger's bound with
+$\delta=0.05$. For $\lambda=0.5$, check numerically that the objective
+\eqref{eq:objective_linear} at $Q_\lambda$ equals $-\frac1{\lambda m}\ln\E_{h\sim P}e^{-\lambda m\RS(h)}$.
+Compare with the bounds of the uniform posterior and of the Dirac on the best voter.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} A practitioner has $500$ examples and $100$ voters. Option~A uses the
+$500$ examples for the bound with a data-independent uniform prior; the best posterior found
+has an empirical Gibbs risk of $0.15$ and $\KL(Q\|P)=2$. Option~B learns a prior on $150$
+examples and computes the bound on the remaining $350$; the best posterior has an
+empirical Gibbs risk of $0.10$ and $\KL(Q\|P)=1$. Compare Seeger's bounds ($\delta=0.05$).
+Can the practitioner compute both and report the smaller one?
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} In the setting of the Gaussian posterior example ($m=398$,
+$\KL(Q\|P)=32$), suppose that $N=1000$ classifiers sampled from $Q$ have an average
+empirical risk of $0.08$. With $\delta=\delta'=0.025$, compute the Monte Carlo upper bound on
+$\RS(\GQ)$ and the final certificate. Compare with the certificate that would be obtained
+if $\RS(\GQ)=0.08$ were known exactly.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Prove the formula
+$\KL\big(\mathcal N(\mu_1,\sigma^2 I_d)\,\|\,\mathcal N(\mu_0,\sigma^2 I_d)\big)=\frac{\|\mu_1-\mu_0\|^2}{2\sigma^2}$,
+and deduce $\KL(Q_{\mathbf w}\|P)=\frac12\|\mathbf w\|^2$ for $Q_{\mathbf w}=\mathcal N(\mathbf w,I_d)$ and
+$P=\mathcal N(\mathbf 0,I_d)$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Let $P$ be a prior on a finite set of parameters $\theta$ and
+$\ell(\theta,(x,y))=-\ln p(y\,|\,x,\theta)$. Using Proposition~\ref{prop:gibbs_post} with $\lambda=1$,
+show that the Bayesian posterior minimizes $\E_{\theta\sim Q}\sum_i\ell(\theta,(x_i,y_i))+\KL(Q\|P)$
+over $Q$, and that the minimal value is minus the log marginal likelihood
+$-\ln\E_{\theta\sim P}\prod_ip(y_i\,|\,x_i,\theta)$.
+\end{exercise}
+\end{exercises}

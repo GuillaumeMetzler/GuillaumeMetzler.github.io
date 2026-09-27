@@ -1,0 +1,222 @@
+\documentclass[11pt]{article}
+\usepackage{../common/dastyle}
+\graphicspath{{../figures/}}
+
+\begin{document}
+\pagestyle{fancy}
+\sheethead{TD -- Adaptation de Domaine -- Corrigé}{Corrigé détaillé du TD sur l'adaptation de domaine (séance 6). Chaque solution est numérotée comme l'énoncé correspondant dans \texttt{td\_da.pdf}.}
+
+\section{Fondamentaux : covariate shift et repondération}
+
+\begin{exercisebox}{Solution -- Identifier l'hypothèse de correspondance}
+\begin{enumerate}[label=(\alph*)]
+\item \textbf{Covariate shift.} Les profils de patients diffèrent ($P_S(X)\neq P_T(X)$, âge différent),
+mais la manifestation clinique de la pathologie, conditionnellement au profil, est supposée identique
+($P(Y\mid X)$ inchangé).
+\item \textbf{Concept shift.} La notion même de \enquote{clic} (et donc la relation entre le profil
+utilisateur/contenu et le comportement observé) a changé de nature entre 2015 et 2025 : ni $P(X\mid Y)$
+ni $P(Y\mid X)$ ne sont stables au sens des définitions du cours.
+\item \textbf{Biais de sélection d'échantillon.} Il existe une distribution \enquote{vraie} sous-jacente
+des températures, mais le capteur d'entraînement exclut systématiquement certaines valeurs (les
+extrêmes) via une variable de sélection $\xi$ liée à la valeur mesurée elle-même.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}{Solution -- Régression pondérée, Exercice~1.2}
+\begin{enumerate}[label=(\alph*)]
+\item $w(x) = p_t(x)/p_s(x)$ avec $p_s(x)\propto \exp(-(x+1)^2/2)$, $p_t(x)\propto\exp(-(x-1)^2/2)$
+(même variance $1$) :
+\[
+w(x) = \exp\!\left(-\frac{(x-1)^2}{2}+\frac{(x+1)^2}{2}\right) = \exp\!\left(\frac{(x+1)^2-(x-1)^2}{2}\right)
+= \exp(2x).
+\]
+\item $w(-0.5) = \exp(-1) \approx 0.3679$.
+\item $w(1.5) = \exp(3) \approx 20.0855$. Le poids explose très vite dès que $x$ s'éloigne de la zone
+source (autour de $x=-1$) pour se rapprocher de la zone cible (autour de $x=+1$) : $w$ croît de façon
+exponentielle, ce qui est le symptôme classique d'un faible recouvrement de support --- quelques points
+source \enquote{typiquement cible} héritent d'un poids disproportionné.
+\item Cf. Exercice~3.1 du cours : en écrivant $\Delta=\mathrm{diag}(\sqrt{w_1},\ldots,\sqrt{w_m})$, le
+problème devient $\min_\beta \|\Delta X\beta^\top - \Delta Y\|_2^2$, moindres carrés ordinaires sur les
+données transformées, dont la solution est
+\[
+\beta^\star = \big[(\Delta X)^\top \Delta X\big]^{-1}(\Delta X)^\top \Delta Y = \big[X^\top \Delta^2
+X\big]^{-1} X^\top \Delta^2 Y.
+\]
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}{Solution -- Effective Sample Size, Exercice~1.3}
+\begin{enumerate}[label=(\alph*)]
+\item $w=(1,1,1,1)$ : $\mathrm{ESS}=\dfrac{4^2}{4}=4=m$. Tous les poids étant égaux, on utilise
+l'intégralité de l'échantillon --- situation idéale (proche du cas non repondéré).
+\item $w=(10,0.1,0.1,0.1)$ : $\sum w_i=10.3$, $\sum w_i^2 = 100+0.03=100.03$, donc
+$\mathrm{ESS}=\dfrac{10.3^2}{100.03}=\dfrac{106.09}{100.03}\approx 1.06$. Bien que $m=4$, on
+\enquote{n'utilise effectivement} qu'environ $1$ point : un seul poids domine totalement les autres. C'est
+exactement le symptôme de supports peu recouvrants illustré Figure~3.5 du cours : quelques points source
+reçoivent un poids énorme et l'estimateur repondéré devient presque équivalent à un estimateur ponctuel,
+donc à variance très élevée.
+\item Par Cauchy-Schwarz appliqué à $(w_i)$ et $(1)_i$ : $\big(\sum_i w_i \cdot 1\big)^2 \le
+\big(\sum_i w_i^2\big)\big(\sum_i 1^2\big) = m\sum_i w_i^2$, donc $\mathrm{ESS}=\dfrac{(\sum w_i)^2}{\sum
+w_i^2}\le m$, avec égalité ssi tous les $w_i$ sont égaux. Pour la borne inférieure, comme $w_i\ge 0$,
+$\big(\sum_i w_i\big)^2 = \sum_i w_i^2 + 2\sum_{i<j}w_iw_j \ge \sum_i w_i^2$ (le second terme est positif
+ou nul), donc $\mathrm{ESS}\ge 1$, avec égalité ssi un seul poids est non nul.
+\end{enumerate}
+\end{exercisebox}
+
+\section{Estimer le ratio de densités}
+
+\begin{exercisebox}{Solution -- Densité paramétrique vs. noyaux, Exercice~2.1}
+\begin{enumerate}[label=(\alph*)]
+\item $\hat\mu_s = \frac{-1.2-0.9-1.1-0.8}{4} = -1.0$, et $\hat\sigma_s^2 =
+\frac{1}{4}\sum_i(x_i-\hat\mu_s)^2 = \frac{0.04+0.01+0.01+0.04}{4} = 0.025$.
+De même $\hat\mu_t = \frac{0.8+1.3+1.0}{3} \approx 1.0333$ et $\hat\sigma_t^2 \approx 0.0422$.
+\item $\hat p_s(x_1) = \frac{1}{\sqrt{2\pi\cdot 0.025}}\exp\!\left(-\frac{(-1.2+1)^2}{2\cdot
+0.025}\right) \approx 2.523 \times \exp(-0.8) \approx 1.134$. $\hat p_t(x_1) = \frac{1}{\sqrt{2\pi\cdot
+0.0422}}\exp\!\left(-\frac{(-1.2-1.0333)^2}{2\cdot 0.0422}\right) \approx 1.942\times\exp(-59.1) \approx
+3.5\times 10^{-26}$. D'où $\hat w(x_1) = \hat p_t(x_1)/\hat p_s(x_1) \approx 3\times 10^{-26} \approx 0$.
+\textbf{Interprétation} : $x_1=-1.2$ est totalement excentré par rapport à la population cible estimée
+(centrée en $1.03$, écart-type $0.21$) : sous le modèle gaussien, la probabilité que ce point vienne de
+la cible est numériquement nulle. En pratique, ce genre de sous/sur-flottant justifie de travailler en
+log-vraisemblance et de \emph{clipper} les poids extrêmes (cf. Exercice~1.3).
+\item Non normalisé, $\sum_{x_i\in S_X} k(-1,x_i)$ avec $\sigma=0.3$ (donc $2\sigma^2=0.18$) :
+\begin{center}
+\begin{tabular}{ccc}
+\toprule
+$x_i$ & $(x_i-(-1))^2$ & $k(-1,x_i)=\exp(-(x_i+1)^2/0.18)$ \\
+\midrule
+$-1.2$ & $0.04$ & $0.80$ \\
+$-0.9$ & $0.01$ & $0.95$ \\
+$-1.1$ & $0.01$ & $0.95$ \\
+$-0.8$ & $0.04$ & $0.80$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Somme $\approx 0.80+0.95+0.95+0.80 = 3.49$ (à $10^{-2}$ près). Contrairement à l'approche paramétrique,
+cette estimation reste \enquote{raisonnable} car elle n'extrapole pas au-delà de la forme observée des
+données.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}{Solution -- Kernel Mean Matching, Exercice~2.2}
+\begin{enumerate}[label=(\alph*)]
+\item Le problème non contraint $\min_w w^\top K w - 2\kappa^\top w$ est convexe quadratique (car $K$
+est une matrice de Gram, semi-définie positive). La condition du premier ordre est
+$\nabla_w\big(w^\top K w - 2\kappa^\top w\big) = 2Kw - 2\kappa = 0 \iff w^\star = K^{-1}\kappa$.
+\item $\kappa_i = \frac{m}{n}\sum_{x'_j\in T_X} k(x_i,x'_j)$ est (à la constante $m/n$ près) une mesure
+de similarité moyenne entre le point source $x_i$ et l'ensemble de la cible : un point source
+\enquote{typique de la cible} aura un $\kappa_i$ élevé. La normalisation $m/n$ compense la différence de
+taille entre échantillon source ($m$ points) et cible ($n$ points), pour que $w^\star$ reste à la bonne
+échelle (poids moyen $\approx 1$ plutôt que $\approx n/m$).
+\item Les contraintes garantissent que $w$ reste interprétable comme un ratio de densités : $w\ge 0$ car
+un ratio de densités est positif, et $\sum_i w_i = m$ assure que la \enquote{masse totale} repondérée de
+la source reste comparable à sa masse d'origine (analogue discret de $\int w(x)p_s(x)\,dx = \int
+p_t(x)\,dx = 1$). Sans ces contraintes, $w^\star=K^{-1}\kappa$ pourrait prendre des valeurs négatives ou
+une échelle arbitraire, perdant toute interprétation probabiliste : on obtiendrait un simple vecteur de
+coefficients de régression, pas une repondération valide.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}{Solution -- Classifieur de domaine, Exercice~2.3}
+\begin{enumerate}[label=(\alph*)]
+\item Comme dans l'exercice du cours (Exercice~3.2), on maximise point par point $g(\phi) = p_s(x)\log
+\phi + p_t(x)\log(1-\phi)$ : $g'(\phi)=p_s(x)/\phi - p_t(x)/(1-\phi)=0 \iff \phi^\star(x) =
+\dfrac{p_s(x)}{p_s(x)+p_t(x)}$ (et $g''<0$, donc c'est bien un maximum).
+\item $\dfrac{1}{\phi^\star(x)} = \dfrac{p_s(x)+p_t(x)}{p_s(x)} = 1 + \dfrac{p_t(x)}{p_s(x)}$, donc
+$w(x) = \dfrac{1}{\phi^\star(x)} - 1$ --- \emph{la même formule que dans le cours}, mais construite ici
+avec la convention $\phi(x)=\P(S\mid x)$ (et non $\P(T\mid x)$).
+\item En appliquant la formule $w=1/\phi-1$ à un classifieur entraîné avec $\phi(x)=\P(T\mid x)$ (la
+convention du cours), le data scientist calcule en réalité
+\[
+\frac{1}{\P(T\mid x)} - 1 = \frac{1-\P(T\mid x)}{\P(T\mid x)} = \frac{\P(S\mid x)}{\P(T\mid x)} \approx
+\frac{p_s(x)}{p_t(x)} = \frac{1}{w(x)}.
+\]
+Il calcule donc l'\textbf{inverse} du poids voulu : il sous-pondère les points source
+\enquote{typiquement cible} (ceux qu'on veut justement amplifier) et sur-pondère les points
+\enquote{typiquement source} (ceux qui apportent le moins d'information sur la cible). C'est un bug
+silencieux --- le code s'exécute sans erreur, mais dégrade activement l'adaptation. D'où l'importance de
+toujours vérifier la convention avant d'implémenter (cf. mise en garde du cours).
+\end{enumerate}
+\end{exercisebox}
+
+\section{Bornes de généralisation}
+
+\begin{exercisebox}{Solution -- $\Hcal$-divergence, Exercice~3.1}
+\begin{enumerate}[label=(\alph*)]
+\item $h_1(x)=\1[x\le 2]$ vaut $1$ en $x=1,2$ (tous les points source) et $0$ en $x=3,4$ (tous les
+points cible). Donc $\P_{D_S}[h_1=1]=1$ et $\P_{D_T}[h_1=1]=0$.
+\item Avec $h_1$ : $2\,|1-0| = 2$.
+\item $h_2(x)=\1[x\le 3]$ vaut $1$ en $x=1,2,3$, donc $\P_{D_S}[h_2=1]=1$ (les deux points source sont
+$\le 3$) et $\P_{D_T}[h_2=1]=\P(x=3)=0.5$ (un seul des deux points cible, $x=3$, vérifie $x\le3$). D'où
+$2\,|1-0.5|=1$. Le classifieur $h_1$ atteint donc la plus grande valeur : $d_\Hcal(D_S,D_T) =
+\max(2,1)=2$. C'est cohérent avec le fait que $h_1$ sépare \emph{parfaitement} source et cible (erreur de
+classification nulle), tandis que $h_2$ ne les sépare qu'imparfaitement.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}{Solution -- Lecture de la borne de Ben-David, Exercice~3.2}
+\begin{enumerate}[label=(\alph*)]
+\item $\hat d_\Hcal(S_X,T_X) = 2\big(1-2\,\mathrm{err}(\phi)\big)$, où $\mathrm{err}(\phi)$ est l'erreur
+du meilleur classifieur de domaine entraîné sur $S_X$ vs. $T_X$.
+\item $\hat d_\Hcal = 2(1-2\times 0.42) = 2\times 0.16 = 0.32$.
+\item $R_T(h) \le R_S(h) + \tfrac12 \hat d_\Hcal + \lambda_\Hcal = 0.05 + 0.16 + 0.03 = 0.24$.
+\item Avec $\mathrm{err}(\phi')=0.08$ : $\hat d'_\Hcal = 2(1-0.16)=1.68$, ce qui donne une borne
+$0.05+0.84+0.03=0.92$. Un classifieur de domaine \emph{plus performant} signale des domaines \emph{plus
+facilement séparables}, donc \emph{plus éloignés} au sens de $\Hcal$ : c'est un signal que le problème de
+transfert est intrinsèquement plus difficile dans ce second cas. La borne obtenue (proche de $1$, le
+risque maximal pour une perte 0/1) est ici quasiment \textbf{non informative} : elle ne garantit presque
+rien sur $R_T(h)$. Ce résultat illustre bien le compromis au cœur de la borne de Ben-David : un bon
+transfert nécessite \emph{à la fois} un faible risque source \emph{et} des domaines peu séparables.
+\end{enumerate}
+\end{exercisebox}
+
+\begin{exercisebox}{Solution -- Rôle du KL, Exercice~3.3}
+\begin{enumerate}[label=(\alph*)]
+\item Avec $m=500$, $\delta=0.05$, $\log(1/\delta)=\log(20)\approx 2.996$ :
+\[
+\text{Borne}(Q_1) = 0.10+0.04+\sqrt{\frac{2.0+2.996}{500}} = 0.14+\sqrt{0.00999}\approx 0.14+0.10=0.24.
+\]
+\[
+\text{Borne}(Q_2) = 0.06+0.03+\sqrt{\frac{45.0+2.996}{500}} = 0.09+\sqrt{0.09599}\approx 0.09+0.31=0.40.
+\]
+\item Au vu du seul risque source, $Q_2$ ($R_S=0.06$) semble préférable à $Q_1$ ($R_S=0.10$). Mais la
+borne complète inverse le classement : $Q_1$ (borne $\approx 0.24$) est préférable à $Q_2$ (borne
+$\approx 0.40$), car le coût en complexité ($\KL=45$ contre $2$) de $Q_2$ domine largement son gain en
+risque empirique.
+\item C'est exactement le compromis biais/complexité rencontré ailleurs en apprentissage statistique (cf.
+arbitrage biais-variance, ou le rôle du terme de régularisation/KL dans les certificats PAC-Bayésiens pour
+les méthodes d'ensemble) : un modèle qui \enquote{colle} très près des données d'entraînement (ici, un
+posterior très concentré, loin du prior) n'est fiable que si sa complexité reste sous contrôle ; sinon,
+son bon score empirique ne se généralise pas et la borne --- donc la garantie théorique de performance
+--- s'en trouve dégradée.
+\end{enumerate}
+\end{exercisebox}
+
+\section{Ouverture : méthodes récentes}
+
+\begin{exercisebox}{Solution -- DANN et Gradient Reversal Layer, Exercice~4.1}
+\begin{enumerate}[label=(\alph*)]
+\item $G_f$ et $G_y$ minimisent $\mathcal L_y - \lambda \mathcal L_d$ (ils veulent bien classifier les
+labels \emph{et} rendre $\mathcal L_d$ la plus grande possible, donc minimisent son opposé), tandis que
+$G_d$ minimise $\mathcal L_d$ seul (il veut au contraire bien discriminer les domaines). C'est un jeu à
+somme non nulle entre $(G_f,G_y)$ et $G_d$.
+\item En rétropropagation standard, tous les morceaux du réseau feraient une descente de gradient sur la
+même perte totale, donc $G_f$ \emph{minimiserait} aussi $\mathcal L_d$ comme $G_d$ --- ce qui est
+l'inverse de ce qu'on veut. En multipliant le gradient de $\mathcal L_d$ par $-\lambda$ uniquement lors de
+sa traversée de $G_f$, on transforme localement, du point de vue de $G_f$, une descente de gradient sur
+$\mathcal L_d$ en une \emph{montée} de gradient (donc une maximisation), sans changer l'algorithme
+d'optimisation global (toujours une simple descente de gradient) ni ajouter de boucle d'optimisation
+imbriquée --- une astuce purement calculatoire, très efficace en pratique.
+\item Il minimise (du point de vue de $G_d$) l'erreur du classifieur de domaine sur les features
+$G_f(x)$, c'est-à-dire minimise $\mathrm{err}(\phi)$ dans l'espace des features appris. Or, la borne de
+Ben-David dépend de $\hat d_\Hcal = 2(1-2\,\mathrm{err}(\phi))$ : \emph{maximiser} $\mathrm{err}(\phi)$
+(ce vers quoi $G_f$ est poussé par le gradient inversé, en rendant les domaines indiscernables) revient à
+\emph{minimiser} $\hat d_\Hcal$, donc directement le second terme de la borne de généralisation.
+\item Quand les proportions de classes diffèrent fortement entre source et cible (target shift marqué),
+forcer $\hat d_\Hcal(S,T)\to 0$ (features totalement invariantes au domaine) peut détruire l'information
+nécessaire à la discrimination des classes elles-mêmes, augmentant en réalité le terme irréductible
+$\lambda_\Hcal$ (cf. Zhao et al., 2019, vu en cours) : DANN peut alors dégrader la performance cible malgré
+un classifieur de domaine \enquote{trompé} avec succès.
+\end{enumerate}
+\end{exercisebox}
+
+\end{document}

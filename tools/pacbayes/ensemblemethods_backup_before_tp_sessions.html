@@ -1,0 +1,222 @@
+<!DOCTYPE HTML>
+<!--
+	Strata by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Ensemble Methods — Guillaume Metzler</title>
+		<meta name="description" content="Ressources et supports du cours Ensemble Methods - Guillaume Metzler, maitre de conferences a l'Universite Lyon 2." />
+		<link rel="icon" type="image/svg+xml" href="../images/favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:wght@600;700&display=swap" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+		<link rel="stylesheet" href="../assets/css/site.css" />
+		<!-- Google tag (gtag.js) -->
+		<script async src="https://www.googletagmanager.com/gtag/js?id=G-BYH92T5GHN"></script>
+		<script>
+		  window.dataLayer = window.dataLayer || [];
+		  function gtag(){dataLayer.push(arguments);}
+		  gtag('js', new Date());
+		  gtag('config', 'G-BYH92T5GHN');
+		</script>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<div class="inner">
+					<a class="image avatar"><img src="../images/courses/ensemblemethods.png" alt="" /></a>
+					<h1><strong>Ensemble Methods</strong> <br> <br></h1>
+					<h1><strong>  <a href="../teaching.html">Retour aux enseignements</a> </strong></h1>
+
+				<p>
+					<h4>
+						Lectures : 5 classes of 3h provided by Guillaume Metzler 
+						<br>
+						<br>
+						Practical Sessions : 2 classes of 3h provided by Guillaume Metzler 
+					</h4>
+				</p>
+				</div>
+			</header>
+
+		<!-- Main -->
+			<div id="main">
+
+				<!-- One -->
+					<section id="one">
+						<header class="major">
+							<h2>Course Content</h2>
+						</header>
+						<p>In this course, we will take a look at Machine Learning in order to consolidate the theoretical, algorithmic and practical basics. <br>
+						Learning methods based on bagging, boosting and stacking will then be presented. Following this, and depending on the time remaining, short introductions to the following topics will be given: PAC-Bayes theory, which is a very suitable theoretical framework for ensemble methods, metric learning and domain adaptation. </p>
+
+						<p>The aim of this course is to assimilate good experimental practices in order to be able to compare methods correctly. It also aims to present different aspects of Machine Learning via set methods.</p>
+
+						<div class="resource-block">
+<p><strong>Lectures</strong></p>
+
+
+						<ul class="actions">
+							<li><a href="contents/supervisedlearning/poly.pdf" class="button">Poly</a> </li>
+							<!--<li><a href="contents/ensemblemethods/slides1/pdf" class="button">Slides</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/ensemble.pdf" class="button">Slides I</a> </li>
+							<li><a href="contents/ensemblemethods/imbalanced.pdf" class="button">Slides II</a> </li>
+						</ul>
+						</div>
+
+						<div class="resource-block">
+<p><strong>Practical Sessions</strong></p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/TD1.pdf" class="button">Fondamentaux</a> </li>
+							<li><a href="contents/ensemblemethods/datasets.zip" class="button" download="datasets.zip">Datasets</a> </li>
+							<li><a href="contents/ensemblemethods/prepdata.py" class="button" download="prepdata.py">Prep. Data</a> </li>
+						</ul>
+
+
+						<!--<ul class="actions">
+							<li><a href="contents/fouillemassive/CorrectionTD1.pdf" class="button">Correction</a> </li>
+							<li><a href="contents/fouillemassive/CodeTD1.zip" class="button" download="CodeTD1.zip">Code</a> </li>
+						</ul>-->
+						</div>
+
+						<div class="resource-block">
+<p><strong>Project</strong></p>
+
+						The following files contain the project associated to this course. 
+						 
+
+						<p></p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/projet.pdf" class="button">Project</a> </li>
+							
+						</ul>
+						</div>
+
+
+						<div class="resource-block">
+<p><strong>Exam</strong></p>
+
+						In the folowing you will find the exams of the previous years. The corrections will never be available. 
+
+						<p></p>
+						<table class="resource-table">
+							<thead><tr><th>Session</th><th>Subject</th></tr></thead>
+							<tbody>
+								<tr>
+									<td class="session">2023</td>
+									<td data-label="Subject"><a href="contents/ensemblemethods/exam2023.pdf" class="button">PDF</a></td>
+								</tr>
+								<tr>
+									<td class="session">2024</td>
+									<td data-label="Subject"><a href="contents/ensemblemethods/exam2024.pdf" class="button">PDF</a></td>
+								</tr>
+							</tbody>
+						</table>
+						</div>
+					</section>
+			
+					<section id="pacbayes">
+						<header class="major">
+							<h2>Apprentissage PAC-Bayes</h2>
+						</header>
+						<p>This part of the course presents <strong>PAC-Bayesian theory</strong>, a theoretical framework which is particularly well suited to ensemble methods: a weighted majority vote (bagging, random forests, boosting...) is nothing but a <em>distribution over voters</em>. We will see how to derive tight generalization bounds (risk certificates) for such votes, how the <em>diversity</em> of the voters appears in these bounds (tandem bound, C-bound), and how to learn the weights of a vote by minimizing a bound. Kernel methods and linear classifiers are also revisited from this point of view.</p>
+
+						<div class="resource-block">
+<p><strong>Lecture notes</strong></p>
+
+						<p>A complete document covering the theory (general PAC-Bayesian theorem, classical bounds of McAllester, Seeger, Catoni, bounds on the majority vote) and the associated learning algorithms, with historical and recent references.</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/poly_pacbayes.pdf" class="button">PAC-Bayes Poly</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/poly_pacbayes_solutions.pdf" class="button">Solutions to the exercises</a> </li>-->
+						</ul>
+						</div>
+
+						<div class="resource-block">
+<p><strong>Python Notebooks</strong></p>
+
+						<p>The notebooks illustrate the notions of the lecture on simulated data and on datasets available in scikit-learn. The button <strong>« Open in Colab »</strong> lets you run a notebook directly in your browser; the other button downloads the file to run it locally (Jupyter, VS Code...).</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/01_pacbayes_foundations_student.ipynb" class="button" download="01_pacbayes_foundations_student.ipynb">1. Foundations: Gibbs classifier, KL, concentration</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/01_pacbayes_foundations_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/01_pacbayes_foundations_solution.ipynb" class="button" download="01_pacbayes_foundations_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/02_pacbayes_classical_bounds_student.ipynb" class="button" download="02_pacbayes_classical_bounds_student.ipynb">2. Classical PAC-Bayesian bounds</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/02_pacbayes_classical_bounds_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/02_pacbayes_classical_bounds_solution.ipynb" class="button" download="02_pacbayes_classical_bounds_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/03_pacbayes_majority_vote_student.ipynb" class="button" download="03_pacbayes_majority_vote_student.ipynb">3. Bounds on the majority vote</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/03_pacbayes_majority_vote_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/03_pacbayes_majority_vote_solution.ipynb" class="button" download="03_pacbayes_majority_vote_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/04_pacbayes_learning_votes_student.ipynb" class="button" download="04_pacbayes_learning_votes_student.ipynb">4. Learning the weights of a vote</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/04_pacbayes_learning_votes_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/04_pacbayes_learning_votes_solution.ipynb" class="button" download="04_pacbayes_learning_votes_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/notebooks/05_pacbayes_linear_kernel_student.ipynb" class="button" download="05_pacbayes_linear_kernel_student.ipynb">5. Linear classifiers, SVM and kernels</a> <a href="https://colab.research.google.com/github/GuillaumeMetzler/GuillaumeMetzler.github.io/blob/master/courses/contents/ensemblemethods/pacbayes/notebooks/05_pacbayes_linear_kernel_student.ipynb" class="button" target="_blank" rel="noopener">Open in Colab</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/05_pacbayes_linear_kernel_solution.ipynb" class="button" download="05_pacbayes_linear_kernel_solution.ipynb">Solution</a> </li>-->
+						</ul>
+						</div>
+
+						<div class="resource-block">
+<p><strong>Tutorials and Practical Session</strong></p>
+
+						<p>The tutorial sheet (pen and paper) covers the main proofs of the lecture; the practical session computes risk certificates for random forests and boosting on the datasets of the course, using the module <code>pbtools.py</code>.</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/td_pacbayes.pdf" class="button">TD PAC-Bayes</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/td_pacbayes_solutions.pdf" class="button">Solutions</a> </li>-->
+						</ul>
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/tp_pacbayes.pdf" class="button">TP PAC-Bayes</a> </li>
+							<li><a href="contents/ensemblemethods/pacbayes/pbtools.py" class="button" download="pbtools.py">pbtools.py</a> </li>
+							<!--<li><a href="contents/ensemblemethods/pacbayes/tp_pacbayes_solutions.pdf" class="button">Solutions</a> </li>-->
+							<!--<li><a href="contents/ensemblemethods/pacbayes/notebooks/tp_pacbayes_solutions.ipynb" class="button" download="tp_pacbayes_solutions.ipynb">Solution notebook</a> <a href="contents/ensemblemethods/pacbayes/tp_solutions.py" class="button" download="tp_solutions.py">tp_solutions.py</a> </li>-->
+						</ul>
+						</div>
+
+						<div class="resource-block">
+<p><strong>Project</strong></p>
+
+						<p>Project for M2 students: PAC-Bayesian learning of weighted majority votes (library, experimental study and one research direction).</p>
+
+						<ul class="actions">
+							<li><a href="contents/ensemblemethods/pacbayes/projet_pacbayes.pdf" class="button">PAC-Bayes Project</a> </li>
+						</ul>
+						</div>
+					</section>
+
+					<section class="stats-widget" id="grades-widget" data-slug="ensemblemethods">
+						<header class="major">
+							<h2>Statistiques de reussite</h2>
+						</header>
+						<p class="stats-intro">Distribution des notes obtenues par les etudiant&middot;e&middot;s a cet enseignement (mise a jour au fil des sessions).</p>
+						<div class="stats-controls">
+							<select class="stats-year" hidden></select>
+						</div>
+						<p class="stats-empty" hidden>Aucune donnee de notes n'est encore disponible pour cet enseignement.</p>
+						<div class="stats-tiles" hidden></div>
+						<div class="stats-chart-wrap" hidden>
+							<canvas height="110"></canvas>
+						</div>
+					</section>
+			</div>
+		<!-- Scripts -->
+			<script src="../assets/js/site.js"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+			<script src="../assets/js/grades.js"></script>
+
+	</body>
+</html>

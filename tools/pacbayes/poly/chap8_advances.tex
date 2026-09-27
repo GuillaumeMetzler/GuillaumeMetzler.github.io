@@ -1,0 +1,146 @@
+%% ======================================================================
+\section{Further topics and recent advances}
+\label{chap:advances}
+%% ======================================================================
+
+\begin{objectives}
+\guiding{Where does PAC-Bayes go beyond this course?}
+This last section is a reading guide. It briefly presents some active research
+directions --- unbounded losses and dependent data, other divergences,
+information-theoretic bounds, disintegrated bounds, domain adaptation --- with
+pointers to the literature. It is a good starting point for the research part of
+the project.
+\end{objectives}
+
+\subsection{Beyond bounded losses and i.i.d.\ data}
+
+All the bounds of this course assume a loss with values in $[0,1]$ and i.i.d.\
+data. The boundedness enters the proofs at a single place: the control of the
+exponential moment $\mathcal I_\Delta(m)$ in the third step of
+Theorem~\ref{thm:general}. For unbounded losses, such as the squared loss or the
+log-loss, this term must be controlled through assumptions on the tails of the
+loss (sub-Gaussian, sub-exponential, or bounded moments). This is the route
+followed by \citet{alquier2016properties} and \citet{germain2016pac}, whose
+analysis of Bayesian inference we met in \cref{chap:posteriors}. More recently,
+\citet{rodriguez2024more} and \citet{chugg2023unified} gave unified treatments,
+the latter based on nonnegative supermartingales, which also yield
+\emph{anytime-valid} bounds, holding simultaneously for all sample sizes. This property matters in online learning and
+sequential decision-making, where the number of observations is not fixed in
+advance. Martingale techniques similarly extend PAC-Bayes to dependent data and
+to reinforcement learning \citep{seldin2012pac,chugg2023unified}.
+
+\subsection{Other divergences and tighter inequalities}
+
+The KL divergence is not an intrinsic feature of PAC-Bayes: it comes from the
+change of measure \eqref{eq:dv}. Other changes of measure, based for instance
+on Hölder's inequality, yield bounds involving other divergences, such as Rényi
+divergences \citep{begin2016pac}, which offer different trade-offs between the
+complexity term and the confidence term. On the concentration side, the kl inequality is optimal
+for Bernoulli variables but not for losses with a small variance, and
+Bernstein-type inequalities exploit this variance
+\citep{tolstikhin2013pac,mhammedi2019pac}. For majority votes, the relevant
+excess losses take only three values, and the split-kl inequality of
+\citet{wu2022split} exploits this structure. On the prior side, data-dependent
+priors remain one of the most effective levers
+\citep{parrado2012pac,dziugaite2018data,perez2021tighter}, as we saw in
+\cref{fig:ddprior}.
+
+\subsection{Information-theoretic generalization bounds}
+
+PAC-Bayesian bounds control, with high probability, the average risk under a
+posterior that depends on the sample. A closely related family of results
+bounds the \emph{expected} generalization gap of a randomized algorithm by the
+\emph{mutual information} $I(S;h)$ between the sample and the output of the
+algorithm \citep{xu2017information}. The connection is direct: averaging a
+PAC-Bayesian bound over $S$ and choosing as prior the average posterior
+$P=\E_SQ_S$, which is the best data-independent prior in expectation, turns
+$\E_S\KL(Q_S\|P)$ into $I(S;h)$. The monograph of \citet{hellstrom2025generalization}
+presents both points of view in a unified way.
+
+\subsection{Deterministic predictors: disintegration}
+
+A recurring limitation of this course is that PAC-Bayes certifies a
+\emph{randomized} predictor, and we had to work to transfer the guarantee to the
+majority vote. Disintegrated bounds \citep{blanchard2007occam,rivasplata2020pac}
+take another route: they hold with high probability over the joint draw of the
+sample and of a \emph{single} hypothesis $h\sim Q_S$, so that the one model that
+is actually deployed is certified. \citet{viallard2024general} give a general
+framework and practical algorithms for such bounds. Applied to majority votes whose
+weights are drawn once from a distribution, as in the stochastic votes of
+\cref{chap:algos}, this approach certifies the vote that is actually used.
+
+\subsection{Domain adaptation and transfer}
+
+When the training distribution (the source) differs from the test distribution
+(the target), the risk of a majority vote on the target can be related to its
+risk on the source and to a \emph{divergence between the two domains}. PAC-Bayes
+is particularly well suited to this problem because the disagreement $\dD(Q)$
+can be computed on \emph{unlabeled} target data.
+\citet{germain2013pac,germain2020pac} define a domain divergence as the difference
+between the disagreements of the voters on the source and on the target, and
+derive PAC-Bayesian domain adaptation bounds together with algorithms that
+minimize them. Similar ideas are used for multi-view learning and for fairness
+constraints.
+
+\subsection{Open questions}
+
+Several questions raised in this course remain open. The first concerns the
+relation between tightness and learning. The tightest certificates, such as the
+kl bounds or the CCPBB bound, are not always the best learning objectives: we
+saw that minimizing the first-order bound gives an excellent bound on the Gibbs
+risk and a poor vote. Understanding which bound should be minimized to obtain
+the best \emph{predictor}, and not only the best certificate, is largely open.
+The second concerns scale. How should priors be designed for boosted ensembles
+with thousands of trees, or for ensembles of large neural networks, so that the
+bounds remain non-vacuous? Compression-based priors \citep{lotfi2022pac} give a
+partial answer. The third concerns diversity. Second-order bounds formalize the
+role of diversity in a vote, and one may hope to design ensemble algorithms that
+optimize the strength--diversity trade-off explicitly, with guarantees, beyond
+the implicit randomization of random forests.
+
+\begin{exercises}
+\begin{exercise}
+\textbf{(Comprehension)} A practitioner collects examples one at a time, recomputes
+Seeger's bound with $\delta=0.05$ after each new example, and stops as soon as the
+certificate is below a target. Explain why the reported certificate is not guaranteed
+to hold with probability $0.95$. Show that applying the bound for sample size $m$ with
+confidence $\delta_m=\frac{\delta}{m(m+1)}$ gives a bound valid simultaneously for all
+$m\geq8$, and compute the extra cost in nats and the resulting Seeger bound for
+$m=1000$, $\RS(\GQ)=0.1$, $\KL(Q\|P)=5$, $\delta=0.05$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Let $\Hcal$ be finite, $S\mapsto Q_S$ a learning rule, and write
+$\bar Q=\E_S Q_S$ for the average posterior. Show that, for any prior $P$,
+$\E_S\KL(Q_S\|P)=\E_S\KL(Q_S\|\bar Q)+\KL(\bar Q\|P)$. Deduce that $\bar Q$ minimizes
+$\E_S\KL(Q_S\|P)$ over data-independent priors, and that the minimum equals the mutual
+information $I(S;h)$ between the sample and a hypothesis $h\sim Q_S$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} Explain why the disagreement $\dD(Q)$ of a vote can be
+estimated on unlabeled target examples, whereas its Gibbs risk and its joint error cannot.
+Suppose that the disagreement measured on unlabeled target data is $0.30$ and that the
+target joint error is (somehow) known to be $0.05$: compute the target Gibbs risk and the
+oracle C-bound on the target risk of the vote.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} A certificate $\mathcal B$ holds for the Gibbs risk $\RD(\GQ)$
+with probability at least $1-\delta$. A single network $h\sim Q$ is drawn once and deployed.
+Is $\RD(h)\leq\mathcal B$ guaranteed with high probability? Using Markov's inequality over
+$h\sim Q$, show that $\RD(h)\leq\mathcal B/\eta$ with probability at least $1-\delta-\eta$, and
+compute this guarantee for $\mathcal B=0.05$ and $\eta=0.1$. What do disintegrated bounds
+improve?
+\end{exercise}
+\end{exercises}
+
+\subsection*{Further reading}
+\addcontentsline{toc}{section}{Further reading}
+
+For a first contact with PAC-Bayes, the tutorial of \citet{langford2005tutorial}
+remains an excellent entry point, and the surveys of \citet{guedj2019primer} and
+\citet{alquier2024user} cover the more recent developments, the latter from a
+statistical perspective. For majority votes, the main references are
+\citet{germain2015risk} for the C-bound, \citet{masegosa2020second} for the tandem
+bound, \citet{wu2021chebyshev} for the Chebyshev--Cantelli family and
+\citet{viallard2021self} for self-bounding algorithms. The monograph of
+\citet{catoni2007pac} and the recent monograph of \citet{hellstrom2025generalization}
+are more advanced.

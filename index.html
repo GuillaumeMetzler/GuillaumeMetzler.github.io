@@ -117,32 +117,11 @@
 		<div class="container">
 			<div class="section-title"><h2>Actualités</h2></div>
 
-			<article class="card news-item">
-				<div class="news-icon amber"><i class="fa-solid fa-flask" aria-hidden="true"></i></div>
-				<div>
-					<span class="date">2026</span>
-					<h3>Nouveau préprint sur arXiv</h3>
-					<p><em>PAC-Bayesian Generalization Guarantees for Fairness on Stochastic and Deterministic Classifiers</em>, J. Bastian, B. Leblanc, P. Germain, A. Habrard, C. Largeron, G. Metzler, E. Morvant, P. Viallard. <a href="https://arxiv.org/abs/2602.11722" target="_blank" rel="noopener">Voir le préprint</a></p>
-				</div>
-			</article>
+			<div id="home-news-list">
+				<!-- genere dynamiquement par assets/js/home-news.js, a partir des 5 publications
+				     les plus recentes (conferences, revues, preprints) de assets/js/data/publications.js -->
+			</div>
 
-			<article class="card news-item">
-				<div class="news-icon blue"><i class="fa-solid fa-award" aria-hidden="true"></i></div>
-				<div>
-					<span class="date">Septembre 2025</span>
-					<h3>Article accepté à ECML-PKDD</h3>
-					<p><em>SigBERT: Combining Narrative Medical Reports and Rough Path Signature Theory for Survival Prediction in Oncology</em>, P. Minchella, L. Verlingue, S. Chrétien, R. Vaucher, G. Metzler. <a href="articles/2025/paper_ecml.pdf">Voir l'article</a></p>
-				</div>
-			</article>
-
-			<article class="card news-item">
-				<div class="news-icon blue"><i class="fa-solid fa-award" aria-hidden="true"></i></div>
-				<div>
-					<span class="date">Avril 2025</span>
-					<h3>Article accepté à NAACL</h3>
-					<p><em>HISTOIRESMORALES: A French Dataset for Assessing Moral Alignment</em>, T. Leteno, I. Proskurina, A. Gourru, J. Velcin, C. Laclau, G. Metzler, C. Gravier. <a href="https://aclanthology.org/2025.naacl-long.131/" target="_blank" rel="noopener">Voir l'article</a></p>
-				</div>
-			</article>
 		</div>
 	</section>
 
@@ -158,5 +137,8 @@
 		</div>
 	</footer>
 	<script src="assets/js/site.js"></script>
+	<script src="assets/js/data/publications.js"></script>
+	<script src="assets/js/pub-shared.js"></script>
+	<script src="assets/js/home-news.js"></script>
 </body>
 </html>

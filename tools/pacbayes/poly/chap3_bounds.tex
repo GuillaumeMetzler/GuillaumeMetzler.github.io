@@ -1,0 +1,506 @@
+%% ======================================================================
+\section{PAC-Bayesian generalization bounds}
+\label{chap:bounds}
+%% ======================================================================
+
+\begin{objectives}
+\guiding{How much can the true risk of a randomly drawn voter exceed its
+empirical risk, when the distribution of the voters has been chosen with the data?}
+This section bounds the true risk of the Gibbs classifier $\GQ$. We first
+explain why a useful bound must hold simultaneously for all posteriors, then
+state and prove a general PAC-Bayesian theorem whose proof has only three steps
+(Jensen, change of measure, Markov). The classical bounds of McAllester,
+Seeger--Maurer and Catoni, and the PAC-Bayes-$\lambda$ bound, are all obtained
+as corollaries, and we compare them numerically to learn how to read the
+different terms of a bound.
+\end{objectives}
+
+\subsection{Why the bound must hold for all posteriors}
+
+Before stating any PAC-Bayesian bound, we must understand what kind of
+guarantee we need. A learning algorithm looks at the data before choosing its
+output. If we compute a confidence bound for the chosen predictor as if it had
+been fixed in advance, we forget this selection step, and the bound can be badly
+wrong. The experiment reported in \cref{fig:uniformity} shows how badly. We
+draw $1000$ classifiers that answer completely at random, so that each of them
+has a true risk of exactly $0.5$, and we evaluate them on a sample of $m=100$
+examples. By chance alone, the best of them has an empirical risk of about
+$0.34$ on average. If we now apply Hoeffding's inequality to this best
+classifier as if it were fixed, we obtain an ``upper bound'' which is below
+$0.5$ in $99.8\%$ of the runs, although it should fail in at most $5\%$ of
+them. The Occam bound of \cref{sec:occam}, which pays $\ln 1000$ for the
+selection, fails in only $0.3\%$ of the runs.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{uniformity}
+\caption{Selection bias. Distribution, over $2000$ repetitions, of the smallest
+empirical risk among $1000$ random classifiers of true risk $0.5$, measured on
+$m=100$ examples. A confidence bound computed for the selected classifier as
+if it had been fixed in advance is violated in almost every run.}
+\label{fig:uniformity}
+\end{figure}
+
+This is why all the bounds of this section are \emph{uniform}: they hold, with
+probability at least $1-\delta$, for all posteriors $Q$ at the same time. The
+posterior can then be chosen by any procedure that looks at the data ---
+including the minimization of the bound itself --- without invalidating the
+guarantee. The price of uniformity is the complexity term $\KL(Q\|P)$, which
+plays the role that $\ln|\Hcal|$ played in the Occam bound. The next subsection
+shows that this price is enough, with a single theorem.
+
+\subsection{A general PAC-Bayesian theorem}
+
+Rather than proving each classical bound separately, we prove one theorem that
+contains them all, in the form given by \citet{germain2009pac} and
+\citet{begin2016pac}. It is parametrized by a convex function $\Delta$, which
+measures the discrepancy between an empirical risk and a true risk.
+
+\begin{theorem}{General PAC-Bayesian theorem \citep{germain2009pac,begin2016pac}}{general}
+Let $\Delta:[0,1]\times[0,1]\to\R$ be a \emph{jointly convex} function. For any
+distribution $\D$ on $\X\times\Y$, any set of voters $\Hcal$, any loss
+$\ell$ with values in $[0,1]$, any prior $P\in\M(\Hcal)$ and any
+$\delta\in(0,1]$, with probability at least $1-\delta$ over $S\sim\D^m$,
+\begin{equation}\label{eq:general}
+\forall Q\in\M(\Hcal),\quad
+\Delta\big(\RS(\GQ),\RD(\GQ)\big)\leq\frac1m\left[\KL(Q\|P)+\ln\frac{\mathcal I_\Delta(m)}{\delta}\right],
+\end{equation}
+where $\mathcal I_\Delta(m)=\Esp{S'\sim\D^m}{\Esp{h\sim P}{e^{m\Delta(\widehat R_{S'}(h),\RD(h))}}}$.
+\end{theorem}
+
+In words, with high probability, and for every posterior at once, the gap
+between the empirical and the true Gibbs risk, measured by $\Delta$, is at most
+a complexity per example: the KL divergence plus a confidence term, divided by
+$m$. Only $\mathcal I_\Delta(m)$ is left to compute, and it involves the prior
+alone.
+
+Before the proof, let us describe its strategy. We want to control a
+quantity that involves the posterior $Q$, which depends on the data, and we only
+know how to control quantities that involve voters fixed in advance. The proof
+therefore moves the problem in three steps. First, it replaces the discrepancy of
+the \emph{average} voter by the average discrepancy of the voters (Jensen).
+Second, it replaces the average under $Q$ by an average under the prior $P$, at
+the price $\KL(Q\|P)$ (change of measure). Third, it controls the resulting
+quantity, which no longer involves $Q$, on average over the samples (Markov).
+The function $\Delta$ only matters in the last step, and each choice of
+$\Delta$ will give one of the classical bounds.
+
+\begin{proof}
+Fix a sample $S$ and a posterior $Q$. The first step uses Jensen's
+inequality. Since $\Delta$ is jointly convex and the two risks of $\GQ$ are
+$Q$-expectations of the risks of the voters,
+\begin{align*}
+m\,\Delta\big(\RS(\GQ),\RD(\GQ)\big)
+&=m\,\Delta\Big(\Esp{h\sim Q}{\RS(h)},\Esp{h\sim Q}{\RD(h)}\Big)\\
+&\leq\Esp{h\sim Q}{m\,\Delta\big(\RS(h),\RD(h)\big)}.
+\end{align*}
+The second step is the change of measure: Lemma~\ref{lem:dv} with
+$\phi(h)=m\,\Delta(\RS(h),\RD(h))$ gives
+\[
+\Esp{h\sim Q}{m\,\Delta\big(\RS(h),\RD(h)\big)}\leq\KL(Q\|P)+\ln\Esp{h\sim P}{e^{m\Delta(\RS(h),\RD(h))}}.
+\]
+The posterior has now disappeared from the last term, which only involves the
+prior; it is a random variable $Z(S)=\E_{h\sim P}\,e^{m\Delta(\RS(h),\RD(h))}$
+that depends on the sample only. The third step bounds this variable. It is
+non-negative, so Markov's inequality ensures that, with probability at least
+$1-\delta$ over $S$, $Z(S)\leq\frac1\delta\E_{S'}Z(S')$. Since $P$ does not
+depend on $S'$, Fubini's theorem allows us to exchange the two expectations,
+$\E_{S'}Z(S')=\E_{h\sim P}\E_{S'}e^{m\Delta(\widehat R_{S'}(h),\RD(h))}=\mathcal I_\Delta(m)$.
+
+On the event of probability at least $1-\delta$ given by the third step,
+inequality \eqref{eq:general} holds for \emph{every} $Q$, because the first
+two steps are deterministic and valid for all posteriors simultaneously.
+\end{proof}
+
+The structure of this proof deserves attention, because it explains most of
+what follows. The only probabilistic statement is made in the third step, and
+it only concerns the prior: this is where the prior must be independent of the
+sample, since we need to exchange $\E_{S'}$ and $\E_{h\sim P}$ with $P$
+fixed. The posterior, on the other hand, only appears in the deterministic
+steps, and it may depend on $S$ in an arbitrary way. This asymmetry is what
+makes PAC-Bayesian bounds usable as learning objectives: we are free to
+minimize them over $Q$.
+
+To obtain a usable bound, it remains to choose $\Delta$ so that $\mathcal
+I_\Delta(m)$ can be computed or bounded. For a \emph{fixed} voter $h$, $m\RS(h)$
+is a sum of $m$ independent variables in $[0,1]$ with mean $\RD(h)$, so the
+concentration results of \cref{chap:tools} apply. Each of them yields one of the
+classical bounds, and the next subsection goes through them in turn: the kl form
+(the tightest), its relaxation by Pinsker's inequality (the most readable),
+Catoni's bound, and two linear bounds (the easiest to optimize).
+
+\subsection{The classical bounds}
+
+\subsubsection{Seeger's bound (kl form)}
+
+The most natural choice is the binary kl itself, since Maurer's lemma tells us
+exactly how large its exponential moment is.
+
+\begin{corollary}{\citet{seeger2002pac,langford2005tutorial}, with the constant of \citet{maurer2004note}}{seeger}
+For $m\geq8$, with probability at least $1-\delta$ over $S\sim\D^m$, for all $Q\in\M(\Hcal)$,
+\begin{equation}\label{eq:seeger}
+\kl\big(\RS(\GQ)\,\|\,\RD(\GQ)\big)\leq\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{m},
+\end{equation}
+that is, $\RD(\GQ)\leq\klup\Big(\RS(\GQ),\ \frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{m}\Big)$.
+\end{corollary}
+\begin{proof}
+Take $\Delta=\kl$, which is jointly convex. By Maurer's lemma
+(Lemma~\ref{lem:chernoff}), for every fixed $h$,
+$\E_{S'}e^{m\kl(\widehat R_{S'}(h)\|\RD(h))}\leq\xi(m)\leq2\sqrt m$, hence
+$\mathcal I_{\kl}(m)\leq2\sqrt m$.
+\end{proof}
+
+In plain words, the true Gibbs risk is at most the largest value that is still
+``plausible'', in the sense of the kl, given the observed Gibbs risk and a
+budget equal to the complexity per example. Seeger's bound has no free
+parameter and no closed form, but it is computed in a few microseconds by the
+bisection of \cref{algo:klinv}. As the numerical comparison below will show, it
+is among the tightest bounds available, and it is the one we use by default to
+compute risk certificates. It inherits the
+fast rate of the kl: when the empirical risk is zero, it gives
+$\RD(\GQ)\leq1-e^{-\varepsilon}\leq\varepsilon$ with
+$\varepsilon=\frac1m[\KL(Q\|P)+\ln\frac{2\sqrt m}\delta]$, a rate in $1/m$.
+Its only weakness is that it is implicit, which makes it hard to read; the next
+bound trades some tightness for readability.
+
+\subsubsection{McAllester's bound}
+
+Relaxing the kl with Pinsker's inequality gives the historical PAC-Bayesian
+bound, whose form is the easiest to interpret.
+
+\begin{corollary}{\citet{mcallester1999some,mcallester2003pac}, in the form of \citet{maurer2004note}}{mcallester}
+For $m\geq 8$, with probability at least $1-\delta$ over $S\sim\D^m$, for all $Q\in\M(\Hcal)$,
+\begin{equation}\label{eq:mcallester}
+\RD(\GQ)\leq\RS(\GQ)+\sqrt{\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{2m}}.
+\end{equation}
+\end{corollary}
+\begin{proof}
+Apply Pinsker's inequality $\kl(q\|p)\geq2(q-p)^2$ to \eqref{eq:seeger}.
+\end{proof}
+
+McAllester's bound reads ``true risk $\leq$ empirical risk $+$ complexity'',
+where the complexity is a square root of the KL per example. It has the same
+structure as the VC or Rademacher bounds of the first part of the course, the
+capacity of the class being replaced by the divergence of the chosen posterior
+from the prior. Its drawback is the $1/\sqrt m$ rate, which it keeps even when
+the empirical risk is zero; Seeger's bound is always at least as tight.
+
+\begin{history}
+The original bounds of \citet{mcallester1998some,mcallester1999some} had
+slightly worse constants, with a numerator of the form
+$\KL(Q\|P)+\ln\frac1\delta+O(\ln m)$ and a denominator $2m-1$. The kl form was
+introduced by \citet{seeger2002pac}, see also \citet{langford2005tutorial}, and the clean
+constant $\ln\frac{2\sqrt m}{\delta}$, valid for any loss in $[0,1]$, is due to
+\citet{maurer2004note}.
+\end{history}
+
+\subsubsection{Catoni's bound}
+
+Can we avoid the $\ln 2\sqrt m$ term altogether? \citet{catoni2007pac} uses a
+different comparison function, for which the exponential moment is not bounded
+by $2\sqrt m$ but by $1$, at the cost of a parameter that must be fixed in
+advance.
+
+\begin{corollary}{\citet{catoni2007pac}, see also \citet{germain2009pac}}{catoni}
+For any fixed $C>0$, with probability at least $1-\delta$ over $S\sim\D^m$, for all $Q$,
+\begin{equation}\label{eq:catoni}
+\RD(\GQ)\leq\frac{1}{1-e^{-C}}\left[1-\exp\Big(-C\,\RS(\GQ)-\frac{\KL(Q\|P)+\ln\frac1\delta}{m}\Big)\right].
+\end{equation}
+\end{corollary}
+\begin{proof}
+Take $\Delta(q,p)=\mathcal F_C(p)-C\,q$ with $\mathcal F_C(p)=-\ln\big(1-p(1-e^{-C})\big)$,
+which is convex. For a fixed $h$ with risk $p=\RD(h)$, the convexity of
+$u\mapsto e^{-Cu}$ on $[0,1]$ gives $e^{-Cu}\leq1-u(1-e^{-C})$, hence, by
+independence of the examples, $\E_{S'}e^{-Cm\widehat R_{S'}(h)}\leq\big(1-p(1-e^{-C})\big)^m=e^{-m\mathcal F_C(p)}$.
+Therefore $\E_{S'}e^{m\Delta(\widehat R_{S'}(h),p)}\leq1$ and $\mathcal I_\Delta(m)\leq1$.
+Rearranging $\mathcal F_C(\RD(\GQ))\leq C\RS(\GQ)+\frac1m[\KL+\ln\frac1\delta]$ gives \eqref{eq:catoni}.
+\end{proof}
+
+The parameter $C$ weighs the empirical risk against the complexity. It cannot be
+optimized after seeing the data for free, but the price is small. If we apply
+the bound with confidence $\delta/k$ to each value of a grid $C_1,\dots,C_k$
+fixed in advance, a union bound shows that it holds for all of them
+simultaneously; the best value can then be chosen at a cost of only $\ln k$ in
+the numerator. With such a grid, Catoni's bound is numerically very
+close to Seeger's, and even marginally smaller when the KL is small, since it
+does not pay the $\ln 2\sqrt m$ term. Using $1-e^{-x}\leq x$, it also implies
+the \emph{linear} bound
+$\RD(\GQ)\leq\frac{1}{1-e^{-C}}\big[C\,\RS(\GQ)+\frac{\KL(Q\|P)+\ln(1/\delta)}{m}\big]$.
+
+\subsubsection{Linear bounds and the PAC-Bayes-\texorpdfstring{$\lambda$}{lambda} bound}
+
+The last two bounds of this section are \emph{linear} in $\RS(\GQ)$ and in
+$\KL(Q\|P)$. This is a weakness as far as tightness is concerned, but a great
+strength for learning: minimizing a linear combination of the empirical risk and
+of the KL over $Q$ has an explicit solution, the Gibbs posterior of
+\cref{sec:gibbs_posterior}.
+
+\begin{corollary}{Hoeffding-based bound \citep{catoni2007pac,alquier2024user}}{hoeffding_pb}
+For any fixed $\lambda>0$, with probability at least $1-\delta$ over $S\sim\D^m$, for all $Q$,
+\begin{equation}\label{eq:catoni_hoeffding}
+\RD(\GQ)\leq\RS(\GQ)+\frac{\KL(Q\|P)+\ln\frac1\delta}{\lambda m}+\frac{\lambda}{8}.
+\end{equation}
+\end{corollary}
+\begin{proof}
+Take $\Delta(q,p)=\lambda(p-q)$, which is linear, hence convex. By Hoeffding's
+lemma (Lemma~\ref{lem:hoeffding}) applied with parameter $\lambda m$,
+$\E_{S'}e^{\lambda m(\RD(h)-\widehat R_{S'}(h))}\leq e^{\lambda^2m/8}$, so that
+$\frac1m\ln\mathcal I_\Delta(m)\leq\lambda^2/8$. Divide by $\lambda$.
+\end{proof}
+
+The bound reads ``empirical risk $+$ complexity$/\lambda$ $+$ $\lambda/8$'': a
+large $\lambda$ makes the KL cheap but increases the last term, and a small
+$\lambda$ does the opposite. The Hoeffding-based bound is the favourite of the
+statistical literature on PAC-Bayes \citep{alquier2024user}, because it leads to clean oracle inequalities.
+Its parameter $\lambda$ must again be fixed in advance. The next bound, obtained
+by relaxing Seeger's bound in a clever way, does not have this limitation.
+
+\begin{corollary}{PAC-Bayes-$\lambda$ bound \citep{thiemann2017strongly}}{lambda}
+With probability at least $1-\delta$ over $S\sim\D^m$, for all $Q\in\M(\Hcal)$ and all
+$\lambda\in(0,2)$ \emph{simultaneously},
+\begin{equation}\label{eq:lambda}
+\RD(\GQ)\leq\frac{\RS(\GQ)}{1-\frac\lambda2}+\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{\lambda\big(1-\frac\lambda2\big)m}.
+\end{equation}
+\end{corollary}
+\begin{proof}
+Let $\hat q=\RS(\GQ)$, $p=\RD(\GQ)$ and $\varepsilon=\frac1m[\KL(Q\|P)+\ln\frac{2\sqrt m}\delta]$.
+On the event of Corollary~\ref{cor:seeger}, if $p>\hat q$, the refined Pinsker inequality gives
+$(p-\hat q)^2\leq2p\,\varepsilon$, that is $p-\hat q\leq\sqrt{2p\varepsilon}$.
+For any $\lambda>0$, $\sqrt{2p\varepsilon}=\sqrt{\lambda p\cdot\frac{2\varepsilon}{\lambda}}\leq\frac{\lambda p}{2}+\frac{\varepsilon}{\lambda}$
+by the inequality between arithmetic and geometric means.
+Hence $p(1-\frac\lambda2)\leq\hat q+\frac\varepsilon\lambda$. Since this is a
+deterministic consequence of \eqref{eq:seeger}, it holds for all $\lambda$ at once.
+\end{proof}
+
+The PAC-Bayes-$\lambda$ bound keeps the linear structure of the previous one,
+but it is a deterministic consequence of Seeger's bound. Because it holds for
+all $\lambda$ simultaneously, $\lambda$ can be optimized freely, at no cost. For a fixed $Q$, the optimal value is
+\begin{equation}\label{eq:lambda_star}
+\lambda^\star=\frac{2}{\sqrt{\frac{2m\RS(\GQ)}{\KL(Q\|P)+\ln\frac{2\sqrt m}\delta}+1}+1},
+\end{equation}
+and for this value the PAC-Bayes-$\lambda$ bound is smaller than the
+relaxation $\hat q+\sqrt{2\hat q\varepsilon}+2\varepsilon$ of Seeger's bound
+given by Lemma~\ref{lem:pinsker}, but larger than Seeger's bound itself, from
+which it is derived. \citet{thiemann2017strongly} show moreover that
+\eqref{eq:lambda} is jointly quasiconvex in $(Q,\lambda)$ under mild conditions,
+which is the basis of the alternating minimization algorithm of \cref{sec:algo_fo}.
+
+\subsection{Reading and comparing the bounds}
+
+We now have five bounds; to choose among them, we must learn to read them.
+All these bounds share the same anatomy. The unknown true risk is bounded by a
+function of two quantities: the empirical risk of the posterior, which measures
+how well it fits the data, and the complexity per example
+$\frac1m[\KL(Q\|P)+\ln\frac{2\sqrt m}\delta]$, which measures how far the
+posterior has moved away from the prior. The first term decreases when $Q$
+concentrates on good voters, the second increases at the same time, and the
+bounds only differ in the way these two ingredients are combined. The
+confidence term is almost negligible: dividing $\delta$ by ten only adds
+$\ln 10\approx2.3$ nats to the numerator.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.75\linewidth]{bound_anatomy}
+\caption{Decomposition of McAllester's and Seeger's bounds into the empirical
+term (grey) and the complexity term, for $m=1000$, $\delta=0.05$ and
+$\RS(\GQ)=0.12$, as the KL divergence grows.}
+\label{fig:bound_anatomy}
+\end{figure}
+
+\Cref{fig:bound_anatomy} and \cref{tab:bound_anatomy} make this concrete. We fix
+$m=1000$, $\delta=0.05$ and an empirical Gibbs risk of $0.12$, and we let the KL
+divergence grow from $0$ to $50$ nats. With $\KL=0$, the complexity per example
+is only $0.007$, and all bounds lie between $0.16$ and $0.18$. The complexity
+term of McAllester's bound is already $0.06$, half the empirical risk, while
+Seeger's bound adds only $0.04$: the square root of Pinsker's inequality is
+expensive when the risk is far from $1/2$.
+
+As the KL grows, all bounds
+deteriorate, but slowly: $50$ nats, which is the cost of a posterior putting
+all its mass on one voter among $e^{50}\approx5\times10^{21}$, still leaves a
+non-trivial certificate of $0.26$. Catoni's bound optimized on a grid and
+Seeger's bound are almost indistinguishable, the former being slightly smaller
+for small KL. The PAC-Bayes-$\lambda$ bound, finally, is tighter than
+McAllester's bound when the KL is small but not when it is large.
+
+\begin{table}[t]
+\centering\small
+\caption{Values of the bounds for $\RS(\GQ)=0.12$, $m=1000$, $\delta=0.05$.
+Catoni's bound is optimized on a grid of $30$ values of $C$ with a union bound.}
+\label{tab:bound_anatomy}
+\begin{tabular}{rccccc}
+\toprule
+$\KL(Q\|P)$ & $\frac1m[\KL+\ln\frac{2\sqrt m}{\delta}]$ & McAllester & PAC-Bayes-$\lambda$ & Catoni (grid) & Seeger \\
+\midrule
+0 & 0.0071 & 0.180 & 0.169 & 0.160 & 0.162 \\
+2 & 0.0091 & 0.188 & 0.177 & 0.166 & 0.168 \\
+5 & 0.0121 & 0.198 & 0.187 & 0.175 & 0.177 \\
+10 & 0.0171 & 0.213 & 0.204 & 0.187 & 0.189 \\
+20 & 0.0271 & 0.236 & 0.232 & 0.207 & 0.209 \\
+50 & 0.0571 & 0.289 & 0.307 & 0.256 & 0.256 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\Cref{fig:bounds} shows the same comparison from two other angles. As a
+function of the sample size, the difference between the kl-based bounds and
+McAllester's bound is most visible when the empirical risk is zero: the former
+decrease like $1/m$, the latter like $1/\sqrt m$. As a function of the empirical
+risk, the bounds coincide near $1/2$ and separate when the risk is small, which
+is precisely the regime of good classifiers.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{bounds_comparison}
+\caption{Comparison of the bounds for $\delta=0.05$. Left: as a function of
+$m$, for $\RS(\GQ)=0.1$ and $\KL(Q\|P)=5$. Middle: same with $\RS(\GQ)=0$: the
+kl-based bounds (Seeger, and Catoni and PAC-Bayes-$\lambda$ which approximate it)
+decrease in $1/m$ whereas McAllester's bound decreases in $1/\sqrt m$.
+Right: as a function of the empirical risk for $m=1000$ and $\KL=10$.}
+\label{fig:bounds}
+\end{figure}
+
+The following table summarizes the section. The first column gives the
+comparison function used in Theorem~\ref{thm:general}, and the second the bound
+on its exponential moment that makes the theorem explicit.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\small
+\begin{tabular}{lccp{4.2cm}}
+\toprule
+Bound & $\Delta(q,p)$ & $\ln\mathcal I_\Delta(m)\leq$ & Main features \\
+\midrule
+Seeger \eqref{eq:seeger} & $\kl(q\|p)$ & $\ln 2\sqrt m$ & among the tightest; implicit \\
+McAllester \eqref{eq:mcallester} & $2(q-p)^2$ & $\ln 2\sqrt m$ & readable; slow rate $1/\sqrt m$ \\
+Catoni \eqref{eq:catoni} & $\mathcal F_C(p)-Cq$ & $0$ & tight on a grid of $C$ \\
+Hoeffding \eqref{eq:catoni_hoeffding} & $\lambda(p-q)$ & $\lambda^2m/8$ & linear; $\lambda$ fixed in advance \\
+PAC-Bayes-$\lambda$ \eqref{eq:lambda} & (from Seeger) & $\ln 2\sqrt m$ & linear, all $\lambda$ at once \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{example}[Three posteriors on the same ensemble]
+Consider an ensemble of $n=100$ voters with the uniform prior $P$, $m=1000$ training
+examples and $\delta=0.05$, so that $\ln\frac{2\sqrt m}{\delta}=\ln(1264.9)\approx7.14$.
+Suppose first that $Q$ is uniform over the $10$ voters with the smallest
+empirical risk, and that its empirical Gibbs risk is $0.12$. The divergence is
+$\KL(Q\|P)=\ln\frac{100}{10}\approx2.30$, so that
+$\varepsilon=\frac{2.30+7.14}{1000}\approx0.0094$. McAllester's bound gives
+$0.12+\sqrt{0.0094/2}\approx0.189$, the PAC-Bayes-$\lambda$ bound (with
+$\lambda^\star\approx0.33$) gives $0.178$, and Seeger's bound gives
+$\klup(0.12,0.0094)\approx0.169$. If instead we keep $Q=P$, the KL vanishes but
+the Gibbs risk is larger, say $0.20$, and Seeger's bound gives $0.251$. At the
+other extreme, the Dirac on the best voter, with empirical risk $0.10$, costs
+$\KL=\ln100\approx4.61$ and Seeger's bound gives $0.152$: this is the Occam bound.
+
+In this example, the best \emph{Gibbs} certificate is thus obtained by the
+Dirac, because $\ln100$ nats is a small price for $m=1000$ examples. But the
+Gibbs risk is not the end of the story: the \emph{majority vote} of the $10$ best
+voters can be much more accurate than any of them, and certifying it requires
+spread-out posteriors, as we will see in \cref{chap:mv}. In general, the best
+trade-off between empirical risk and KL is given by the Gibbs posterior of
+\cref{sec:gibbs_posterior}.
+\end{example}
+
+\begin{running}
+Let us certify the Gibbs classifier of our forest, that is a tree drawn at
+random, with the uniform prior and the uniform posterior, so that $\KL(Q\|P)=0$.
+We need examples that the trees have not seen; for now, let us admit that each
+tree may be evaluated on the examples left out of its bootstrap sample (its
+\emph{out-of-bag} examples), a construction justified in \cref{sec:oob}. The
+average out-of-bag error of the trees is $0.174$, computed with at least $747$
+examples per tree. With $\delta=0.05$, the complexity per example is
+$\ln(2\sqrt{747}/0.05)/747=0.0094$, McAllester's bound gives $0.243$ and Seeger's
+bound $0.230$. The test Gibbs risk, which the bound did not see, is $0.190$: the
+certificate is valid and only four points above. The difficulty is elsewhere:
+the vote has a test risk of $0.044$, and nothing in this section says anything
+about it. This is the object of \cref{chap:mv}.
+\end{running}
+
+\begin{remark}[(Bernstein-type bounds)]
+When the variance of the loss is small, the kl bound can be further improved
+by PAC-Bayes-Bernstein inequalities, which involve an empirical variance term
+\citep{tolstikhin2013pac,mhammedi2019pac}. The same idea is used for majority
+votes in \cref{sec:cctnd} \citep{wu2021chebyshev}.
+\end{remark}
+
+\begin{keypoints}
+A generalization bound for a data-dependent predictor must be uniform, otherwise
+the selection bias makes it meaningless. All the classical PAC-Bayesian bounds
+follow from Theorem~\ref{thm:general}, whose only probabilistic step uses the
+independence between the prior and the sample; the posterior can therefore
+depend on the data arbitrarily. The complexity term is $\KL(Q\|P)/m$: a posterior
+close to the prior is cheap. Seeger's kl bound and Catoni's bound optimized on a
+grid are the tightest, McAllester's bound is the easiest to read, and linear
+bounds such as PAC-Bayes-$\lambda$ are the easiest to minimize.
+\end{keypoints}
+
+\begin{quickchecks}
+\item Which step of the proof of Theorem~\ref{thm:general} requires the prior to be independent of the sample?
+\item Why may the posterior depend on the data without invalidating the bound?
+\item Which bound has a rate in $1/m$ when the empirical risk is zero, McAllester's or Seeger's?
+\item Why can $\lambda$ be optimized freely in the PAC-Bayes-$\lambda$ bound, but not in the Hoeffding-based bound?
+\end{quickchecks}
+
+\begin{exercises}
+\begin{exercise}
+Starting from Theorem~\ref{thm:general} with $\Delta(q,p)=2(q-p)^2$, prove McAllester's
+bound directly, without going through the kl.
+\end{exercise}
+\begin{exercise}
+For $m=500$, $\delta=0.05$, $\RS(\GQ)=0.05$ and $\KL(Q\|P)\in\{0,5,20\}$, compute
+McAllester's and Seeger's bounds, and compare with \cref{tab:bound_anatomy}.
+\end{exercise}
+\begin{exercise}
+Using the linear form of Catoni's bound given after Corollary~\ref{cor:catoni}, find
+the value of $C$ that minimizes it when $\RS(\GQ)=0.12$, $\KL(Q\|P)=5$, $m=1000$ and
+$\delta=0.05$, and compare the result with \cref{tab:bound_anatomy}.
+\end{exercise}
+\begin{exercise}
+Reproduce the experiment of \cref{fig:uniformity} for $m\in\{100,1000,10000\}$.
+Show that the failure frequency of the naive bound does not go to zero when $m$ grows, and
+explain why by comparing $\sqrt{\ln(1/\delta)/(2m)}$ with the typical deviation of the
+minimum of $1000$ empirical risks.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} In the proof of Theorem~\ref{thm:general}, which step uses the
+joint convexity of $\Delta$, which step uses the independence of the prior from the
+sample, and which step is the only probabilistic one? Why does the bound hold for all
+posteriors although Markov's inequality is applied only once?
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} True or false? Justify briefly. (a)~For the same
+$\RS(\GQ)$, $\KL(Q\|P)$, $m$ and $\delta$, Seeger's bound is never larger than
+McAllester's bound. (b)~Doubling the sample size $m$ halves the complexity term of
+McAllester's bound. (c)~In Catoni's bound, the parameter $C$ may be chosen after
+seeing the data, since the bound holds for all posteriors. (d)~Dividing $\delta$ by
+$10$ adds about $2.3$ nats to the numerator of the complexity term.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} An ensemble of $n=50$ voters has a uniform prior. With $m=500$
+examples and $\delta=0.05$, the posterior $Q$ uniform over the $5$ best voters has an
+empirical Gibbs risk of $0.08$. Compute $\KL(Q\|P)$ and the complexity per example
+$\varepsilon=\frac1m[\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}]$, then McAllester's bound, the
+PAC-Bayes-$\lambda$ bound at $\lambda^\star$, Seeger's bound (with \texttt{pbtools}), and
+Catoni's bound for $C\in\{0.5,1,2\}$. Which value of $C$ is legitimate to report?
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} A posterior has zero empirical Gibbs risk on $m=200$ examples,
+with $\KL(Q\|P)=3$ and $\delta=0.05$. Compute Seeger's bound (using its closed form
+$1-e^{-\varepsilon}$ when $\RS(\GQ)=0$) and McAllester's bound. How many examples does
+each of them need to certify a Gibbs risk below $0.05$ (with the same KL)?
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Show that the binary kl is \emph{jointly} convex in $(q,p)\in[0,1]\times(0,1)$,
+as required by Theorem~\ref{thm:general}. \emph{Hint:} for $a>0$, $b>0$, write
+$a\ln\frac ab=a\,f\big(\frac ba\big)$ with the convex function $f(u)=-\ln u$, and show that
+the perspective $(a,b)\mapsto a\,f(b/a)$ of a convex function is jointly convex.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Show that, for fixed $\hat q>0$ and $\varepsilon>0$, the function
+$\lambda\mapsto\frac{\hat q}{1-\lambda/2}+\frac{\varepsilon}{\lambda(1-\lambda/2)}$ is minimized on $(0,2)$
+at $\lambda^\star=2/\big(\sqrt{1+2\hat q/\varepsilon}+1\big)$, which is \eqref{eq:lambda_star}, and that
+its minimal value is $\big(\sqrt{\hat q+\varepsilon/2}+\sqrt{\varepsilon/2}\big)^2$.
+\end{exercise}
+\end{exercises}

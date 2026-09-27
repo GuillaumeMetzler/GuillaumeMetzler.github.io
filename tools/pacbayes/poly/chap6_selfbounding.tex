@@ -1,0 +1,648 @@
+%% ======================================================================
+\section{Self-bounding learning}
+\label{chap:selfbounding}
+%% ======================================================================
+
+\begin{objectives}
+\guiding{If a bound holds for every posterior, why not choose the posterior that
+makes it smallest, and what does this change to the certificate?}
+Up to now, PAC-Bayesian bounds were used after learning, to certify a posterior
+produced by some algorithm. This section reverses the roles: since the bounds
+hold for all posteriors, we can \emph{minimize} them, and obtain a predictor
+together with its own risk certificate. We explain why this is legitimate, what
+may and may not depend on the data, how this approach compares with the
+classical hold-out certificate, and which optimization tools are used by all
+self-bounding algorithms. Each point is illustrated by running the algorithms on
+random forests.
+\end{objectives}
+
+The bounds of Sections~\ref{chap:bounds} to~\ref{chap:mv} have a remarkable
+property: they hold \emph{simultaneously for all posteriors}. So far we have
+used them to evaluate a posterior produced by another algorithm, such as the
+uniform weights of a random forest; in our running example, the uniform
+forest received a tandem certificate of $0.387$. But nothing prevents us from choosing the
+posterior \emph{because} its bound is small. Instead of minimizing an empirical
+risk and then trying to certify the result, we can directly minimize the bound:
+the algorithm then outputs a predictor \emph{and} a guarantee on its risk. This
+idea goes back to \citet{freund1998self} and \citet{langford2003microchoice}, who
+coined the term \emph{self-bounding learning algorithm}. PAC-Bayes turned it
+into a general and practical methodology
+\citep{germain2009pac,germain2015risk,thiemann2017strongly,masegosa2020second,viallard2021self,perez2021tighter}.
+
+%% ----------------------------------------------------------------------
+\subsection{From empirical risk minimization to bound minimization}
+
+To see what self-bounding learning changes, let us first recall how we usually
+learn and evaluate a model. In the first part of the course, learning followed
+a three-step pipeline. A model is learned by minimizing a regularized empirical risk on a training
+sample, its hyperparameters are tuned by cross-validation, and it is finally
+evaluated on a test sample that was never used before. The test error is an
+\emph{estimate} of the true risk, which a concentration inequality turns into a
+\emph{guarantee} (the test-set bound of \cref{sec:holdout}). This last step has a
+cost: the examples of the test sample do not contribute to learning.
+
+A self-bounding algorithm merges the three steps into one. Suppose that we have a
+PAC-Bayesian bound of the form
+\[
+\P_{S\sim\D^m}\Big(\forall Q\in\M(\Hcal),\ \ \RD(Q)\leq\mathcal B(Q,S,\delta)\Big)\geq1-\delta,
+\]
+where $\RD(Q)$ denotes the risk we want to control (the Gibbs risk, or the
+risk of the vote) and $\mathcal B(Q,S,\delta)$ is a quantity that can be computed
+from the sample. The algorithm learns
+\begin{equation}\label{eq:sb_principle}
+Q_S\in\argmin_{Q\in\mathcal Q}\ \mathcal B(Q,S,\delta),
+\qquad\text{and returns the certificate}\qquad \mathcal B(Q_S,S,\delta),
+\end{equation}
+where $\mathcal Q\subseteq\M(\Hcal)$ is the family of posteriors in which we
+search, for instance all distributions on a finite set of voters, or Gaussian
+distributions on the weights of a model.
+
+\begin{definition}{Self-bounding learning algorithm}{selfbounding}
+A \emph{self-bounding learning algorithm} is a procedure which, given a sample
+$S\sim\D^m$ and a confidence level $\delta\in(0,1]$, returns a predictor $f_S$ and a
+number $\mathcal B_S\in[0,1]$, both computed from $S$ only, such that
+\[
+\P_{S\sim\D^m}\Big(\RD(f_S)\leq\mathcal B_S\Big)\geq1-\delta.
+\]
+The number $\mathcal B_S$ is called the \emph{risk certificate} of $f_S$.
+\end{definition}
+
+In plain words, a self-bounding algorithm hands us two things computed from the
+same data: a predictor, and a number that we can trust, with high probability,
+as an upper bound on its true risk. Many algorithms of this course fit this
+definition: the Gibbs posterior
+$Q_\lambda$ of \cref{sec:gibbs_posterior} with its Seeger certificate, the
+forest weighted by \cref{algo:fo} with its first-order certificate, or PBGD with
+Catoni's bound (\cref{sec:linear}). A random forest with uniform weights,
+returned together with its out-of-bag tandem certificate, is also
+self-bounding in the sense of the definition; the certificate is simply not used
+to learn. One question must be settled before we go further: if the posterior is
+chosen by looking at its own bound, is that bound still trustworthy?
+
+%% ----------------------------------------------------------------------
+\subsection{Why the certificate remains valid}
+
+The following result is almost trivial, but it is the reason why the whole
+approach works, so it deserves to be stated carefully.
+
+\begin{theorem}{Validity of self-bounding certificates}{sb_valid}
+Let $\mathcal B$ be such that $\P_S\big(\forall Q\in\mathcal Q,\ \RD(Q)\leq\mathcal B(Q,S,\delta)\big)\geq1-\delta$.
+Let $S\mapsto Q_S\in\mathcal Q$ be \emph{any} learning rule (deterministic, or using a
+source of randomness independent of the data). Then
+\[
+\P_S\Big(\RD(Q_S)\leq\mathcal B(Q_S,S,\delta)\Big)\geq1-\delta .
+\]
+In particular this holds for $Q_S$ minimizing $\mathcal B(\cdot,S,\delta)$ or any
+other objective, and for any stopping time of an iterative optimizer.
+\end{theorem}
+\begin{proof}
+Let $E=\{S:\forall Q\in\mathcal Q,\ \RD(Q)\leq\mathcal B(Q,S,\delta)\}$. For every
+$S\in E$, the inequality holds in particular for the posterior $Q_S$. Hence
+$\{S:\RD(Q_S)\leq\mathcal B(Q_S,S,\delta)\}\supseteq E$ and its probability is at
+least $\P(E)\geq1-\delta$. If $Q_S$ also depends on an independent random seed $\xi$,
+apply the argument conditionally on $\xi$ and integrate.
+\end{proof}
+
+In words: since the bad event does not depend on which posterior we pick, no
+way of picking one, however clever or data-driven, can make us fall into it.
+The key is the quantifier ``for all $Q$'' inside the probability. A bound which
+only holds for a \emph{fixed} predictor, such as Hoeffding's inequality for a
+fixed $h$ or a test-set bound, does not remain valid if the predictor is chosen
+by looking at the data used in the bound.
+
+We saw in \cref{fig:uniformity} how
+badly such a bound fails: after selecting the best of $1000$ random classifiers,
+the naive Hoeffding bound was wrong in $99.8\%$ of the runs. The Occam bound
+remained valid because it pays $\ln\frac{1}{P(h)}=\ln1000$, which is exactly the
+price of having \emph{selected} $h$ with the data. PAC-Bayes extends this
+accounting to any soft selection: the price of choosing a posterior $Q$ with the
+data is $\KL(Q\|P)$. Because the price is already included in the bound, we are
+allowed to choose $Q$ in any way we like, and in particular by minimizing the
+bound. This freedom concerns the posterior only, and the next subsection makes
+precise where it stops.
+
+%% ----------------------------------------------------------------------
+\subsection{What may depend on the data?}\label{sec:sb_rules}
+
+Theorem~\ref{thm:sb_valid} allows the posterior to depend arbitrarily on $S$.
+Everything else in the bound --- the prior, the confidence level $\delta$, the form
+of the bound and its internal parameters --- must be fixed before seeing the
+sample used in the bound. When we nevertheless want to choose one of these
+ingredients with the data, we pay for it with a union bound, as the following
+proposition shows.
+
+\begin{proposition}{Combining several bounds}{union}
+Let $\mathcal B_1,\dots,\mathcal B_K$ be $K$ bounds (they may use different priors,
+different parameters, different forms, or even different sets of voters),
+each valid in the sense that for every $\delta'$,
+$\P_S\big(\forall Q,\ \RD(Q)\leq\mathcal B_k(Q,S,\delta')\big)\geq1-\delta'$.
+Let $\pi_1,\dots,\pi_K>0$ with $\sum_k\pi_k=1$. Then
+\[
+\P_S\Big(\forall k,\ \forall Q,\ \ \RD(Q)\leq\mathcal B_k(Q,S,\pi_k\delta)\Big)\geq1-\delta.
+\]
+Consequently, $\min_k\mathcal B_k(Q_S,S,\pi_k\delta)$ is a valid certificate for any
+learning rule $Q_S$, and the index $k$ may be chosen with the data.
+\end{proposition}
+\begin{proof}
+The probability that at least one of the $K$ events fails is at most
+$\sum_k\pi_k\delta=\delta$ (union bound).
+\end{proof}
+
+In other words, we may try several bounds and keep the best one, provided we
+share the confidence budget $\delta$ among them in advance. With
+$\pi_k=\frac1K$, choosing among $K$ candidates amounts to replacing $\delta$ by
+$\delta/K$, that is to adding $\ln K$ to the numerator of the complexity term.
+This is a very small price for a moderate $K$: choosing among ten candidates
+costs $2.3$ nats, the same as dividing $\delta$ by ten. With a countable family,
+one can take $\pi_k=\frac{6}{\pi^2k^2}$, which costs $2\ln k+\ln\frac{\pi^2}6$ for the
+$k$-th candidate.
+
+The line between what is free and what must be paid for is subtle, so the
+table below gathers the most common cases. The underlying rule is simple to
+state. A parameter is free when it only indexes a family of
+\emph{posteriors}, all compared with the same prior in the same bound: the
+parameter $C$ of PBGD, for instance, selects a weight vector $\mathbf w$, hence a
+posterior $Q_{\mathbf w}$, and Seeger's bound holds for all of them at once. A
+parameter is not free when it changes the \emph{probabilistic event} on which
+the bound holds: the parameter $C$ of Catoni's bound changes the function
+$\Delta$ of Theorem~\ref{thm:general}, and each value gives a different event.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{4.6cm}p{4.2cm}p{4.2cm}}
+\toprule
+\textbf{Free} (no correction) & \textbf{Union bound} ($\delta\to\delta/K$) & \textbf{Forbidden} \\
+\midrule
+\small the posterior $Q$ and the algorithm producing it; the temperature of a Gibbs posterior; $\lambda$ in the PAC-Bayes-$\lambda$ bound; $C$ in PBGD; the learning rate, initialization and number of iterations (early stopping on the bound)
+&
+\small $C$ in Catoni's bound; $\lambda$ in the Hoeffding-type bound; the variance of a Gaussian prior chosen on a grid; the choice among first-order / tandem / C-bound; the choice among $K$ ensembles built with different hyperparameters
+&
+\small a prior learned on the examples used in the bound; choosing $\delta$ after seeing the bound; repeating the experiment with many seeds and reporting the best certificate (unless all of them are accounted for) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Self-bounding model selection.} Because a choice among $K$ candidates
+costs only $\ln K$, Proposition~\ref{prop:union} offers a principled alternative
+to cross-validation. We build $K$ candidate models, for
+instance forests with different tree depths, learn a posterior for each of them
+by minimizing its bound computed with $\delta/K$, and keep the candidate with the
+smallest certificate. The selected model comes with a valid certificate, and no
+example was set aside for validation.
+
+\begin{example}[Choosing the depth of the trees with the certificate]
+On \texttt{digits}, we build six forests of $100$ trees, with maximal depths $1$,
+$2$, $3$, $5$, $8$ and unlimited, each tree being trained on a bootstrap sample
+of half the training set. For each forest, the posterior minimizes the
+out-of-bag tandem bound of \cref{sec:oob}, computed with $\delta/6$.
+\Cref{fig:sb_selection} reports the certificates and the test risks over five
+random splits. The certificate decreases steadily with the depth, from $0.96$
+for stumps to $0.375$ for unpruned trees, and so does the test risk of the vote,
+from $0.19$ to $0.031$. The certificate thus selects the unpruned trees, which
+is also the best choice for the test risk, and the price of the selection
+($\ln6\approx1.8$ nats) is invisible at this scale. (These values are averaged over five
+stratified splits, which explains the small differences with the single split
+used in \cref{chap:algos}.) In general, the certificate remains a pessimistic
+proxy for the test risk: when two candidates are close, it may select a slightly
+sub-optimal one.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.66\linewidth]{selfbounding_selection}
+\caption{Self-bounding model selection. Six forests (100 trees, bootstrap samples
+of size $m/2$) with increasing tree depth are learned on \texttt{digits}; for each
+of them the posterior minimizes the tandem bound and the certificate is computed
+with $\delta/6$ (Proposition~\ref{prop:union}). The certificate decreases with the depth
+like the test risk; here it selects the model with the best test risk (means and standard deviations over 5 splits).}
+\label{fig:sb_selection}
+\end{figure}
+
+%% ----------------------------------------------------------------------
+\subsection{Self-bounding versus hold-out}\label{sec:holdout}
+
+A self-bounding certificate is only interesting if it compares well with the
+simplest alternative. This natural competitor is the \emph{test-set
+bound} \citep{langford2005tutorial}, which certifies a predictor with an
+independent sample.
+
+\begin{proposition}{Test-set bound}{testset}
+Let $f$ be a predictor learned on $S_1$ and $T\sim\D^n$ a sample independent of $S_1$.
+Then, with probability at least $1-\delta$ over $T$,
+$\RD(f)\leq\klup\big(\widehat R_T(f),\frac{\ln(1/\delta)}{n}\big)$.
+\end{proposition}
+\begin{proof}
+Conditionally on $S_1$, $f$ is fixed and $n\widehat R_T(f)\sim\mathrm{Bin}(n,\RD(f))$;
+apply Chernoff's bound (Lemma~\ref{lem:chernoff}). Equivalently, it is the Occam
+bound with a single hypothesis ($P=\delta_f$, $\KL=0$).
+\end{proof}
+
+The test-set bound certifies \emph{any} predictor, in particular the majority
+vote itself, with no factor $2$ or $4$ and no KL term, so it is very tight. Its
+drawback is that the $n$ test examples do not contribute to learning.
+Self-bounding learning makes the opposite trade-off: all the data serve both to
+learn and to certify, but the certificate relies on a PAC-Bayesian bound, which
+is looser. Which trade-off wins is an empirical question, which the next
+example examines.
+
+\begin{example}[Which approach gives the better vote, and the better certificate?]
+We compare the two approaches on a simulated problem, for sample sizes $m$ from
+$200$ to $4000$ (\cref{fig:sb_holdout}). The self-bounding approach builds a
+forest of $100$ trees on the $m$ examples and minimizes its out-of-bag tandem
+bound; the hold-out approach builds the same forest on $70\%$ of the examples
+and computes the test-set bound of its vote on the remaining $30\%$. As
+expected, using all the data gives a better vote for every $m$: with $m=1000$,
+its test risk is $0.099$ against $0.110$. But the hold-out certificate is much
+tighter: $0.17$ against $0.63$ for $m=1000$, and $0.10$ against $0.39$ for
+$m=4000$. For majority votes, the factor $4$ of the tandem bound and the
+second-order KL term cost more than the examples withheld by the hold-out.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{selfbounding_vs_holdout}
+\caption{Self-bounding (forest learned on the $m$ examples, posterior minimizing the
+OOB tandem bound, TND certificate) versus hold-out (forest learned on $70\%$ of
+the examples, test-set bound on the remaining $30\%$), on a simulated problem,
+as a function of $m$ (average over 3 repetitions). Using all the data gives a
+better vote (left), but for majority votes the hold-out certificate remains much
+tighter (right).}
+\label{fig:sb_holdout}
+\end{figure}
+
+This experiment should be read honestly. If the only goal is to report a tight
+guarantee on a fixed vote, the hold-out is hard to beat. The value of
+self-bounding learning lies elsewhere: it uses all the data, it provides a
+learning objective with a guarantee, and it makes model selection almost free.
+
+The gap in tightness is also specific to majority votes, where the passage from
+the Gibbs risk to the vote costs a constant factor; for stochastic neural
+networks, self-bounding certificates with data-dependent priors are tight
+enough to be informative, for instance on MNIST \citep{perez2021tighter}. The
+following table summarizes the comparison.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{p{3.2cm}p{4.8cm}p{4.8cm}}
+\toprule
+& Hold-out (test-set bound) & Self-bounding (PAC-Bayes) \\
+\midrule
+Data used to learn & part of the sample & the whole sample \\
+Predictor certified & any (vote, deep net\dots) & a posterior (Gibbs, vote via Section~\ref{chap:mv}) \\
+Tightness & excellent: a single kl inversion, no KL term & depends on the KL and on the Gibbs-to-vote relation \\
+Guides learning? & no & yes: the certificate is the objective \\
+Model selection & needs another split & free or $\ln K$ (Proposition~\ref{prop:union}) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Best of both worlds: data-dependent priors.} We do not have to choose
+between the two approaches: they can be combined. We split $S=S_1\cup S_2$, use $S_1$ to learn a \emph{prior} $P_{S_1}$
+(a Gaussian centred on a network trained on $S_1$, or voters built on $S_1$),
+and compute the PAC-Bayesian bound on $S_2$.
+
+\begin{proposition}{Self-bounding with a data-dependent prior}{ddprior}
+Let $P_{S_1}$ be a prior learned on $S_1$ and $\mathcal B$ a PAC-Bayesian bound
+computed on $S_2\sim\D^{m_2}$, independent of $S_1$. Then, with probability at least
+$1-\delta$ over $(S_1,S_2)$, for all posteriors $Q$ --- including posteriors learned on the whole
+sample $S_1\cup S_2$ --- we have $\RD(Q)\leq\mathcal B(Q,S_2,P_{S_1},\delta)$.
+\end{proposition}
+\begin{proof}
+Conditionally on $S_1$, the prior is fixed and $S_2$ is an i.i.d.\ sample, so the
+bound holds with probability at least $1-\delta$ over $S_2$, for all $Q$ simultaneously.
+Integrate over $S_1$.
+\end{proof}
+
+Put simply, the prior may look at $S_1$ as long as the bound only looks at
+$S_2$. Only the \emph{empirical term} of the bound must be computed on $S_2$; the
+posterior itself may use all the data. This is the strategy behind the tightest
+certificates for neural networks \citep{dziugaite2017computing,perez2021tighter}
+and SVMs \citep{ambroladze2006tighter,parrado2012pac}, and we measured its
+trade-off in \cref{fig:ddprior}.
+
+The two approaches of this subsection appear as the two ends of this spectrum.
+The test-set bound is the extreme case where
+the posterior is a Dirac on the prior ($\KL=0$), and a pure self-bounding
+algorithm is the other extreme ($S_1=\emptyset$). The out-of-bag construction of
+\cref{sec:oob} can be seen as a clever way to obtain a data-dependent prior
+without splitting the sample once and for all.
+
+%% ----------------------------------------------------------------------
+\subsection{Anatomy of a self-bounding algorithm}
+
+We now know what is allowed; it remains to turn these rules into algorithms.
+Fortunately, all the self-bounding algorithms of this course follow the same
+template, summarized in \cref{fig:sb_pipeline} and \cref{algo:sb_template}. The
+first decision is how to organize the data: which examples build the voters or the
+prior, and which ones are used in the bound. The prior is then fixed,
+independently of the examples of the bound. The third step chooses an
+objective, which may be the bound itself or a relaxation that is easier to
+optimize, and the fourth step minimizes it with one of the tools of
+\cref{sec:sb_optim}. Finally, the tightest valid bound is computed for the
+posterior that was found.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[node distance=0.5cm and 0.32cm,
+   box/.style={draw,rounded corners,align=center,minimum height=1.3cm,text width=2.05cm,font=\footnotesize,fill=#1!6,draw=#1},
+   arr/.style={-{Stealth[length=2.2mm]},thick}]
+\node[box=pbteal] (a) {\textbf{1. Voters}\\ and data\\ organization\\ (split, OOB)};
+\node[box=pbgrey,right=of a] (b) {\textbf{2. Prior} $P$\\ fixed before\\ the bound sample};
+\node[box=pbviolet,right=of b] (c) {\textbf{3. Objective}\\ relaxed bound\\ $\widetilde{\mathcal B}(Q)$};
+\node[box=pbblue,right=of c] (d) {\textbf{4. Optimize}\\ $Q_S\approx\argmin\widetilde{\mathcal B}$};
+\node[box=pbred,right=of d] (e) {\textbf{5. Certify}\\ tight kl form\\ at $Q_S$};
+\draw[arr] (a) -- (b); \draw[arr] (b) -- (c); \draw[arr] (c) -- (d); \draw[arr] (d) -- (e);
+\draw[arr,dashed,pbgrey] (e.south) -- ++(0,-0.5) -| node[pos=0.25,below,font=\small]{model selection with $\delta/K$ (Prop.~\ref{prop:union})} (a.south);
+\end{tikzpicture}
+\caption{The five ingredients of a self-bounding algorithm.}
+\label{fig:sb_pipeline}
+\end{figure}
+
+\begin{algorithm}[h]
+\caption{Generic self-bounding learning}\label{algo:sb_template}
+\KwIn{sample $S$, confidence $\delta$, family of posteriors $\{Q_\theta\}$}
+Organize the data: which examples build the voters / the prior, which ones are used in the bound\;
+Fix the prior $P$ (independent of the examples used in the bound)\;
+Choose a \emph{relaxed} objective $\widetilde{\mathcal B}(\theta)\geq$ (or $\approx$) the bound, easy to optimize\;
+$\theta_S\leftarrow$ approximately minimize $\widetilde{\mathcal B}(\theta)$ (closed form, alternating or gradient-based)\;
+Compute the \emph{tight} certificate $\mathcal B(Q_{\theta_S},S,\delta)$ with the kl inversion (Monte Carlo if needed)\;
+\KwOut{$Q_{\theta_S}$ and its certificate}
+\end{algorithm}
+
+Two features of this template are worth stressing. First, the objective need
+not be the certificate. By Theorem~\ref{thm:sb_valid}, the certificate is valid
+whatever the way $Q_S$ was obtained, so we may optimize a convenient relaxation
+(McAllester's bound, the PAC-Bayes-$\lambda$ bound, a surrogate loss) and report
+the tightest valid bound at the end; if we report the minimum of several bounds,
+Proposition~\ref{prop:union} applies. Second, the optimizer need not find the
+global minimum: every posterior is certified, and a poor optimizer only yields
+a looser certificate, never a wrong one. Step~4 is therefore a matter of
+efficiency rather than validity, and the next subsection reviews the tools
+available for it.
+
+%% ----------------------------------------------------------------------
+\subsection{Optimization toolbox}\label{sec:sb_optim}
+
+The right optimizer depends on the shape of the objective. We go from the
+easiest case, where the minimizer is explicit, to the most general one, where
+we differentiate through the kl inversion itself.
+
+\subsubsection{Closed form: linear objectives and the Gibbs posterior}
+
+When the objective is linear in the empirical term and in the KL,
+$\RS(\GQ)+\frac{\KL(Q\|P)}{\lambda m}$, as for Hoeffding-type or PAC-Bayes-$\lambda$
+bounds, Proposition~\ref{prop:gibbs_post} gives the minimizer in closed form,
+$Q_\lambda(h)\propto P(h)e^{-\lambda m\RS(h)}$. The only remaining parameter is the
+temperature, which is free since it indexes posteriors: we can scan a grid of
+values of $\lambda$ and keep the best certificate, as in \cref{fig:temperature}.
+
+\subsubsection{Alternating minimization}
+
+When the temperature is not scanned but optimized, a closed form is available
+in each variable separately. The PAC-Bayes-$\lambda$ bound \eqref{eq:lambda} is minimized in $Q$ by the Gibbs
+posterior when $\lambda$ is fixed, and in $\lambda$ by the closed form
+\eqref{eq:lambda_star} when $Q$ is fixed. Alternating the two steps
+(\cref{algo:fo}) converges to the global minimum under the conditions of
+\citet{thiemann2017strongly}; we will see in \cref{tab:fo_iterations} that a few
+iterations suffice in practice.
+
+\subsubsection{Gradient-based minimization}
+
+For richer objectives, such as second-order bounds, C-bounds or bounds on
+neural networks, we use gradient descent on a parametrization of the posterior.
+For a finite set of voters, the simplest parametrization is the softmax
+$\rho=\mathrm{softmax}(\theta)$, $\rho_t=e^{\theta_t}/\sum_se^{\theta_s}$, which
+removes the simplex constraint. If $g=\nabla_\rho\mathcal B$ is the gradient
+with respect to the weights, the chain rule gives
+\begin{equation}\label{eq:softmax_grad}
+\nabla_\theta\mathcal B=\rho\odot\big(g-(\rho^\top g)\mathbf 1\big),
+\qquad\text{with, for the KL term,}\qquad
+\nabla_\rho\KL(\rho\|\pi)=\ln\frac{\rho}{\pi}+\mathbf 1 .
+\end{equation}
+For Gaussian posteriors $Q=\mathcal N(\boldsymbol\mu,\mathrm{diag}(\boldsymbol\sigma^2))$ on the
+parameters $\mathbf w$ of a model, the KL to a Gaussian prior is explicit, and
+the expected loss is differentiated with the \emph{reparametrization trick}:
+writing $\mathbf w=\boldsymbol\mu+\boldsymbol\sigma\odot\boldsymbol\varepsilon$ with
+$\boldsymbol\varepsilon\sim\mathcal N(0,I)$, we have
+$\nabla_{\boldsymbol\mu,\boldsymbol\sigma}\E_{\mathbf w\sim Q}\ell(\mathbf w)=\E_{\boldsymbol\varepsilon}\nabla_{\boldsymbol\mu,\boldsymbol\sigma}\ell(\boldsymbol\mu+\boldsymbol\sigma\odot\boldsymbol\varepsilon)$,
+which is estimated with a few samples of $\boldsymbol\varepsilon$
+\citep{dziugaite2017computing,perez2021tighter}.
+
+In both cases a difficulty remains: the 0-1 loss is not differentiable. Either the Gibbs risk has a smooth
+closed form, as the probit loss of linear classifiers (\cref{eq:probit}), or the
+0-1 loss is replaced during learning by a bounded surrogate such as a clipped
+cross-entropy. The final certificate is always computed with the 0-1 loss.
+
+\subsubsection{Differentiating through the kl inversion}
+
+The tightest bounds are expressed with $\klup$, which has no closed form. It
+can nevertheless be differentiated, which allows us to minimize Seeger-type
+certificates directly \citep{reeb2018learning,viallard2021self}.
+
+\begin{proposition}{Derivatives of the kl inversion}{klgrad}
+Let $q\in(0,1)$, $\varepsilon>0$ and $p=\klup(q,\varepsilon)$ (or $p=\kllow(q,\varepsilon)$), so that
+$\kl(q\|p)=\varepsilon$ and $p\neq q$. Then
+\[
+\frac{\partial p}{\partial q}=\frac{p(1-p)}{p-q}\,\ln\frac{p(1-q)}{q(1-p)},
+\qquad
+\frac{\partial p}{\partial\varepsilon}=\frac{p(1-p)}{p-q}.
+\]
+\end{proposition}
+\begin{proof}
+Let $F(q,p)=\kl(q\|p)-\varepsilon$. We have $F_q=\partial_q\kl(q\|p)=\ln\frac{q(1-p)}{p(1-q)}$
+and $F_p=\partial_p\kl(q\|p)=\frac{p-q}{p(1-p)}\neq0$. By the implicit function theorem,
+$p$ is a differentiable function of $(q,\varepsilon)$ with $\frac{\partial p}{\partial q}=-\frac{F_q}{F_p}$
+and $\frac{\partial p}{\partial\varepsilon}=\frac{1}{F_p}$.
+\end{proof}
+
+So, although $\klup$ has no closed form, its gradient only requires the value
+$p$ that we compute anyway. As expected, $\frac{\partial p}{\partial\varepsilon}$
+is positive for the upper inversion and negative for the lower one. These
+derivatives also tell us how
+sensitive a certificate is to its ingredients. At $\hat q=0.1$ and $\varepsilon=0.05$,
+where $p\approx0.220$, we find $\frac{\partial p}{\partial\varepsilon}\approx1.43$: with $m=1000$
+examples, one more nat of KL increases $\varepsilon$ by $0.001$ and the certificate by
+about $0.0014$.
+
+For the tandem certificate of a finite ensemble,
+$\mathcal B_{\mathrm{TND}}(\rho)=4\,\klup\big(\rho^\top\widehat{\mathbf L}\rho,\,\varepsilon(\rho)\big)$ with
+$\varepsilon(\rho)=\frac{2\KL(\rho\|\pi)+\ln(2\sqrt{n_0}/\delta)}{n_0}$, where $n_0$ is the number of examples on which the tandem losses are computed, the chain rule gives
+\begin{equation}\label{eq:grad_tnd_cert}
+\nabla_\rho\mathcal B_{\mathrm{TND}}=4\Big[\frac{\partial p}{\partial q}\,2\widehat{\mathbf L}\rho+\frac{\partial p}{\partial\varepsilon}\,\frac2n\Big(\ln\frac\rho\pi+\mathbf 1\Big)\Big],
+\end{equation}
+to be combined with \eqref{eq:softmax_grad}. The function
+\texttt{certificate\_and\_grad} of \texttt{pbtools.py} implements this formula.
+
+\begin{example}[Watching a self-bounding algorithm learn]
+\Cref{fig:sb_dynamics} runs this gradient descent (Adam, $400$ iterations, softmax
+parametrization, uniform initialization) on the out-of-bag first-order and
+tandem certificates of a forest of $100$ trees on \texttt{digits}, and records the
+certificate, the test risk of the vote and the effective number of trees
+$1/\sum_t\rho_t^2$ along the iterations. The first-order certificate decreases
+from $0.46$ to $0.39$, but it achieves this by concentrating the posterior on
+fewer and fewer trees: after $200$ iterations, fewer than two trees carry the
+whole weight, and the test risk of the vote jumps from $0.044$ to $0.15$. The
+tandem certificate decreases from $0.39$ to $0.36$ while keeping an effective
+number of about $48$ trees, and the vote remains as accurate as the uniform
+forest. This is the phenomenon announced in \cref{chap:mv} and analysed in
+\cref{sec:algo_fo}: an objective that ignores the correlations between voters
+destroys the diversity that makes the vote work.
+\end{example}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{selfbounding_dynamics}
+\caption{Direct minimization (Adam, softmax parametrization, gradient of
+Proposition~\ref{prop:klgrad}) of the OOB first-order and tandem certificates of a forest of
+100 trees on \texttt{digits}. Left: value of the certificate; middle: test risk
+of the vote; right: effective number of trees.}
+\label{fig:sb_dynamics}
+\end{figure}
+
+\subsubsection{Relaxations of Seeger's bound used as objectives}
+
+Differentiating through $\klup$ is not always convenient. When a differentiable
+closed form is preferred, one of the following upper
+bounds on $\klup(\hat q,\varepsilon)$ can be minimized instead \citep{perez2021tighter}.
+All of them follow from the Pinsker-type inequalities of Lemma~\ref{lem:pinsker}.
+The PAC-Bayes-$\lambda$ bound, optimized in $\lambda$, coincides with the
+``quadratic'' bound, but its linear form is more convenient for alternating
+minimization.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{lll}
+\toprule
+Name & Objective & Comment \\
+\midrule
+McAllester (``classic'') & $\hat q+\sqrt{\varepsilon/2}$ & simplest, loose when $\hat q$ is small \\
+PAC-Bayes-$\lambda$ & $\frac{\hat q}{1-\lambda/2}+\frac{\varepsilon}{\lambda(1-\lambda/2)}$ & linear; quadratic at $\lambda^\star$ \\
+``Quadratic'' & $\big(\sqrt{\hat q+\varepsilon/2}+\sqrt{\varepsilon/2}\big)^2$ & from $(p-\hat q)^2\leq2p\varepsilon$ \\
+Seeger (kl) & $\klup(\hat q,\varepsilon)$ & tightest; gradient by Prop.~\ref{prop:klgrad} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%% ----------------------------------------------------------------------
+\subsection{Pitfalls and good practice}
+
+Self-bounding learning is simple, but its guarantees are only as good as the
+care with which the rules of \cref{sec:sb_rules} are applied. Three mistakes are
+particularly common.
+
+\begin{pitfall}[: a prior that has seen the data]
+Building the voters on the whole sample and then using a uniform prior over them,
+with empirical risks computed on the same sample, is \emph{not} valid: the
+voters, hence the prior, depend on the examples of the bound. Use a split, or the
+out-of-bag construction of \cref{sec:oob}.
+\end{pitfall}
+
+\begin{pitfall}[: hidden selections]
+Trying several bounds, several priors or several random seeds and reporting the
+best certificate is a selection with the data, which must be accounted for with
+Proposition~\ref{prop:union}.
+\end{pitfall}
+
+\begin{pitfall}[: certifying the wrong predictor]
+A bound on the Gibbs risk is not a bound on the risk of the vote (use
+\cref{chap:mv}), nor on the risk of a single network drawn from the posterior
+(use disintegrated bounds). State precisely what is certified.
+\end{pitfall}
+
+Turning these warnings around, we obtain a short checklist. In practice, a sound self-bounding experiment starts by deciding what is
+certified: a Gibbs classifier, a majority vote or a deterministic model. The
+prior is then fixed before looking at the examples used in the bound, and every
+choice made with the data is accounted for, at the price of $\ln K$ for $K$
+candidates. A convenient relaxation can be optimized, but the reported
+certificate should be the tight kl form. For majority votes of diverse voters,
+second-order bounds should be preferred. Finally, a certificate should always
+be reported with its ingredients (empirical term, KL, $m$, $\delta$) and next to
+the test error, since a bound is a guarantee and not an estimate.
+
+\begin{keypoints}
+A PAC-Bayesian bound holds for all posteriors: minimizing it is legitimate and
+yields a predictor together with its risk certificate (Theorem~\ref{thm:sb_valid}).
+The posterior, and anything that only indexes posteriors, may depend freely on the
+data; the prior, $\delta$ and the parameters of the bound may not, and a choice
+among $K$ candidates costs $\ln K$. Hold-out certificates are tighter for majority
+votes, but self-bounding learning uses all the data, makes the certificate a
+learning objective and makes model selection almost free; data-dependent priors
+interpolate between the two. The generic recipe is always the same: organize the
+data, fix the prior, optimize a relaxed bound (closed form, alternating
+minimization, or gradient through the kl inversion), and certify with the kl form.
+\end{keypoints}
+
+\begin{quickchecks}
+\item Why does minimizing a PAC-Bayesian bound not invalidate the certificate of the minimizer?
+\item Is the temperature of a Gibbs posterior a free parameter? And the parameter $C$ of Catoni's bound?
+\item What is the price of choosing the best of $K$ candidate models with their certificates?
+\item Give one advantage of the hold-out certificate and one advantage of the self-bounding certificate.
+\end{quickchecks}
+
+\begin{exercises}
+\begin{exercise}
+Reproduce the experiment of \cref{fig:uniformity} (draw $1000$ random classifiers
+and $m=100$ labels). How often is the ``fixed-$h$'' Hoeffding bound violated?
+And the Occam bound? What happens to the Occam bound with $10^6$ classifiers?
+\end{exercise}
+\begin{exercise}
+Show that the value of $\lambda$ minimizing the Hoeffding-type bound
+\eqref{eq:catoni_hoeffding} depends on $\KL(Q\|P)$, and explain why using it
+directly is forbidden, whereas using $\lambda^\star$ in the PAC-Bayes-$\lambda$ bound is allowed.
+\end{exercise}
+\begin{exercise}
+Using Proposition~\ref{prop:klgrad}, compute $\partial p/\partial q$ at
+$\hat q=0.1$, $\varepsilon=0.05$ (with $p\approx0.220$, see \cref{fig:klinv}). Which ingredient of
+the certificate is it more profitable to decrease: the empirical risk by $0.01$,
+or the KL by $5$ nats with $m=1000$?
+\end{exercise}
+\begin{exercise}
+$(\star)$ Derive the ``quadratic'' relaxation of the table above from the refined
+Pinsker inequality. Writing $a=\sqrt{\varepsilon/2}$, show that it is smaller than
+McAllester's bound iff $2a+2\sqrt{\hat q+a^2}\leq1$; in particular, for small
+$\varepsilon$ it is the case as soon as $\hat q<\frac14$.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} For each of the following practices, say whether it is free,
+requires a union bound, or is forbidden, with a one-sentence justification. (a)~Stopping
+the gradient descent on the certificate when the certificate stops decreasing.
+(b)~Choosing the scale $\sigma_0$ of a Gaussian prior among $5$ values after computing the
+five certificates. (c)~Computing the certificate with $\delta=0.01$, reporting it with a $99\%$ claim if it is below a target value, and otherwise reporting the certificate computed with $\delta=0.05$ with a $95\%$ claim. (d)~Choosing the temperature of a
+Gibbs posterior by cross-validation on the sample used in the bound.
+\end{exercise}
+\begin{exercise}
+\textbf{(Comprehension)} True or false? Justify briefly. (a)~A self-bounding certificate
+is an unbiased estimate of the true risk of the learned predictor. (b)~If the optimizer
+of a self-bounding algorithm is stuck in a poor local minimum, the reported certificate
+may be wrong. (c)~A test-set bound remains valid if the test set is also used to choose
+among several predictors.
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} In the model-selection example, the tandem certificates are computed
+with $\delta/6$. For a forest with an OOB empirical joint error $\eS(Q)=0.05$,
+$\KL(Q\|P)=2$ and $n_0=423$, compute the tandem certificate \eqref{eq:tnd_pb} with
+$\delta=0.05$, with $\delta/6$, and with $\delta/100$. With a countable family and
+$\pi_k=\frac6{\pi^2k^2}$, what is the extra cost, in nats, for the candidates $k=1$ and $k=10$?
+\end{exercise}
+\begin{exercise}
+\textbf{(Application)} With $m=1000$ examples, the hold-out approach trains a forest on
+$700$ examples and its vote errs on $30$ of the $300$ remaining ones. The self-bounding
+approach trains a forest on the $1000$ examples and obtains an OOB empirical joint error of
+$0.06$ with $\KL(Q\|P)=1.5$ and $n_0=370$. With $\delta=0.05$, compute the test-set
+bound (Proposition~\ref{prop:testset}) and the tandem certificate. Below which value of
+the empirical joint error would the tandem certificate beat the hold-out one? What is the
+tandem certificate when $\eS(Q)=0$?
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Prove Proposition~\ref{prop:union} in detail: write the failure event of each
+bound, apply the union bound, and explain why the certificate $\min_k\mathcal B_k(Q_S,S,\pi_k\delta)$
+is valid for any learning rule and any data-dependent choice of $k$. Check that
+$\pi_k=\frac{6}{\pi^2k^2}$, $k\geq1$, is a valid choice of weights.
+\end{exercise}
+\begin{exercise}
+\textbf{(Proof)} Let $\rho=\mathrm{softmax}(\theta)$ with $\theta\in\R^n$. Show that
+$\frac{\partial\rho_s}{\partial\theta_t}=\rho_s(\ind{s=t}-\rho_t)$, deduce the formula
+\eqref{eq:softmax_grad} for $\nabla_\theta\mathcal B$, and show that the components of
+$\nabla_\theta\mathcal B$ sum to zero. Interpret this last fact.
+\end{exercise}
+\end{exercises}

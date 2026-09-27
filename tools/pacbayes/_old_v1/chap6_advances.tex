@@ -1,0 +1,89 @@
+%% ======================================================================
+\chapter{Further topics and recent advances}
+\label{chap:advances}
+%% ======================================================================
+
+This last chapter is a reading guide. It briefly presents some active research
+directions, with pointers to the literature; it is a good starting point for
+the ``research'' part of the project.
+
+\section{Beyond bounded losses and i.i.d.\ data}
+
+All the bounds of this course assume a loss in $[0,1]$ and i.i.d.\ data. For
+unbounded losses (squared loss, log-loss), the term $\mathcal I_\Delta(m)$ of
+Theorem~\ref{thm:general} must be controlled through assumptions on the tails of the
+loss (sub-Gaussian, sub-exponential, bounded moments):
+see \citet{alquier2016properties}, \citet{germain2016pac} and the recent
+unified treatments of \citet{rodriguez2024more} and \citet{chugg2023unified}, which
+also give \emph{anytime-valid} bounds (holding simultaneously for all sample
+sizes, a useful property for online learning and sequential decisions).
+Martingale techniques extend PAC-Bayes to dependent data and to reinforcement
+learning \citep{seldin2012pac,chugg2023unified}.
+
+\section{Other divergences and priors}
+
+The KL divergence comes from the change of measure \eqref{eq:dv}; other
+changes of measure yield bounds with other divergences, e.g.\ Rényi
+divergences \citep{begin2016pac}, which can be much smaller when $Q$ and $P$
+have different supports. Tighter bounds are also obtained with Bernstein-type
+inequalities \citep{tolstikhin2013pac,mhammedi2019pac} and, for the
+ternary-valued losses that appear in majority votes, with the split-kl
+inequality \citep{wu2022split}. On the prior side, data-dependent priors
+remain one of the most effective levers
+\citep{parrado2012pac,dziugaite2018data,perez2021tighter}.
+
+\section{Information-theoretic generalization bounds}
+
+PAC-Bayesian bounds control the average risk under a posterior that depends on
+$S$. A close family of results bounds the \emph{expected} generalization gap of
+a (randomized) algorithm by the \emph{mutual information} $I(S;h)$ between the
+sample and the output \citep{xu2017information}. Averaging a PAC-Bayesian bound
+over $S$ with the ``optimal'' prior $P=\E_SQ_S$ turns $\E_S\KL(Q_S\|P)$ into
+$I(S;h)$, which shows the deep connection between the two approaches. The
+monograph by \citet{hellstrom2025generalization} presents both points of view in a
+unified way.
+
+\section{Deterministic predictors: disintegration}
+
+A drawback of PAC-Bayes is that it certifies a \emph{randomized} predictor.
+Disintegrated bounds \citep{blanchard2007occam,rivasplata2020pac} hold with
+high probability over the joint draw of $S$ and of a single $h\sim Q_S$, so
+that the one model actually deployed is certified;
+\citet{viallard2024general} give a general framework and practical algorithms
+for such bounds. For majority votes, this line of work leads to bounds on the
+vote itself rather than on the Gibbs classifier.
+
+\section{Domain adaptation and transfer}
+
+When the training distribution (source) differs from the test distribution
+(target), the risk of a majority vote on the target can be related to its risk
+on the source and to a \emph{divergence between domains}. PAC-Bayes is
+particularly well suited because the disagreement $\dD(Q)$ can be computed on
+\emph{unlabeled} target data: \citet{germain2013pac,germain2020pac} define a
+domain divergence as the difference of disagreements between source and target
+and derive PAC-Bayesian domain adaptation bounds and algorithms. Similar ideas
+are used for multi-view learning and for fairness constraints.
+
+\section{Open questions}
+
+\begin{itemize}
+\item \textbf{Tightness vs.\ learning.} The tightest certificates (kl, CCPBB) are
+      not always the best learning objectives; understanding which bound to
+      minimize to obtain the best \emph{predictor} is still open.
+\item \textbf{Large ensembles and large models.} How to design priors for boosted
+      ensembles with thousands of trees, or for ensembles of large neural
+      networks, so that bounds remain non-vacuous \citep{lotfi2022pac}?
+\item \textbf{Diversity.} Second-order bounds formalize the role of diversity;
+      can we design ensemble algorithms that explicitly optimize the
+      strength--diversity trade-off with guarantees, beyond random forests?
+\end{itemize}
+
+\section*{Further reading}
+\addcontentsline{toc}{section}{Further reading}
+\begin{itemize}
+\item Introductions: \citet{langford2005tutorial}, \citet{guedj2019primer},
+      \citet{alquier2024user}.
+\item Majority votes: \citet{germain2015risk}, \citet{masegosa2020second},
+      \citet{wu2021chebyshev}, \citet{viallard2021self}.
+\item Advanced: \citet{catoni2007pac}, \citet{hellstrom2025generalization}.
+\end{itemize}

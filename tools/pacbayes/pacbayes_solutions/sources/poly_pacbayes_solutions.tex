@@ -1,0 +1,545 @@
+\documentclass[11pt]{article}
+\usepackage{../common/polystyle}
+\usepackage{xr}
+\externaldocument[P-]{poly_pacbayes}
+\graphicspath{{figures/}}
+\renewcommand{\polytitle}{PAC-Bayesian Learning -- Solutions to the exercises}
+\newcommand{\statement}[1]{\begin{tcolorbox}[enhanced,breakable,colback=black!3,colframe=black!25,boxrule=0.4pt,sharp corners,fontupper=\itshape\small]#1\end{tcolorbox}}
+\newcommand{\exo}[1]{\Needspace{6\baselineskip}\subsection*{Exercise #1}\addcontentsline{toc}{subsection}{Exercise #1}}
+\newcommand{\sol}{\noindent\textbf{Solution.}\ }
+
+\begin{document}
+\sloppy
+\begin{center}
+{\LARGE\bfseries PAC-Bayesian Learning}\\[0.2cm]
+{\Large Detailed solutions to the exercises of the lecture notes}\\[0.3cm]
+{\large Master MALIA -- Ensemble Methods}\\[0.4cm]
+Guillaume Metzler\\
+Institut de Communication (ICOM), Université Lumière Lyon 2\\
+Laboratoire ERIC UR 3083, Lyon, France
+\end{center}
+
+\bigskip
+\noindent This document gathers detailed solutions to the exercises that close each section of the lecture notes
+\emph{PAC-Bayesian Learning: A Theoretical Framework for Ensemble Methods}. Exercises, figures, equations and results
+are numbered as in the notes. The numerical values were computed with \texttt{pbtools.py}; the short scripts used
+for the simulation exercises are those of the notebooks. We advise to try each exercise before reading its
+solution: most of them take a few lines once the right tool of the notes has been identified, and the remarks
+that follow the solutions point to what the exercise is meant to teach.
+
+\tableofcontents
+\bigskip
+
+%% ======================================================================
+\section*{Section 1 -- Why PAC-Bayes for ensemble methods?}
+\addcontentsline{toc}{section}{Section 1 -- Why PAC-Bayes for ensemble methods?}
+
+\exo{1.1}
+\statement{Write the predictors of bagging, of AdaBoost and of a kernel machine with random Fourier features in the
+form \eqref{P-eq:mv}. In each case, what is the set of voters $\Hcal$, and what is the distribution $Q$?}
+
+\sol In all three cases we look for a set of voters $\Hcal$ and a probability distribution $Q$ on $\Hcal$ such that the
+predictor equals $\sign(\E_{h\sim Q}h(x))$.
+
+\emph{Bagging and random forests.} The voters are the $n$ trees $h_1,\dots,h_n$ learned on the bootstrap samples, so
+$\Hcal=\{h_1,\dots,h_n\}$, and $Q$ is the uniform distribution $Q(h_t)=\frac1n$. Indeed
+$\sign\big(\frac1n\sum_th_t(x)\big)=\sign(\E_{h\sim Q}h(x))$.
+
+\emph{AdaBoost.} The voters are the weak learners $h_1,\dots,h_T$, and $Q(h_t)=\alpha_t/\sum_s\alpha_s$. The weights are
+non-negative because each weak learner has a weighted error $\varepsilon_t<\frac12$, so that
+$\alpha_t=\frac12\ln\frac{1-\varepsilon_t}{\varepsilon_t}>0$, and dividing the score $\sum_t\alpha_th_t(x)$ by the positive
+constant $\sum_s\alpha_s$ does not change its sign. If some $\alpha_t$ were negative, we would replace $h_t$ by $-h_t$ and
+$\alpha_t$ by $|\alpha_t|$: a vote with signed weights is always a vote with non-negative weights over the set
+$\Hcal\cup(-\Hcal)$.
+
+\emph{Random Fourier features.} The kernel machine is $\sign\big(\sum_{k=1}^K\alpha_k\cos(\omega_k^\top x+b_k)\big)$. The voters are
+the functions $h_{\omega,b,s}(x)=s\cos(\omega^\top x+b)$ with $s\in\{-1,+1\}$ (which take values in $[-1,1]$ rather than
+$\{-1,+1\}$; for binary voters take $s\,\sign\cos(\omega^\top x+b)$ as in \cref{P-fig:rff}), and $Q$ puts the weight
+$|\alpha_k|/\sum_j|\alpha_j|$ on the voter $(\omega_k,b_k,\sign\alpha_k)$. The set of voters is infinite, indexed by
+$(\omega,b,s)$, and the distribution from which the frequencies are drawn (the Fourier transform of the kernel,
+times the uniform distribution of $b$ on $[0,2\pi]$) plays the role of a \emph{prior}: this is the viewpoint of
+\citet{letarte2019pseudo} discussed in \cref{P-sec:linear}.
+
+\emph{Remark.} The exercise shows that the question ``which predictor?'' reduces, for all these methods, to the
+question ``which distribution $Q$ over voters?'', which is precisely the object of PAC-Bayes.
+
+\exo{1.2}
+\statement{Show that the empirical Rademacher complexity of $\mathrm{conv}(\Hcal)$ equals the one of $\Hcal$.
+\emph{Hint:} for a fixed vector of signs $\sigma$, the function $f\mapsto\frac1m\sum_i\sigma_if(x_i)$ is linear in $f$.}
+
+\sol Recall that $\widehat{\mathfrak R}_S(\mathcal F)=\E_\sigma\big[\sup_{f\in\mathcal F}\frac1m\sum_i\sigma_if(x_i)\big]$, where the
+$\sigma_i$ are independent uniform signs. Since $\Hcal\subseteq\mathrm{conv}(\Hcal)$, the supremum over the convex hull is at
+least the supremum over $\Hcal$, so $\widehat{\mathfrak R}_S(\Hcal)\leq\widehat{\mathfrak R}_S(\mathrm{conv}(\Hcal))$.
+
+For the converse, fix $\sigma$ and let $L_\sigma(f)=\frac1m\sum_i\sigma_if(x_i)$, which is linear in $f$. Any
+$f\in\mathrm{conv}(\Hcal)$ can be written $f=\sum_{j=1}^kQ_jh_j$ with $h_j\in\Hcal$, $Q_j\geq0$ and $\sum_jQ_j=1$. By linearity,
+\[
+L_\sigma(f)=\sum_jQ_jL_\sigma(h_j)\leq\max_jL_\sigma(h_j)\leq\sup_{h\in\Hcal}L_\sigma(h).
+\]
+Taking the supremum over $f$ and then the expectation over $\sigma$ gives
+$\widehat{\mathfrak R}_S(\mathrm{conv}(\Hcal))\leq\widehat{\mathfrak R}_S(\Hcal)$, hence equality. (For infinite convex combinations
+the same argument applies with integrals.)
+
+\emph{Remark.} Averaging voters does not increase the capacity measured by the Rademacher complexity. This is the
+key to the margin bounds of \citet{schapire1998boosting} and \citet{koltchinskii2002empirical}, which do not depend on
+the number of voters in the vote.
+
+\exo{1.3}
+\statement{In \cref{P-fig:adaboost}, the training error reaches zero after a few dozen rounds. Using the right panel,
+explain why a bound based on the empirical margin distribution can keep decreasing afterwards.}
+
+\sol A margin bound (\cref{P-sec:margins}) has the form
+$\RD(\BQ)\leq\P_S(M_Q\leq\theta)+O\big(\sqrt{\ln|\Hcal|\ln m/(m\theta^2)}\big)$ for every $\theta>0$. Its empirical term is not the
+training error, which is $\P_S(M_Q\leq0)$, but the proportion of training examples whose normalized margin is below
+$\theta$. Once the training error is zero, AdaBoost keeps increasing the margins of the examples: the right panel of
+\cref{P-fig:adaboost} shows that the empirical distribution function of the margins moves to the right between $T=50$ and
+$T=400$ rounds. For a fixed $\theta$, the quantity $\P_S(M_Q\leq\theta)$ therefore keeps decreasing; equivalently, we can
+use a larger $\theta$ for the same empirical term, which decreases the complexity term in $1/\theta^2$. The bound thus
+keeps improving although the training error no longer moves, which is consistent with the stable (and even slightly
+decreasing) test error of the middle panel.
+
+%% ======================================================================
+\section*{Section 2 -- Mathematical toolbox}
+\addcontentsline{toc}{section}{Section 2 -- Mathematical toolbox}
+
+\exo{2.1}
+\statement{Compute $\kl(0.1\|0.2)$ and $\kl(0.2\|0.1)$. Is the binary kl symmetric?}
+
+\sol By definition $\kl(q\|p)=q\ln\frac qp+(1-q)\ln\frac{1-q}{1-p}$. Hence
+\begin{align*}
+\kl(0.1\|0.2)&=0.1\ln\tfrac12+0.9\ln\tfrac98=-0.0693+0.1060=0.0367,\\
+\kl(0.2\|0.1)&=0.2\ln2+0.8\ln\tfrac89=0.1386-0.0942=0.0444.
+\end{align*}
+The two values differ: the binary kl is not symmetric. The interpretation of \cref{P-chap:tools} helps: $\kl(q\|p)$ measures
+the surprise of observing a frequency $q$ when the true rate is $p$. Observing $0.1$ errors when the true rate is
+$0.2$ is less surprising than observing $0.2$ when the true rate is $0.1$, because a Bernoulli variable of mean $0.2$
+fluctuates more than one of mean $0.1$.
+
+\exo{2.2}
+\statement{Show that the Gibbs distribution $Q_\phi$ of Lemma~\ref{P-lem:dv} is the only posterior for which the change of
+measure is an equality.}
+
+\sol The proof of Lemma~\ref{P-lem:dv} shows that, for every $Q$ with $\KL(Q\|P)<\infty$,
+\[
+\KL(Q\|P)+\ln\E_Pe^\phi-\E_Q\phi=\KL(Q\|Q_\phi).
+\]
+The change of measure is therefore an equality iff $\KL(Q\|Q_\phi)=0$. By Gibbs' inequality (the KL is non-negative and
+vanishes only for equal distributions, see TD Exercise~1), this happens iff $Q=Q_\phi$. If $\KL(Q\|P)=+\infty$, the
+right-hand side of \eqref{P-eq:dv} is infinite while the left-hand side is finite (when $\E_Q\phi$ is), so there is no
+equality either. Hence $Q_\phi$ is the unique posterior achieving equality, and the supremum in
+\eqref{P-eq:gibbs_variational} is attained only at $Q_\phi$.
+
+\exo{2.3}
+\statement{Using the Occam bound in Pinsker form, how many examples are needed to certify a risk below $0.15$ for a
+classifier with empirical risk $0.1$ chosen among $10^6$ candidates, with $\delta=0.05$?}
+
+\sol With the uniform prior on $|\Hcal|=10^6$ classifiers, $\ln\frac1{P(h)}=\ln10^6=13.82$, and $\ln\frac1\delta=\ln20=3.00$. The
+Pinsker form of Theorem~\ref{P-thm:occam} gives
+$\RD(h)\leq0.1+\sqrt{\frac{13.82+3.00}{2m}}$. The certificate is below $0.15$ iff
+\[
+\sqrt{\frac{16.81}{2m}}\leq0.05\iff m\geq\frac{16.81}{2\times0.0025}=3362.2,
+\]
+so $m=3363$ examples suffice. \emph{Remarks.} With the kl form, far fewer examples are needed: about $1550$, since the kl
+is much tighter for small risks. And the dependence on the number of candidates is only logarithmic: with $10^{12}$
+candidates, the numerator becomes $27.63+3.00$ and we need $6127$ examples, less than twice as many.
+
+\exo{2.4}
+\statement{Using Pinsker's inequality, show that the kl interval of \cref{P-fig:concentration} is never wider than the
+Hoeffding interval. Using notebook~1, determine for which empirical risks it is at least twice narrower when $m=1000$.}
+
+\sol Let $\varepsilon=\ln(1/\delta)/m$. The Hoeffding interval is $[\hat q,\hat q+\sqrt{\varepsilon/2}]$ and the kl interval is
+$[\hat q,\klup(\hat q,\varepsilon)]$. If $p$ belongs to the kl interval, then $\kl(\hat q\|p)\leq\varepsilon$, and Pinsker's inequality
+gives $2(p-\hat q)^2\leq\kl(\hat q\|p)\leq\varepsilon$, i.e.\ $p\leq\hat q+\sqrt{\varepsilon/2}$. Hence
+$\klup(\hat q,\varepsilon)\leq\hat q+\sqrt{\varepsilon/2}$: the kl interval is always contained in the Hoeffding interval.
+
+Numerically, for $m=1000$ and $\delta=0.05$, the Hoeffding width is $\sqrt{\ln20/2000}=0.0387$. Computing
+$\klup(\hat q,\varepsilon)-\hat q$ on a grid of $\hat q$, the ratio of the two widths is $3.97$ at $\hat q=0.01$, still $2$ at
+$\hat q\approx0.054$, and decreases to $1.00$ at $\hat q=0.5$. The kl interval is thus at least twice narrower for all
+empirical risks below about $5.4\%$. Pinsker's inequality is tight around $\frac12$, which is why the two intervals
+coincide there.
+
+%% ======================================================================
+\section*{Section 3 -- PAC-Bayesian generalization bounds}
+\addcontentsline{toc}{section}{Section 3 -- PAC-Bayesian generalization bounds}
+
+\exo{3.1}
+\statement{Starting from Theorem~\ref{P-thm:general} with $\Delta(q,p)=2(q-p)^2$, prove McAllester's bound directly,
+without going through the kl.}
+
+\sol The function $\Delta(q,p)=2(q-p)^2$ is jointly convex (it is a convex function of the linear form $q-p$), so
+Theorem~\ref{P-thm:general} applies. It remains to bound $\mathcal I_\Delta(m)=\E_{S'}\E_{h\sim P}e^{2m(\widehat R_{S'}(h)-\RD(h))^2}$.
+For a fixed $h$, by Pinsker's inequality, $2(\hat p-p)^2\leq\kl(\hat p\|p)$, so
+$\E_{S'}e^{2m(\hat p-p)^2}\leq\E_{S'}e^{m\kl(\hat p\|p)}\leq2\sqrt m$ by Maurer's lemma (Lemma~\ref{P-lem:chernoff}, for $m\geq8$).
+Hence $\mathcal I_\Delta(m)\leq2\sqrt m$ and, with probability at least $1-\delta$, for all $Q$,
+\[
+2\big(\RS(\GQ)-\RD(\GQ)\big)^2\leq\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{m},
+\]
+hence
+\[
+\RD(\GQ)\leq\RS(\GQ)+\sqrt{\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{2m}}.
+\]
+\emph{Remark.} One can also bound $\E e^{2m(\hat p-p)^2}$ without the kl, using the sub-Gaussian tail
+$\P(|\hat p-p|\geq t)\leq2e^{-2mt^2}$ and the formula $\E e^{Z}=1+\int_0^\infty e^z\P(Z>z)\,dz$; this gives a bound of order
+$m$ instead of $2\sqrt m$, i.e.\ a slightly worse constant ($\ln(2m)$ instead of $\ln(2\sqrt m)$). This is the form of the
+original bounds of McAllester.
+
+\exo{3.2}
+\statement{For $m=500$, $\delta=0.05$, $\RS(\GQ)=0.05$ and $\KL(Q\|P)\in\{0,5,20\}$, compute McAllester's and Seeger's bounds,
+and compare with \cref{P-tab:bound_anatomy}.}
+
+\sol The confidence term is $\ln\frac{2\sqrt{500}}{0.05}=\ln894.4=6.80$. The complexity per example
+$\varepsilon=\frac{\KL+6.80}{500}$ and the two bounds are:
+\begin{center}\small
+\begin{tabular}{cccc}
+\toprule
+$\KL(Q\|P)$ & $\varepsilon$ & McAllester $0.05+\sqrt{\varepsilon/2}$ & Seeger $\klup(0.05,\varepsilon)$ \\
+\midrule
+$0$ & $0.0136$ & $0.132$ & $0.094$ \\
+$5$ & $0.0236$ & $0.159$ & $0.112$ \\
+$20$ & $0.0536$ & $0.214$ & $0.154$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+Compared with \cref{P-tab:bound_anatomy} ($m=1000$, $\RS=0.12$), the gap between the two bounds is larger here: the
+complexity term of Seeger's bound is about $30\%$ smaller than McAllester's when $\RS=0.12$, but about $40\%$ smaller when
+$\RS=0.05$. This is the fast rate of the kl at work: the smaller the empirical risk, the more the square root of
+Pinsker's inequality is wasteful. Halving $m$ roughly doubles $\varepsilon$, which costs Seeger's bound less than
+McAllester's for the same reason.
+
+\exo{3.3}
+\statement{Using the linear form of Catoni's bound given after Corollary~\ref{P-cor:catoni}, find the value of $C$ that
+minimizes it when $\RS(\GQ)=0.12$, $\KL(Q\|P)=5$, $m=1000$ and $\delta=0.05$, and compare the result with
+\cref{P-tab:bound_anatomy}.}
+
+\sol Let $A=\frac{\KL+\ln(1/\delta)}m=\frac{5+3.00}{1000}=0.0080$ and $f(C)=\frac{C\RS+A}{1-e^{-C}}$. Setting
+$f'(C)=0$ gives $\RS(1-e^{-C})=(C\RS+A)e^{-C}$, i.e.\ $\RS(e^C-1-C)=A$. With $\RS=0.12$, $e^C-1-C=0.0667$; since
+$e^C-1-C\approx\frac{C^2}2+\frac{C^3}6$, a first approximation is $C\approx\sqrt{2A/\RS}=0.365$, and solving numerically gives
+$C^\star=0.344$ and $f(C^\star)=0.169$. The exact (non-linear) Catoni bound is minimized at $C=0.371$, where it equals
+$0.165$. In \cref{P-tab:bound_anatomy}, Catoni's bound optimized on a grid of $30$ values of $C$ (with a union bound, hence
+$\ln30$ added to the numerator) gives $0.166$ for $\KL=5$ and Seeger's bound $0.168$: the linear relaxation loses
+only $0.004$ with respect to the exact bound, and the grid costs very little. \emph{Warning:} as for $\lambda$ in the
+Hoeffding bound, $C^\star$ depends on $\RS$ and $\KL$, hence on the data; using it directly requires a grid and a union bound.
+
+\exo{3.4}
+\statement{Reproduce the experiment of \cref{P-fig:uniformity} for $m\in\{100,1000,10000\}$. Show that the failure frequency
+of the naive bound does not go to zero when $m$ grows, and explain why by comparing $\sqrt{\ln(1/\delta)/(2m)}$ with
+the typical deviation of the minimum of $1000$ empirical risks.}
+
+\sol We draw $1000$ classifiers of true risk $0.5$ (their empirical risks are independent $\mathrm{Bin}(m,\frac12)/m$),
+keep the smallest empirical risk $\hat r_{\min}$, and check whether the naive bound $\hat r_{\min}+\sqrt{\ln(1/\delta)/(2m)}$ is
+below $0.5$. Over $2000$ repetitions:
+\begin{center}\small
+\begin{tabular}{cccccc}
+\toprule
+$m$ & mean of $0.5-\hat r_{\min}$ & naive width & ratio & naive bound wrong & Occam wrong \\
+\midrule
+$100$ & $0.160$ & $0.122$ & $1.31$ & $99.8\%$ & $0.3\%$ \\
+$1000$ & $0.051$ & $0.039$ & $1.32$ & $99.9\%$ & $0.5\%$ \\
+$10000$ & $0.016$ & $0.012$ & $1.32$ & $100\%$ & $0.6\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+The failure frequency does not decrease. The reason is that both quantities scale as $1/\sqrt m$. Each empirical risk
+is approximately Gaussian with standard deviation $\frac{1}{2\sqrt m}$, and the minimum of $n$ independent Gaussian
+variables lies about $\sqrt{2\ln n}$ standard deviations below their mean. The selection bias is therefore of order
+$\frac{\sqrt{2\ln n}}{2\sqrt m}=\frac{1.86}{\sqrt m}$ for $n=1000$ (in practice $\approx1.6/\sqrt m$ at these sample sizes), while
+the naive width is $\frac{\sqrt{\ln(1/\delta)/2}}{\sqrt m}=\frac{1.22}{\sqrt m}$. Their ratio does not depend on $m$: the naive bound
+is always too narrow by the same factor. The Occam bound has width $\frac{\sqrt{(\ln n+\ln(1/\delta))/2}}{\sqrt m}=\frac{2.22}{\sqrt m}$,
+which exceeds the selection bias: the price $\ln n$ is exactly what is needed to absorb the selection. More data do not
+cure selection bias; only accounting for the selection does.
+
+%% ======================================================================
+\section*{Section 4 -- Posteriors, priors and the computation of the bounds}
+\addcontentsline{toc}{section}{Section 4 -- Posteriors, priors and the computation of the bounds}
+
+\exo{4.1}
+\statement{For a finite class and a uniform prior, show that $\KL(Q_\lambda\|P)\to\ln\frac{|\Hcal|}{k}$ when $\lambda\to\infty$, where $k$
+is the number of empirical risk minimizers.}
+
+\sol Let $n=|\Hcal|$, $r^\star=\min_h\RS(h)$ and $\mathcal M=\{h:\RS(h)=r^\star\}$, with $|\mathcal M|=k$. With the uniform prior,
+\[
+Q_\lambda(h)=\frac{e^{-\lambda m\RS(h)}}{\sum_{h'}e^{-\lambda m\RS(h')}}=\frac{e^{-\lambda m(\RS(h)-r^\star)}}{k+\sum_{h'\notin\mathcal M}e^{-\lambda m(\RS(h')-r^\star)}}.
+\]
+For $h'\notin\mathcal M$, $\RS(h')-r^\star>0$, so the exponentials tend to $0$ when $\lambda\to\infty$. Hence $Q_\lambda(h)\to\frac1k$ for
+$h\in\mathcal M$ and $Q_\lambda(h)\to0$ otherwise: $Q_\lambda$ converges to the uniform distribution $U_{\mathcal M}$ on the
+minimizers. The KL is a continuous function of $Q$ on the simplex (with $0\ln0=0$) when $P$ has full support, so
+$\KL(Q_\lambda\|P)\to\KL(U_{\mathcal M}\|P)=\sum_{h\in\mathcal M}\frac1k\ln\frac{1/k}{1/n}=\ln\frac nk$ (TD Exercise~1). With a unique minimizer we
+recover the Occam price $\ln n$; when several classifiers tie, the Gibbs posterior spreads over them and pays less.
+
+\exo{4.2}
+\statement{Explain why using the same sample to learn the centre of a Gaussian prior and to compute the empirical term
+of the bound is not allowed. What happens if we do it anyway?}
+
+\sol The only probabilistic step of the proof of Theorem~\ref{P-thm:general} is the third one, where we write
+$\E_{S'}\E_{h\sim P}e^{m\Delta(\widehat R_{S'}(h),\RD(h))}=\E_{h\sim P}\E_{S'}e^{m\Delta(\cdots)}$ and bound the inner expectation for each
+\emph{fixed} $h$. This requires $P$ not to depend on $S'$: if $P=P_S$ is centred on a classifier learned on $S$, the
+voters drawn from $P_S$ are correlated with the sample, their empirical risks are biased downwards, and the inner
+expectation can no longer be controlled by Maurer's lemma. The theorem simply does not apply.
+
+If we do it anyway, the ``certificate'' can be badly wrong. Take the extreme case where the posterior equals the prior,
+both centred on the learned classifier: the KL is zero, and the bound becomes a concentration inequality for a
+classifier that was selected with the data---exactly the naive bound of \cref{P-fig:uniformity}, which fails almost surely
+when the selection is strong. With a flexible model (for instance a neural network that interpolates the data),
+the empirical risk is close to zero, the KL is zero, and the certificate would claim a near-zero risk regardless of
+the true one. The correct procedure is to split $S$: learn the prior on $S_1$ and compute the bound on $S_2$
+(Proposition~\ref{P-prop:ddprior}, \cref{P-fig:ddprior}).
+
+\exo{4.3}
+\statement{In the Monte Carlo certificate, how should $\delta$ and $\delta'$ be split to minimize the final bound when $N=100$?
+when $N=10^4$?}
+
+\sol The final certificate holds with probability $1-\delta_{\text{tot}}$ with $\delta_{\text{tot}}=\delta+\delta'$; we fix
+$\delta_{\text{tot}}=0.05$ and choose the fraction $\alpha=\delta'/\delta_{\text{tot}}$ given to the Monte Carlo step. Increasing $\alpha$
+makes the Monte Carlo inversion $\klup(\hat r_N,\ln(2/\delta')/N)$ tighter but the PAC-Bayesian bound looser (it uses
+$\delta=(1-\alpha)\delta_{\text{tot}}$). The two terms enter only through logarithms, so the optimum is flat. On the example of
+\cref{P-fig:montecarlo} (\texttt{breast cancer}, $\KL=32$, $m=398$), a grid search over $\alpha$ gives the following. With
+$N=100$ samples, the Monte Carlo term is the main source of looseness, since $\ln(2/\delta')/N$ is large; it deserves most
+of the budget, and the optimum is $\alpha\approx0.86$ ($\delta'=0.043$, $\delta=0.007$), with a certificate of $0.380$ against $0.386$
+for the even split. With $N=10^4$ samples, the Monte Carlo term is small and the PAC-Bayesian term dominates; the
+optimum moves to $\alpha\approx0.3$, and the certificate ($0.2591$) is practically the same as with the even split ($0.2594$).
+In practice the even split is a sensible default; the gain from optimizing is small, and the split must anyway be
+chosen before computing the bound (or on a grid with a union bound). It is more effective to increase $N$.
+
+%% ======================================================================
+\section*{Section 5 -- From the Gibbs classifier to the majority vote}
+\addcontentsline{toc}{section}{Section 5 -- From the Gibbs classifier to the majority vote}
+
+\exo{5.1}
+\statement{Give an example of three voters and a distribution on three points for which $\RD(\BQ)=0$ while $\RD(\GQ)=\frac13$.
+Compute the three oracle bounds.}
+
+\sol Let $\D$ be uniform on three points $z_1,z_2,z_3$, and let voter $h_i$ err on $z_i$ only; $Q$ is uniform on
+$\{h_1,h_2,h_3\}$. On each point exactly one voter out of three errs, so $W_Q(z_j)=\frac13$ for all $j$. The vote is correct
+everywhere ($W_Q<\frac12$): $\RD(\BQ)=0$, while $\RD(\GQ)=\E W_Q=\frac13$. The second-order quantities are
+$e_Q=\E W_Q^2=\frac19$ and $d_Q=\E[2W_Q(1-W_Q)]=2\cdot\frac13\cdot\frac23=\frac49$. Hence:
+\[
+2\RD(\GQ)=\tfrac23,\qquad 4e_Q=\tfrac49,\qquad
+\mathcal C_Q=1-\frac{(1-2/3)^2}{1-8/9}=1-\frac{1/9}{1/9}=0
+\]
+for the first-order bound, the tandem bound and the C-bound respectively.
+The C-bound is exact here: $W_Q$ is constant, its variance is zero, and Cantelli's inequality says that a variable with
+zero variance equal to $\frac13$ is never above $\frac12$. The example is a small Condorcet jury with perfectly
+``anti-correlated'' errors: the disagreement ($\frac49$) exceeds the Gibbs risk ($\frac13$), so Proposition~\ref{P-prop:compare}
+predicts the order C-bound $\leq$ tandem $\leq$ first order, as observed.
+
+\exo{5.2}
+\statement{Show that the C-bound is always smaller than $1$ when $\RD(\GQ)<\frac12$, and that it equals $4\RD(\GQ)(1-\RD(\GQ))$ when
+$\dD(Q)=0$. Compare with the first-order bound.}
+
+\sol Write $R=\RD(\GQ)$ and $d=\dD(Q)$. By Proposition~\ref{P-prop:decomp}, $0\leq d\leq2R(1-R)<\frac12$, so $1-2d>0$. When $R<\frac12$,
+$(1-2R)^2>0$, hence $\frac{(1-2R)^2}{1-2d}>0$ and $\mathcal C_Q<1$. (In fact $1-2d\geq1-4R+4R^2=(1-2R)^2$, so the ratio is at most $1$
+and $\mathcal C_Q\geq0$.) When $d=0$, $\mathcal C_Q=1-(1-2R)^2=4R-4R^2=4R(1-R)$. Compared with the first-order bound $2R$:
+$4R(1-R)\geq2R\iff2(1-R)\geq1\iff R\leq\frac12$. So when the voters never disagree, the C-bound is \emph{worse} than the
+first-order bound, by a factor $2(1-R)$ which is close to $2$ for small $R$. This is consistent with
+Proposition~\ref{P-prop:compare} ($d=0<R$): without diversity, second-order information can only hurt, since all voters
+predict the same thing and the vote is just one of them.
+
+\exo{5.3}
+\statement{$(\star)$ Prove that the minimum over $\mu$ of the Chebyshev--Cantelli family equals the C-bound (TD, Exercise~5).}
+
+\sol Let $R=\E W_Q<\frac12$, $e=\E W_Q^2$, $v=e-R^2=\Var W_Q$, and $f(\mu)=\frac{e-2\mu R+\mu^2}{(1/2-\mu)^2}$ for $\mu<\frac12$. The
+numerator equals $\E(W_Q-\mu)^2=v+(R-\mu)^2$. Differentiating,
+\[
+f'(\mu)=\frac{2(\mu-R)(\tfrac12-\mu)+2\big(v+(R-\mu)^2\big)}{(1/2-\mu)^3}=\frac{2\big[v-(R-\mu)(\tfrac12-R)\big]}{(1/2-\mu)^3},
+\]
+using $(\mu-R)(\frac12-\mu)+(R-\mu)^2=(R-\mu)(R-\frac12)$. The bracket is increasing in $\mu$ and vanishes at
+$\mu^\star=R-\frac{v}{1/2-R}=\frac{R/2-e}{1/2-R}$; $f$ decreases before $\mu^\star$ and increases after, so $\mu^\star$ is the minimum
+(and $\mu^\star<R<\frac12$ is admissible). At $\mu^\star$, $R-\mu^\star=\frac{v}{a}$ with $a=\frac12-R$, and
+$\frac12-\mu^\star=a+\frac va=\frac{a^2+v}{a}$. Hence
+\[
+f(\mu^\star)=\frac{v+v^2/a^2}{(a^2+v)^2/a^2}=\frac{v(a^2+v)}{(a^2+v)^2}=\frac{v}{v+a^2}.
+\]
+Finally, with the margin $M_Q=1-2W_Q$: $v=\frac14\Var M_Q$ and $a^2=\frac14(\E M_Q)^2$, so
+$f(\mu^\star)=\frac{\Var M_Q}{\Var M_Q+(\E M_Q)^2}=1-\frac{(\E M_Q)^2}{\E M_Q^2}=\mathcal C_Q$, the C-bound \eqref{P-eq:cbound}. The tandem
+bound is $f(0)$, hence always at least the C-bound, which proves the first claim of Proposition~\ref{P-prop:compare}.
+
+\exo{5.4}
+\statement{In Condorcet's model with $n$ independent voters of error $p$, compute $\eD(Q)$ and $\dD(Q)$, and show that the
+C-bound decreases like $1/n$ while the tandem bound tends to $4p^2$.}
+
+\sol Since $nW_Q\sim\mathrm{Bin}(n,p)$, $\E W_Q=p$ and $\Var W_Q=\frac{p(1-p)}n$. Hence
+$\eD(Q)=\E W_Q^2=p^2+\frac{p(1-p)}n$ and, by Proposition~\ref{P-prop:decomp}, $\dD(Q)=2(p-\eD(Q))=2p(1-p)\big(1-\frac1n\big)$. The tandem
+bound is $4\eD(Q)=4p^2+\frac{4p(1-p)}n\to4p^2$: it never goes to zero, even though the risk of the vote does (for $p=0.3$
+it tends to $0.36$). For the C-bound,
+\begin{align*}
+1-2\dD(Q)&=1-4p(1-p)+\frac{4p(1-p)}n=(1-2p)^2+\frac{4p(1-p)}n,\\
+\mathcal C_Q&=1-\frac{(1-2p)^2}{1-2\dD(Q)}=\frac{4p(1-p)/n}{(1-2p)^2+4p(1-p)/n}.
+\end{align*}
+When $n\to\infty$, $\mathcal C_Q\sim\frac{4p(1-p)}{(1-2p)^2}\cdot\frac1n$. For $p=0.3$ the equivalent is $\frac{0.84}{0.16\,n}=\frac{5.25}n$; the exact values are $0.174$ for $n=25$ and $0.049$ for
+$n=101$ (\cref{P-fig:condorcet}). The true risk decreases exponentially fast (by Hoeffding's inequality,
+$\RD(\BQ)\leq e^{-2n(1/2-p)^2}$), so even the C-bound is pessimistic, but it captures the qualitative effect of independence.
+The tandem bound misses it because it applies Markov's inequality to $W_Q^2$, i.e.\ it measures the deviations of
+$W_Q$ from $0$: since $W_Q$ concentrates around $p>0$, $\E W_Q^2\to p^2$ does not vanish. The C-bound measures the deviations
+from the well-chosen centre $\mu^\star$ (Exercise~5.3), and only pays for the variance $\frac{p(1-p)}n$, which vanishes.
+
+%% ======================================================================
+\section*{Section 6 -- Self-bounding learning}
+\addcontentsline{toc}{section}{Section 6 -- Self-bounding learning}
+
+\exo{6.1}
+\statement{Reproduce the experiment of \cref{P-fig:uniformity} (draw $1000$ random classifiers and $m=100$ labels). How often
+is the ``fixed-$h$'' Hoeffding bound violated? And the Occam bound? What happens to the Occam bound with $10^6$
+classifiers?}
+
+\sol See Exercise~3.4 for the code and the explanation. With $1000$ classifiers and $m=100$, the best empirical risk is
+$0.34$ on average; the fixed-$h$ Hoeffding bound ($+0.122$) is violated in about $99.8\%$ of the runs, while the Occam
+bound ($+\sqrt{(\ln1000+\ln20)/200}=+0.222$) is violated in about $0.3\%$ of them, below the nominal $5\%$. With $10^6$
+classifiers, the best empirical risk drops to $0.26$ on average (a stronger selection), but the Occam price grows only
+to $\sqrt{(\ln10^6+\ln20)/200}=0.290$: the certificate, about $0.55$ on average, is never violated in $200$ runs. It is
+vacuous, which is the honest answer: with $100$ examples one cannot distinguish a million random classifiers from each
+other. The logarithmic price keeps the bound valid for any number of candidates, at the cost of informativeness.
+
+\exo{6.2}
+\statement{Show that the value of $\lambda$ minimizing the Hoeffding-type bound \eqref{P-eq:catoni_hoeffding} depends on
+$\KL(Q\|P)$, and explain why using it directly is forbidden, whereas using $\lambda^\star$ in the PAC-Bayes-$\lambda$ bound is allowed.}
+
+\sol The bound is $\RS(\GQ)+\frac{A}{\lambda}+\frac\lambda8$ with $A=\frac{\KL(Q\|P)+\ln(1/\delta)}m$; its derivative in $\lambda$ vanishes
+at $\lambda^\star=\sqrt{8A}=\sqrt{8(\KL(Q\|P)+\ln\frac1\delta)/m}$, which depends on $\KL(Q\|P)$, hence on the posterior and on the data.
+In Corollary~\ref{P-cor:hoeffding_pb}, $\lambda$ is a parameter of the comparison function $\Delta(q,p)=\lambda(p-q)$: each value of
+$\lambda$ defines a different event of probability at least $1-\delta$, and the corollary guarantees only that the event
+associated with a $\lambda$ \emph{fixed in advance} holds. Choosing $\lambda$ after seeing the data means picking one event
+among infinitely many, and the probability that the picked one fails is not controlled (the situation of
+\cref{P-fig:uniformity}). It must be done on a finite grid with a union bound (Proposition~\ref{P-prop:union}).
+
+In Corollary~\ref{P-cor:lambda}, on the contrary, the probabilistic event is the single event of Seeger's bound, which does
+not involve $\lambda$; the PAC-Bayes-$\lambda$ inequality is derived from it by deterministic algebra valid for every
+$\lambda\in(0,2)$ simultaneously. Plugging the data-dependent $\lambda^\star$ is therefore legitimate: the rule is ``free if it
+indexes a family of inequalities all implied by the same event, paid if it changes the event''
+(\cref{P-sec:sb_rules}).
+
+\exo{6.3}
+\statement{Using Proposition~\ref{P-prop:klgrad}, compute $\partial p/\partial q$ at $\hat q=0.1$, $\varepsilon=0.05$ (with $p\approx0.220$). Which
+ingredient of the certificate is it more profitable to decrease: the empirical risk by $0.01$, or the KL by $5$ nats with
+$m=1000$?}
+
+\sol With $p=0.2201$, $q=0.1$: $\frac{p(1-p)}{p-q}=\frac{0.2201\times0.7799}{0.1201}=1.429$ and
+$\ln\frac{p(1-q)}{q(1-p)}=\ln\frac{0.1981}{0.0780}=\ln2.540=0.932$. Hence
+\[
+\frac{\partial p}{\partial q}=1.429\times0.932=1.33,\qquad\frac{\partial p}{\partial\varepsilon}=1.43.
+\]
+Decreasing the empirical risk by $0.01$ decreases the certificate by about $1.33\times0.01=0.0133$ (the exact value is
+$0.0135$). Decreasing the KL by $5$ nats decreases $\varepsilon$ by $5/1000=0.005$ and the certificate by about
+$1.43\times0.005=0.0071$ (exact: $0.0073$). At this operating point, one point of empirical risk is worth about $9.3$ nats of
+KL: it is more profitable to improve the fit. The balance changes with $m$: for $m=100$, the same $5$ nats would be
+worth $0.071$, five times more than the gain in empirical risk. This is exactly the trade-off that the Gibbs
+posterior or a gradient descent on the certificate resolves automatically.
+
+\exo{6.4}
+\statement{$(\star)$ Derive the ``quadratic'' relaxation of the table of \cref{P-sec:sb_optim} from the refined Pinsker
+inequality. Writing $a=\sqrt{\varepsilon/2}$, show that it is smaller than McAllester's bound iff $2a+2\sqrt{\hat q+a^2}\leq1$; in
+particular, for small $\varepsilon$ it is the case as soon as $\hat q<\frac14$.}
+
+\sol Let $p=\klup(\hat q,\varepsilon)>\hat q$. By the refined Pinsker inequality, $\varepsilon\geq\kl(\hat q\|p)\geq\frac{(p-\hat q)^2}{2p}$, so
+$(p-\hat q)^2\leq2\varepsilon p$, i.e.\ $p^2-2(\hat q+\varepsilon)p+\hat q^2\leq0$. The roots of this quadratic are
+$\hat q+\varepsilon\pm\sqrt{2\hat q\varepsilon+\varepsilon^2}$, so
+\[
+p\leq\hat q+\varepsilon+\sqrt{2\hat q\varepsilon+\varepsilon^2}=\Big(\sqrt{\hat q+\tfrac\varepsilon2}+\sqrt{\tfrac\varepsilon2}\Big)^2,
+\]
+where the last equality is checked by expanding: $(\sqrt{\hat q+a^2}+a)^2=\hat q+2a^2+2a\sqrt{\hat q+a^2}$ with $2a^2=\varepsilon$ and
+$2a\sqrt{\hat q+a^2}=\sqrt{2\varepsilon}\sqrt{\hat q+\varepsilon/2}=\sqrt{2\hat q\varepsilon+\varepsilon^2}$. McAllester's bound is $\hat q+a$. Then
+\[
+(\sqrt{\hat q+a^2}+a)^2\leq\hat q+a\iff2a^2+2a\sqrt{\hat q+a^2}\leq a\iff2a+2\sqrt{\hat q+a^2}\leq1
+\]
+(dividing by $a>0$). When $\varepsilon\to0$, $a\to0$ and the condition becomes $2\sqrt{\hat q}<1$, i.e.\ $\hat q<\frac14$. So the quadratic
+bound improves on McAllester's for all classifiers better than $25\%$ error, provided the complexity term is small; for
+$\hat q$ close to $\frac12$, Pinsker's inequality is tight and McAllester's bound is better than this relaxation (but never better
+than the kl itself).
+
+%% ======================================================================
+\section*{Section 7 -- Self-bounding algorithms for ensembles and beyond}
+\addcontentsline{toc}{section}{Section 7 -- Self-bounding algorithms for ensembles and beyond}
+
+\exo{7.1}
+\statement{Derive the gradient \eqref{P-eq:grad_tnd_lambda} of the tandem objective, and check it numerically with finite
+differences (notebook~4).}
+
+\sol Write $c_1=\frac{4}{1-\lambda/2}$ and $c_2=\frac{4}{\lambda(1-\lambda/2)n_0}$, so that
+$\mathcal B_{\mathrm{TND}}(\rho)=c_1\,\rho^\top\widehat{\mathbf L}\rho+c_2\big(2\KL(\rho\|\pi)+\ln\frac{2\sqrt{n_0}}\delta\big)$. The matrix $\widehat{\mathbf L}$ of
+tandem losses is symmetric ($\widehat L_{tt'}=\widehat L_{t't}$), so $\nabla_\rho(\rho^\top\widehat{\mathbf L}\rho)=2\widehat{\mathbf L}\rho$. For the KL,
+$\KL(\rho\|\pi)=\sum_t\rho_t\ln\rho_t-\rho_t\ln\pi_t$, and $\partial_{\rho_t}=\ln\rho_t+1-\ln\pi_t$, i.e.\
+$\nabla_\rho\KL=\ln\frac\rho\pi+\mathbf1$ (componentwise). Hence
+\[
+\nabla_\rho\mathcal B_{\mathrm{TND}}=4\Big[\frac{2\widehat{\mathbf L}\rho}{1-\lambda/2}+\frac{2(\ln\frac\rho\pi+\mathbf 1)}{\lambda(1-\lambda/2)n_0}\Big].
+\]
+With the softmax parametrization $\rho=\mathrm{softmax}(\theta)$, the Jacobian is $\frac{\partial\rho_s}{\partial\theta_t}=\rho_s(\ind{s=t}-\rho_t)$,
+so $\nabla_\theta\mathcal B=\rho\odot(g-(\rho^\top g)\mathbf 1)$ with $g=\nabla_\rho\mathcal B$, which is \eqref{P-eq:softmax_grad}. (The constant $\mathbf1$
+in the KL gradient disappears in this projection, as it should: it corresponds to the direction that changes
+$\sum_t\rho_t$.) \emph{Numerical check.} On the forest of the running example ($n_0=423$), at random logits $\theta$ and
+$\lambda=0.7$, the centred finite differences with step $10^{-6}$ agree with the analytical gradient up to a relative error
+of $6\times10^{-8}$:
+\begin{verbatim}
+num = np.array([(f(th + 1e-6*e) - f(th - 1e-6*e)) / 2e-6
+                for e in np.eye(100)])
+print(np.linalg.norm(g - num) / np.linalg.norm(num))   # 5.6e-08
+\end{verbatim}
+
+\exo{7.2}
+\statement{Explain why the uniform prior over the trees of a random forest would \emph{not} be a valid prior if the empirical
+losses were computed on the whole training sample.}
+
+\sol The uniform prior on the \emph{indices} of the trees is fixed in advance, and in this sense it is legitimate.
+The problem lies in the third step of the proof of Theorem~\ref{P-thm:general}: for each index $t$, we need the empirical loss
+$\widehat L_t$ to be an average of i.i.d.\ variables of mean $\RD(h_t)$, independent of $h_t$. If $\widehat L_t$ is computed on the whole
+training sample, it includes the examples used to grow $h_t$, on which a fully grown tree makes almost no error: $\widehat L_t$ is
+then a strongly biased estimate of $\RD(h_t)$ (close to $0$ for unpruned trees), and Maurer's lemma does not apply.
+Equivalently, the prior on the trees $h_t$ themselves (not on their indices) depends on the sample used to evaluate
+them. The certificate would be meaningless: it would certify a near-zero risk for a forest whose trees err on $19\%$ of
+the test digits. The out-of-bag construction restores the independence by evaluating each tree only on the examples
+it has not seen (Theorem~\ref{P-thm:oob}).
+
+\exo{7.3}
+\statement{In PBGD, show that when all the training points have a large normalized margin, the gradient of the loss term
+vanishes, and interpret the resulting value of $\|\mathbf w\|$.}
+
+\sol The gradient of the objective is $\nabla F(\mathbf w)=-C\sum_i\varphi(t_i)\frac{y_ix_i}{\|x_i\|}+\mathbf w$ with
+$t_i=\frac{y_i\langle\mathbf w,x_i\rangle}{\|x_i\|}$ and $\varphi$ the standard Gaussian density. Since $\|\frac{y_ix_i}{\|x_i\|}\|=1$, the loss
+part has norm at most $C\sum_i\varphi(t_i)\leq Cm\,\varphi(t_{\min})$, and $\varphi(t)=\frac{e^{-t^2/2}}{\sqrt{2\pi}}\to0$ very fast: if all
+$t_i\geq t_{\min}$ large, the loss gradient vanishes. Then $\nabla F(\mathbf w)\approx\mathbf w\neq0$, and gradient descent shrinks
+$\mathbf w$. Shrinking $\mathbf w$ decreases all normalized margins proportionally ($t_i$ is linear in $\|\mathbf w\|$), until the smallest
+ones become of order $1$--$2$, where $\varphi(t_i)$ is no longer negligible. At a stationary point,
+$\mathbf w=C\sum_i\varphi(t_i)\frac{y_ix_i}{\|x_i\|}$: $\mathbf w$ is a combination of the points with moderate margins, the analogue
+of support vectors. If the data are separable with geometric normalized margin $\gamma$ in direction $\mathbf u$, the
+stationary $\mathbf w=s\mathbf u$ has $s\gamma=O(1)$, i.e.\ $\|\mathbf w\|\approx\frac{c}{\gamma}$ with $c$ growing slowly (logarithmically) with $C$, since $\varphi(t)$ decays like
+$e^{-t^2/2}$. The KL, $\frac12\|\mathbf w\|^2\approx\frac{c^2}{2\gamma^2}$, is thus inversely proportional to the squared margin: large margins
+give small certificates, which is the PAC-Bayesian explanation of the SVM. On the example of \cref{P-fig:pbgd}, the
+norm grows from $3.5$ ($C=1$) to $13.6$ ($C=100$) only because of the noisy points, which pull $\mathbf w$ as long as their
+margin is moderate.
+
+\exo{7.4}
+\statement{With notebook~4, compute the test disagreement of the C-bound posterior of \cref{P-tab:rf_posteriors} and check
+whether the condition $d\geq R$ of Proposition~\ref{P-prop:compare} holds. Why is its certificate nevertheless larger than the
+tandem certificate?}
+
+\sol For the posterior minimizing the PAC-Bayesian C-bound, the test Gibbs risk is $R=0.176$ and the test
+disagreement is $d=0.246$: the condition $d\geq R$ holds, and indeed the \emph{oracle} C-bound is $0.171$, smaller than the
+oracle tandem bound $4e=0.210$. Its certificate, however, is $0.531$, against $0.361$ for the TND-optimized posterior. The
+reason is statistical. The certificate replaces $R$ by an upper confidence bound and $d$ by a lower confidence bound,
+each with $\delta/2$: from the OOB estimates $\hat R=0.153$ ($n_1=747$) and $\hat d=0.224$ ($n_3=423$ pairs), with $\KL=0.73$,
+we get $\overline r=0.212$ and $\underline d=0.147$. The disagreement is estimated on the smaller pairwise sample with a doubled KL,
+and it enters through $\frac1{1-2d}$, which amplifies its estimation error: plugging $\overline r$ and $\underline d$ gives
+$1-\frac{(1-0.424)^2}{1-0.294}=0.531$. The tandem certificate needs a single kl inversion of a small quantity ($\hat e=0.041$),
+where the kl is at its best. This is the general lesson of Proposition~\ref{P-prop:compare}: the best oracle bound is not
+necessarily the best certificate; the number of quantities to estimate, and their size, matter.
+
+\exo{7.5}
+\statement{$(\star)$ For a stochastic network with $D=10^5$ weights, $\sigma_j=\sigma_0=0.03$ and $\|\boldsymbol\mu-\boldsymbol\mu_0\|=3$, compute
+$\KL(Q\|P)$. How many examples are needed for the complexity term $\KL/m$ to be below $0.01$? What does this suggest
+about data-dependent priors?}
+
+\sol With $\sigma_j=\sigma_0$, the terms $\frac{\sigma_j^2}{\sigma_0^2}-1+\ln\frac{\sigma_0^2}{\sigma_j^2}$ vanish, and
+\[
+\KL(Q\|P)=\frac12\sum_j\frac{(\mu_j-\mu_{0,j})^2}{\sigma_0^2}=\frac{\|\boldsymbol\mu-\boldsymbol\mu_0\|^2}{2\sigma_0^2}=\frac{9}{2\times0.0009}=5000\text{ nats}.
+\]
+The complexity term $\KL/m$ is below $0.01$ only when $m\geq5000/0.01=500\,000$ examples, about eight times the size of
+MNIST's training set, and this ignores the confidence term and the kl inversion. Note that the dimension $D$ does not
+appear: what matters is how far, in units of $\sigma_0$, the posterior mean has travelled from the prior mean. Moving
+$3$ units of Euclidean distance with a noise scale of $0.03$ is enormous. This suggests two levers: take $\sigma_0$ as large
+as the network tolerates (chosen on a grid with a union bound), and above all bring $\boldsymbol\mu_0$ close to $\boldsymbol\mu$ with a
+data-dependent prior: if $\boldsymbol\mu_0$ is a network trained on half of the data, the final network may for instance move by a
+distance of $0.3$ instead of $3$, which divides the KL by $100$ ($50$ nats): the certificate then becomes informative
+with a few tens of thousands of examples. This is the approach of \citet{dziugaite2018data} and \citet{perez2021tighter}
+(Proposition~\ref{P-prop:ddprior}).
+
+\bibliographystyle{plainnat}
+\bibliography{../common/pacbayes}
+\end{document}

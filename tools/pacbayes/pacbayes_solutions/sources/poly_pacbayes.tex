@@ -1,0 +1,234 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{../common/polystyle}
+\hypersetup{pdftitle={PAC-Bayesian Learning: a Theoretical Framework for Ensemble Methods},pdfauthor={Guillaume Metzler}}
+\numberwithin{equation}{section}
+\graphicspath{{figures/}}
+\setcounter{tocdepth}{2}
+
+\begin{document}
+
+%% ============================================================ Title (same layout as the SL poly)
+\thispagestyle{empty}
+\begin{center}
+\includegraphics[height=1.55cm]{logos/eric.png}\hspace{0.5cm}
+\includegraphics[height=1.55cm]{logos/ul2.png}\hspace{0.5cm}
+\includegraphics[height=1.3cm]{logos/icom.png}
+
+\vspace{1.4cm}
+{\LARGE PAC-Bayesian Learning}\\[0.25cm]
+{\Large A Theoretical Framework for Ensemble Methods}\\[0.45cm]
+{\large Master MALIA -- Ensemble Methods}\\[0.8cm]
+\textbf{Guillaume Metzler}\\[0.2cm]
+\textbf{Institut de Communication (ICOM)}\\
+\textbf{Universit\'e de Lyon, Universit\'e Lumi\`ere Lyon 2}\\
+\textbf{Laboratoire ERIC UR 3083, Lyon, France}\\[0.2cm]
+\href{mailto:guillaume.metzler@univ-lyon2.fr}{\textcolor{polyblue}{\textbf{guillaume.metzler@univ-lyon2.fr}}}
+\end{center}
+
+\vspace{0.6cm}
+\begin{abstract}
+Most ensemble methods --- bagging, random forests, boosting, stacking, and even
+kernel machines with random features --- output a \emph{weighted majority vote},
+that is, a probability distribution over a set of base classifiers. These notes
+present PAC-Bayesian theory, a framework whose object of study is precisely such
+a distribution. We derive the classical PAC-Bayesian generalization bounds from a
+single general theorem, show how the risk of a majority vote can be controlled
+through the quality \emph{and the diversity} of its voters, and develop the
+\emph{self-bounding} point of view: learning algorithms that minimize a
+generalization bound and therefore output a predictor together with its own
+risk certificate. Each section combines theory (with proofs), intuition, worked
+examples and exercises, and is accompanied by Python notebooks, a tutorial
+sheet, a practical session and a project, all available on the course webpage.
+\end{abstract}
+
+\vspace{0.4cm}
+\begin{center}
+\begin{tikzpicture}[scale=0.95]
+  \draw[->,thick,pbgrey] (-0.2,0) -- (6.4,0) node[right,black]{\small $\Hcal$};
+  \fill[pbgrey!30] plot[domain=0:6,samples=80] (\x,{1.0*exp(-((\x-2.6)^2)/2.0)}) -- (6,0) -- (0,0) -- cycle;
+  \draw[red!70!black,very thick] plot[domain=0:6,samples=120] (\x,{2.0*exp(-((\x-4.0)^2)/0.25)});
+  \node[pbgrey!80!black] at (1.0,1.1) {\small prior $P$};
+  \node[red!70!black,right] at (4.5,1.8) {\small posterior $Q$};
+  \node[draw=blue!50,rounded corners,fill=blue!5,align=center] at (3.0,-0.9)
+     {\small $\RD(\BQ)\ \leq\ \mathcal{B}\big(\widehat{\text{stat}}_S(Q),\,\KL(Q\|P),\,m,\,\delta\big)$};
+\end{tikzpicture}
+\end{center}
+
+\newpage
+\tableofcontents
+
+%% ============================================================ Foreword
+\newpage
+\section*{Foreword}
+\addcontentsline{toc}{section}{Foreword}
+
+These notes extend the \emph{Ensemble Methods} course. In the first part of
+the course we studied how to combine several models --- by bagging, random
+forests, boosting, gradient boosting or stacking --- and we saw that most of
+these algorithms output a \emph{(weighted) majority vote} of base classifiers.
+We also saw that classical generalization bounds (VC dimension, Rademacher
+complexity) explain why a single model generalizes, but that they tell us
+very little about why \emph{combining} models helps.
+
+The aim of this part is to present \textbf{PAC-Bayesian theory}, a framework
+in which the object of study is not a single hypothesis but a
+\emph{distribution} over hypotheses. A weighted majority vote is precisely
+such a distribution. PAC-Bayesian theory therefore provides a natural language to
+(i)~derive tight, often \emph{non-vacuous}, generalization guarantees for
+ensembles, (ii)~understand the role of the \emph{diversity} of the voters, and
+(iii)~design \emph{self-bounding} learning algorithms, which minimize a
+generalization bound instead of an empirical risk and come with a risk
+certificate for free.
+
+\paragraph{How to read these notes.}
+Each section opens with a short box \emph{About this section}, which states
+the question the section answers and announces its content. It closes with a
+summary \emph{To remember}, a few short questions \emph{Check your
+understanding} (answered in Appendix~\ref{app:answers}) and exercises. A single
+experiment, a random forest on the \texttt{digits} dataset, runs through all the
+sections in teal boxes \emph{Running example}: following it is the quickest way
+to see how the pieces of the theory fit together. Detailed solutions to all the exercises are gathered in a
+separate document, \emph{Solutions to the exercises}, available on the course webpage. Definitions are in blue boxes and theorems in red boxes, always with
+their proofs or proof sketches; boxes \emph{In a nutshell} give the intuition
+behind a result, and historical notes and pitfalls complete the picture. Most
+notions are illustrated by running the algorithms on the datasets of the course
+(\texttt{breast cancer}, \texttt{digits}, two moons and simulated data): all
+figures and tables are produced by the script \texttt{make\_figures.py} and the
+module \texttt{pbtools.py}, so that every number of these notes can be
+reproduced, and most experiments are revisited in the notebooks. The dependencies between the sections are shown in
+\cref{fig:roadmap}: a first reading can follow the path 1--2--3--5--6.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=0.45cm and 0.45cm,
+  sec/.style={draw,rounded corners,align=center,font=\small,minimum height=0.95cm,text width=2.3cm,fill=#1!6,draw=#1!70!black},
+  arr/.style={-{Stealth[length=2mm]},thick}]
+\node[sec=blue] (s1) {\textbf{1} Why PAC-Bayes?};
+\node[sec=blue,right=of s1] (s2) {\textbf{2} Toolbox};
+\node[sec=red,right=of s2] (s3) {\textbf{3} Bounds};
+\node[sec=red,right=of s3] (s4) {\textbf{4} Priors \& posteriors};
+\node[sec=red,below=of s3] (s5) {\textbf{5} Majority vote};
+\node[sec=green,below=of s5] (s6) {\textbf{6} Self-bounding learning};
+\node[sec=green,right=of s6] (s7) {\textbf{7} Self-bounding algorithms};
+\node[sec=black,left=of s6] (s8) {\textbf{8} Perspectives};
+\draw[arr] (s1) -- (s2); \draw[arr] (s2) -- (s3); \draw[arr] (s3) -- (s4);
+\draw[arr] (s3) -- (s5); \draw[arr] (s5) -- (s6); \draw[arr] (s4) |- (s6);
+\draw[arr] (s6) -- (s7); \draw[arr,dashed] (s6) -- (s8);
+\node[font=\scriptsize,blue!60!black,above=0.05cm of s1.north east,anchor=south east] {Part I};
+\node[font=\scriptsize,red!60!black,above=0.05cm of s4.north east,anchor=south east] {Part II};
+\node[font=\scriptsize,green!40!black,below=0.05cm of s7.south east,anchor=north east] {Part III};
+\end{tikzpicture}
+\caption{Dependencies between the sections. Blue: foundations; red: PAC-Bayesian bounds; green: self-bounding learning.}
+\label{fig:roadmap}
+\end{figure}
+
+\paragraph{Accompanying material.} Five Python notebooks (student and solution
+versions), a tutorial sheet (TD), a practical session (TP) and a project are
+available on the course webpage, in the section \emph{Apprentissage PAC-Bayes}.
+The notebooks follow the sections: notebook~1 (Sections~1--2), notebook~2
+(Sections~3--4), notebook~3 (Section~5), notebook~4 (Sections~6--7, forests),
+notebook~5 (Section~7, linear classifiers and kernels).
+
+\paragraph{Prerequisites.} The first part of the course (risk, empirical risk,
+loss functions, Rademacher bound, bagging, random forests, AdaBoost, gradient
+boosting) and basic probability (expectation, Markov's inequality, independence).
+
+\paragraph{Suggested schedule.} Sections~1--4 in a first 3-hour lecture,
+Sections~5--7 in a second one; Section~8 is a reading section.
+
+\paragraph{Main references.} For a first reading, we recommend
+\citet{alquier2024user}, \citet{guedj2019primer} and \citet{langford2005tutorial}.
+The majority-vote and self-bounding points of view follow mainly
+\citet{germain2015risk}, \citet{masegosa2020second} and \citet{viallard2021self}.
+\citet{catoni2007pac} and \citet{hellstrom2025generalization} are advanced references.
+
+%% ============================================================ Notation
+\section*{Notation}
+\addcontentsline{toc}{section}{Notation}
+\begin{center}
+\renewcommand{\arraystretch}{1.22}
+\small
+\begin{tabular}{p{3.6cm}p{10cm}}
+\toprule
+$\X$, $\Y=\{-1,+1\}$ & input space, (binary) output space \\
+$\D$ & unknown data distribution on $\X\times\Y$ \\
+$S=\{(x_i,y_i)\}_{i=1}^m\sim\D^m$ & learning sample of $m$ i.i.d.\ examples \\
+$\Hcal$ & set of \emph{voters} (base classifiers) $h:\X\to\{-1,+1\}$ (or $[-1,1]$) \\
+$\ell$ & loss function, $\ell(h,(x,y))\in[0,1]$; by default the 0-1 loss $\ind{h(x)\neq y}$ \\
+$\RD(h)$, $\RS(h)$ & true risk and empirical risk of $h$ \\
+$\M(\Hcal)$ & set of probability distributions on $\Hcal$ \\
+$P\in\M(\Hcal)$ & \emph{prior} distribution (chosen before seeing $S$) \\
+$Q\in\M(\Hcal)$ & \emph{posterior} distribution (chosen after seeing $S$); also denoted $\rho$ \\
+$\KL(Q\|P)$ & Kullback--Leibler divergence $\Esp{h\sim Q}{\ln\frac{Q(h)}{P(h)}}$ \\
+$\kl(q\|p)$ & binary KL divergence $q\ln\frac qp+(1-q)\ln\frac{1-q}{1-p}$ \\
+$\klup(q,\varepsilon)$, $\kllow(q,\varepsilon)$ & upper / lower inverses of the binary kl \\
+$\GQ$, $\RD(\GQ)$ & Gibbs (stochastic) classifier and its risk $\Esp{h\sim Q}{\RD(h)}$ \\
+$\BQ$ & $Q$-weighted majority vote $\BQ(x)=\sign\big(\Esp{h\sim Q}{h(x)}\big)$ \\
+$W_Q(x,y)$, $M_Q(x,y)$ & weight of the erring voters, margin $y\,\Esp{h\sim Q}{h(x)}=1-2W_Q$ \\
+$\eD(Q)$, $\dD(Q)$ & joint error (tandem loss) and disagreement of the voters \\
+$\delta\in(0,1]$ & confidence: bounds hold with probability $\geq1-\delta$ over $S$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+We write $\ln$ for the natural logarithm and ``w.p.\ $\geq1-\delta$'' for
+``with probability at least $1-\delta$ over $S\sim\D^m$''.
+
+%% ============================================================ Part I
+\part{Foundations}
+A random forest whose trees err on $19\%$ of the test digits, but whose vote
+errs on only $4.4\%$: this experiment opens the course and raises its two
+questions. Why is a vote so much better than its voters, and can we guarantee its
+accuracy without a test set? This first part explains why ensemble methods call
+for a dedicated theory, and gathers the mathematical tools used in the rest of
+the notes: concentration inequalities, the Kullback--Leibler divergence and the
+change of measure inequality. The Occam bound, presented at the end of the part,
+already contains the main idea of PAC-Bayes: the price of choosing a hypothesis
+with the data can be measured, and paid.
+\clearpage
+
+\input{chap1_intro}
+\input{chap2_tools}
+
+%% ============================================================ Part II
+\part{PAC-Bayesian generalization bounds}
+This part builds the certificates. We first bound the risk of the Gibbs
+classifier, a voter drawn at random, from a general theorem to the classical
+bounds of the literature. We then discuss how to choose the prior and the
+posterior, and how to compute a bound in practice. We finally turn to the risk of
+the majority vote itself: this is where the diversity of the voters appears, and
+where the first question of the course receives its answer.
+\clearpage
+
+\input{chap3_bounds}
+\input{chap4_posteriors}
+\input{chap5_majority}
+
+%% ============================================================ Part III
+\part{Self-bounding learning}
+Because PAC-Bayesian bounds hold for all posteriors simultaneously, they can be
+used as learning objectives: instead of certifying a vote after learning it, we
+learn the vote that has the best certificate. This part develops this
+\emph{self-bounding} point of view: its principles and its rules (what may depend
+on the data), its comparison with the hold-out approach, the optimization tools,
+and the main self-bounding algorithms for ensembles, linear classifiers, kernels
+and neural networks. Along the way, we will see that the choice of the certificate
+matters: a bound that ignores the diversity of the voters leads to a bad vote.
+\clearpage
+
+\input{chap6_selfbounding}
+\input{chap7_algorithms}
+
+%% ============================================================ Part IV
+\part{Perspectives}
+This last part is a reading guide towards current research on PAC-Bayesian
+learning; it can be used as a starting point for the research part of the project.
+\clearpage
+\input{chap8_advances}
+
+\appendix
+\input{appendix}
+
+\bibliographystyle{plainnat}
+\bibliography{../common/pacbayes}
+
+\end{document}
