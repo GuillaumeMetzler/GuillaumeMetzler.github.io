@@ -5,7 +5,7 @@
  * [C1], [N2], [W1], [P3], [R2]... est TOUJOURS identique partout sur le
  * site, sans jamais avoir a la dupliquer ni a la recalculer a la main.
  *
- * Depend de assets/js/data/publications.js (PUBLICATIONS, PUBLICATIONS_GROUPS),
+ * Depend de data/publications/publications.js (PUBLICATIONS, PUBLICATIONS_GROUPS),
  * a charger avant ce fichier.
  */
 var PubShared = (function () {

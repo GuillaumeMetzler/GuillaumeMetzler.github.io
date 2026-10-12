@@ -5,11 +5,12 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title>Publications — Guillaume Metzler</title>
 	<meta name="description" content="Liste complete des publications de Guillaume Metzler : conferences internationales, revues, conferences nationales et theses." />
-	<link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
+	<link rel="icon" type="image/svg+xml" href="assets/images/favicon.svg" />
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:wght@600;700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<link rel="stylesheet" href="assets/vendor/katex/katex.min.css" />
 	<link rel="stylesheet" href="assets/css/site.css" />
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-BYH92T5GHN"></script>
@@ -66,16 +67,19 @@
 	<footer class="site-footer">
 		<div class="container">
 			<div class="footer-logos">
-				<img src="images/logos/udl.svg" alt="Logo Universite de Lyon" />
-				<img src="images/logos/ul2.png" alt="Logo Universite Lumiere Lyon 2" />
-				<img src="images/logos/eric.png" alt="Logo Laboratoire ERIC" />
-				<img src="images/logos/icom.png" alt="Logo ICOM" />
+				<img src="assets/images/logos/udl.svg" alt="Logo Universite de Lyon" />
+				<img src="assets/images/logos/ul2.png" alt="Logo Universite Lumiere Lyon 2" />
+				<img src="assets/images/logos/eric.png" alt="Logo Laboratoire ERIC" />
+				<img src="assets/images/logos/icom.png" alt="Logo ICOM" />
 			</div>
 			<p class="footer-bottom">&copy; <span id="year"></span> Guillaume Metzler — Maitre de conferences, Universite Lumiere Lyon 2</p>
 		</div>
 	</footer>
 	<script src="assets/js/site.js"></script>
-	<script src="assets/js/data/publications.js"></script>
+	<script src="assets/vendor/katex/katex.min.js"></script>
+	<script src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+	<script src="data/publications/publications.js"></script>
+	<script src="data/publications/pub-resumes.js"></script>
 	<script src="assets/js/pub-shared.js"></script>
 	<script src="assets/js/pub-render.js"></script>
 </body>

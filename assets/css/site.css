@@ -634,3 +634,44 @@ table.resource-table a.button{ padding:6px 14px; font-size:.82rem; }
 /* KaTeX : eviter que les formules debordent sur mobile */
 .exo-q .katex-display{ margin:.4em 0; overflow-x:auto; overflow-y:hidden; }
 .exo-options .katex{ font-size:1.02em; }
+
+/* ---------- Publications : resume deroulant (bouton "Resume") ---------- */
+.pub-toggle{
+  font:inherit; font-size:.8rem; line-height:1.4; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px;
+  padding:3px 12px; border-radius:999px;
+  background:transparent; color:var(--accent); border:1px solid var(--accent);
+  transition:background .15s ease, color .15s ease;
+}
+.pub-toggle:hover, .pub-toggle[aria-expanded="true"]{ background:var(--accent); color:#fff; }
+.pub-toggle:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.pub-toggle .pub-chevron{ display:inline-block; font-size:.7em; transition:transform .2s ease; }
+.pub-toggle[aria-expanded="true"] .pub-chevron{ transform:rotate(180deg); }
+.pub-summary{
+  display:grid; grid-template-rows:0fr; opacity:0;
+  transition:grid-template-rows .28s ease, opacity .28s ease;
+}
+.pub-summary.open{ grid-template-rows:1fr; opacity:1; }
+.pub-summary-inner{ overflow:hidden; min-height:0; }
+.pub-summary-body{
+  display:grid; gap:12px; margin-top:12px; padding:14px; max-width:78ch;
+  background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-md); box-shadow:var(--shadow-sm);
+}
+.pub-summary-block{
+  --sb:var(--primary);
+  background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--sb);
+  border-radius:var(--radius-sm); padding:10px 14px 12px;
+}
+.pub-summary-block.sb-problem{ --sb:var(--s-rose); }
+.pub-summary-block.sb-idea{ --sb:var(--accent); }
+.pub-summary-block.sb-results{ --sb:var(--accent-2); }
+.pub-summary-block h4{
+  display:flex; align-items:center; gap:8px; margin:0 0 6px;
+  font-family:var(--font-sans); font-size:.8rem; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--sb);
+}
+.pub-summary-block p{ margin:0; font-size:.92rem; line-height:1.65; font-style:normal; color:var(--text); }
+.pub-summary-block .katex{ font-size:1.04em; }
+.pub-summary-block .katex-display{ margin:.7em 0; overflow-x:auto; overflow-y:hidden; }
+@media (max-width:700px){ .pub-summary-body{ padding:8px; } .pub-summary-block{ padding:9px 11px 11px; } }
+@media (prefers-reduced-motion:reduce){ .pub-summary, .pub-toggle .pub-chevron{ transition:none; } }

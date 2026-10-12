@@ -199,7 +199,7 @@
     return { wrap: wrap, select: select };
   }
 
-  var BASE = window.GRADES_BASE || '../grades/';
+  var BASE = window.GRADES_BASE || '../data/grades/';
 
   document.addEventListener('DOMContentLoaded', function () {
     var root = document.getElementById('grades-widget');

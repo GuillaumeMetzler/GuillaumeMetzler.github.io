@@ -1,11 +1,11 @@
 /* Construit automatiquement le bloc "Actualités" de la page d'accueil a
  * partir des publications les plus recentes (conferences, revues,
- * preprints) declarees dans assets/js/data/publications.js. Ajouter,
+ * preprints) declarees dans data/publications/publications.js. Ajouter,
  * corriger ou dater une publication se fait uniquement dans ce fichier de
  * donnees : la page d'accueil se met a jour seule, sans jamais avoir a
  * toucher index.html.
  *
- * Depend de, dans cet ordre : assets/js/data/publications.js, pub-shared.js.
+ * Depend de, dans cet ordre : data/publications/publications.js, pub-shared.js.
  */
 document.addEventListener('DOMContentLoaded', function () {
   var list = document.getElementById('home-news-list');

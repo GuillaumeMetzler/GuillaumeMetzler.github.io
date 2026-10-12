@@ -3,7 +3,7 @@
  * TOUJOURS synchronise avec publications.html — aucune mise a jour manuelle
  * necessaire si l'ordre ou le contenu de publications.js change.
  *
- * Depend de, dans cet ordre : assets/js/data/publications.js, pub-shared.js.
+ * Depend de, dans cet ordre : data/publications/publications.js, pub-shared.js.
  *
  * 1) Reference ponctuelle a UNE publication (par son id) :
  *      <span class="pub-ref" data-pub-id="fairgptq-2025"></span>
