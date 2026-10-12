@@ -1,8 +1,5 @@
-# %% [markdown]
-# # TP 1 -- An experimental protocol for supervised learning. Starter file
-# Statistical Supervised Machine Learning. Copy this file into your notebook (or import it) and fill in the TODOs.
+# TP 1 -- An experimental protocol for supervised learning. 
 
-# %%
 import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
