@@ -181,6 +181,16 @@ var PUBLICATIONS = [
 
   // --- Revues internationales ---
   {
+    id: "gptq-tacl-2026", group: "group-revues-intl", year: 2026, month: 10,
+    title: "Debias-SparseGPT: Bias-Aware Pruning for Large Language Models",
+    authors: "I. Proskurina, G. Metzler, A. Gourru, J. Velcin",
+    authorIds: ["iproskurina", "gmetzler", "agourru", "jvelcin"],
+    venue: "The 2026 Conference on Empirical Methods in Natural Language Processing (EMNLP), Budapest, Hungary, octobre 2026",
+    badges: [{ text: "CORE A*", color: "amber" }],
+    links: [
+    ]
+  },
+  {
     id: "adjustedknn-ijait-2021", group: "group-revues-intl", year: 2021, month: 1,
     title: "An Adjusted Nearest Neighbor Algorithm Maximizing the F-Measure from Imbalanced Data",
     authors: "R. Viola, R. Emonet, A. Habrard, G. Metzler, S. Riou, M. Sebban",
