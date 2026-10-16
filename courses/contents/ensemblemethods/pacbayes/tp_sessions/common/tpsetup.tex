@@ -1,0 +1,56 @@
+%% ===========================================================================
+%% Practical sessions of "Statistical Supervised Machine Learning"
+%% Same template as the lecture notes (polystyle.sty + usercommands.tex), with
+%% a few additions for the sheets: header with the logos, session box, parts.
+%% The solutions are in the notebooks tpX_solutions.ipynb.
+%% Usage in tpX.tex:
+%%   \documentclass[a4paper,11pt]{article}
+%%   \input{tpsetup}   (after setting \tpdir, \tpcommon and \input@path)
+%%   \renewcommand{\polytitle}{...}            % footer
+%% ===========================================================================
+\providecommand{\polycommondir}{}          % usercommands.tex is found through \input@path
+\usepackage{polystyle}
+\usepackage{adjustbox}
+\renewcommand{\sectionbreak}{\Needspace{10\baselineskip}}     % parts do not start on a new page
+\numberwithin{equation}{section}
+%% header of a sheet: the title page of the lecture notes (chapters/frontmatter.tex), with the title of the session
+\newcommand{\sheethead}[2]{%
+\thispagestyle{empty}
+\begin{center}
+\parindent 0cm
+{\centerline{\hfill \includegraphics[height=1.8cm]{LOGO-ERIC.pdf} \hfill \includegraphics[height=1.8cm]{ICOM.pdf} \hfill \includegraphics[height=1.8cm]{assp.png} \hfill}}
+
+\bigskip\bigskip
+{\noindent \huge \bf Statistical Supervised Machine Learning\\}
+\bigskip
+{\noindent \Large \bf \color{bfig} #1\\}
+\bigskip
+{\noindent \Large \bf Master MIASHS \& MALIA}
+
+\bigskip
+{\noindent \small \bf Guillaume Metzler\\}
+\smallskip
+{\noindent \small \bf Institut de Communication (ICOM) \\ Universit\'e de Lyon, Universit\'e Lumi\`ere Lyon 2\\
+Laboratoire ERIC UR 3083, Lyon, France \\}
+\smallskip
+{\noindent \small \bf \href{mailto:guillaume.metzler@univ-lyon2.fr}{guillaume.metzler@univ-lyon2.fr}}
+\end{center}
+
+\begin{abstract}
+#2
+\end{abstract}}
+%% session box, same look as the `objectives' box of the notes
+\newtcolorbox{sessionbox}[1][]{enhanced,breakable,colback=white,colframe=black!35,boxrule=0.4pt,
+  arc=1mm,title={#1},fonttitle=\bfseries\small,colbacktitle=black!6,coltitle=black,fontupper=\small}
+%% good practice box (same family as the remark / pitfall boxes of the notes)
+\newtcolorbox{tip}[1][]{enhanced,breakable,colback=blue!3!white,colframe=bfig,boxrule=0pt,
+  leftrule=2.5pt,sharp corners,title={Good practice#1},coltitle=bfig,colbacktitle=blue!3!white,
+  fonttitle=\bfseries,attach title to upper={\ }}
+%% parts of a session = numbered sections of the notes
+\newcommand{\tppart}[1]{\section{#1}}
+\newcommand{\hard}{$(\star)$\ }
+\newcommand{\code}[1]{\texttt{#1}}
+\SetKwComment{Com}{$\triangleright$ }{}
+\SetAlgoSkip{smallskip}
+\newcommand\mycommfont[1]{\small\textit{#1}}\SetCommentSty{mycommfont}
+

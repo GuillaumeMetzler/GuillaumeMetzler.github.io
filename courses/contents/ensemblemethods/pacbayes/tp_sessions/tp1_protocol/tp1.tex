@@ -1,0 +1,182 @@
+\documentclass[a4paper,11pt]{article}
+%% Compiles both from this folder (pdflatex tp1.tex) and from the root of the project
+%% (Overleaf: Menu > Main document = tp1_protocol/tp1.tex).
+\makeatletter
+\IfFileExists{tp1_protocol/tp1.tex}{\gdef\tpdir{tp1_protocol/}\gdef\tpcommon{common/}}{\gdef\tpdir{}\gdef\tpcommon{../common/}}
+\edef\input@path{{\tpdir}{\tpcommon}}
+\makeatother
+\input{tpsetup}
+\renewcommand{\polytitle}{Statistical Supervised Machine Learning -- TP 1}
+\graphicspath{{figures/}{tp1_protocol/figures/}{../common/logos/}{common/logos/}}
+
+\begin{document}
+\sloppy
+\sheethead{TP 1 -- An experimental protocol for supervised learning}{%
+This first practical session sets up the experimental protocol that we will use in all the following ones. On two
+simple families of models, Gaussian kernel SVMs and decision trees, we distinguish the empirical risk from the true
+risk, we see why and when the data must be normalized, we search hyperparameters with a validation set and with
+cross-validation, and we evaluate the final model once, on a test set kept aside. The last two parts open the
+programme of the course: combining many trees into a vote (ensemble methods, TP~2 and~3), and turning a test error into
+a \emph{guarantee} on the true risk (generalization bounds and PAC-Bayes, TP~4 and~5). The session lasts
+\textbf{three hours}; Part~\ref{p1:far} contains the difficult questions and can be left for home.}
+
+\begin{sessionbox}[About this session -- TP 1: An experimental protocol]
+\textbf{Goal.} By the end of the session you should be able to explain the difference between empirical and true
+risk, decide when to normalize the features, tune hyperparameters by cross-validation without touching the test set,
+report a test error with its uncertainty, and say what ensemble methods and generalization bounds will bring.\par
+\textbf{To reread before the session.} Sections~5 and~6.1 (risk and empirical risk minimization), Section~7.1 (how to
+train and tune a model), Section~8.3 (SVM and kernels), Section~8.7 (decision trees) and Sections~11.3--11.5
+(preprocessing, splitting, tuning) of the lecture notes.\par
+\textbf{Timing (3 hours).}\quad
+\begin{tabular}[t]{ll}Setting up and Part~1 & 40 min\\
+Part~2 & 20 min\\
+Part~3 & 45 min\\
+Part~4 & 25 min\\
+Part~5 & 20 min\\
+Part~6 & 30 min\\
+Part~7 \hard & at home\end{tabular}\par
+\textbf{To hand in.} Your notebook, with the figures of Parts~1 and~3 and the tables of Parts~2 to~6.\par
+\textbf{Tools.} \code{numpy}, \code{matplotlib} and \code{scikit-learn} (\code{SVC}, \code{DecisionTreeClassifier},
+\code{StandardScaler}, \code{make\_pipeline}, \code{StratifiedKFold}, \code{cross\_val\_score}, \code{GridSearchCV}).
+\end{sessionbox}
+
+\medskip
+\noindent\textbf{Data.} A synthetic problem whose distribution is known (Part~\ref{p1:risk}), and three datasets of the
+course loaded with \code{load(name)} of \code{common/tptools.py}, with labels in $\{-1,+1\}$: \code{wdbc} (breast cancer,
+$569\times30$), \code{pima} (diabetes, $768\times8$) and \code{australian} (credit, $690\times14$). The file
+\code{tp1\_starter.py} contains the data generator and the imports.
+
+\begin{tip}
+Fix all the random seeds (\code{random\_state=seed}). Never call \code{fit} on data that contains test examples, and
+put every preprocessing step in a \code{Pipeline} so that cross-validation refits it on each training fold. Keep the
+test set in a variable that you use only once, at the end.
+\end{tip}
+
+%% =====================================================================
+\tppart{Empirical risk and true risk (Sections 5 and 6.1)}\label{p1:risk}
+
+The input $X$ is uniform on $[-1,1]^2$, the clean label is $c(x)=+1$ if $x_2>\frac12\sin(\pi x_1)$ and $-1$ otherwise,
+and the observed label $Y$ is $c(X)$ flipped with probability $\eta=0.1$. For a classifier $h$, the true risk is
+$\RD(h)=\P(h(X)\neq Y)$ and the empirical risk on a sample $S=\{(x_i,y_i)\}_{i=1}^m$ is
+$\RS(h)=\frac1m\sum_{i=1}^m\ind{h(x_i)\neq y_i}$.
+
+\begin{enumerate}
+\item What is the Bayes classifier of this problem and its risk $R^\star$?\\
+      Check it on $50\,000$ examples.
+\item Draw a training sample of size $m=200$ and a sample of $50\,000$ examples used as a proxy for the true risk.\\
+      Plot the empirical (training) risk and the true risk of a decision tree as functions of its maximal depth
+      ($1$ to $15$), and of a Gaussian kernel SVM ($C=10$) as functions of $\gamma\in[10^{-2},10^{3}]$, where the kernel
+      is $k(x,x')=e^{-\gamma\|x-x'\|^2}$.\\
+      Identify underfitting and overfitting.\\
+      Plot the decision boundaries of the
+      SVM for $\gamma\in\{0.01,3,100\}$.
+\item Fix the tree of depth $5$.\\
+      Draw $500$ fresh samples of size $n\in\{50,200,1000,5000\}$, compute its empirical
+      risk on each, and compare their mean and standard deviation with $\RD(h)$ and $\sqrt{\RD(h)(1-\RD(h))/n}$.\\
+      Why is the empirical risk an unbiased estimate of the true risk here, but not in question~2?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Normalization of the data (Section 11.3)}\label{p1:norm}
+
+\begin{enumerate}
+\item Look at the standard deviations of the features of \code{wdbc} and \code{australian}.\\
+      What do you notice?
+\item For $10$ random splits ($70\%/30\%$), compute the test error of an SVM (\code{C=1}, \code{gamma="scale"}) and of a
+      tree of depth $4$, with and without standardization (\code{StandardScaler} fitted on the training set).\\
+      Explain the
+      results.
+\item Why must the scaler be fitted on the training set only?\\
+      How do you do it inside a cross-validation?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Hyperparameter search and cross-validation (Sections 7.1 and 11.5)}\label{p1:cv}
+
+We work on \code{pima}. Keep $25\%$ of the data as test set (stratified, \code{random\_state=0}); the remaining
+$75\%$ is the learning set.
+
+\begin{enumerate}
+\item On the learning set, compute the $5$-fold cross-validation error of the pipeline (standardization + SVM) for
+      $C\in\{0.1,1,10,100,1000\}$ and $\gamma\in\{10^{-4},\dots,1\}$, and display it as a heat map.\\
+      Do the same for a
+      tree, with \code{max\_depth}$\in\{1,2,3,4,6,8,\text{None}\}$ and \code{min\_samples\_leaf}$\in\{1,5,10,20\}$.\\
+      Which hyperparameters do you select?\\
+      Retrain on the whole learning set and compute the test error.
+\item \textbf{Hold-out or cross-validation?} Repeat the selection of $(C,\gamma)$ $30$ times, with different random
+      partitions of the learning set, (a) with a single hold-out validation split ($75\%/25\%$ of the learning set),
+      (b) with $5$-fold cross-validation.\\
+      For each procedure, count the number of distinct pairs selected, and compute
+      the mean and standard deviation of the selected validation score and of the test error of the selected model.\\
+      Conclude.
+\end{enumerate}
+
+%% =====================================================================
+\tppart{The complete protocol, and the optimism of the best score}\label{p1:protocol}
+
+\begin{enumerate}
+\item Write a function that, given a dataset and a seed, (i) splits it into a learning set ($75\%$) and a test set,
+      (ii) selects the hyperparameters of the SVM pipeline and of the tree by $5$-fold cross-validation on the learning
+      set (\code{GridSearchCV}), (iii) retrains them on the whole learning set and (iv) computes their test errors.\\
+      Run it on \code{wdbc}, \code{pima} and \code{australian} for $10$ seeds, and compare the best cross-validation
+      error with the test error.
+\item To understand the difference, replace the labels of \code{pima} by random labels (independent of the features)
+      and run the same protocol for the SVM.\\
+      What is the true risk of any classifier?\\
+      What do you observe?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Opening: what if we combine many trees? (Section 10.2)}\label{p1:ens}
+
+\begin{enumerate}
+\item On the synthetic problem ($m=300$) and on \code{pima} ($70\%/30\%$), learn $B=100$ fully grown trees, each one on a
+      \emph{bootstrap sample} of the training set ($m$ indices drawn with replacement), and predict by the majority vote
+      $\sign\big(\sum_{b}h_b(x)\big)$.\\
+      Compare the test error of the vote with that of one fully grown tree learned on the
+      whole training set, and with the mean test error of the $100$ trees.
+\item Why can a vote be much better than its voters?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Opening: a first guarantee on the true risk (Sections 1.4 and 6.2)}\label{p1:bounds}
+
+Let $h$ be a classifier \emph{fixed before} drawing a test sample $T$ of $n$ i.i.d.\ examples. Hoeffding's inequality
+gives, with probability at least $1-\delta$ over $T$,
+\[
+\RD(h)\leq\widehat R_T(h)+\sqrt{\frac{\ln(1/\delta)}{2n}} ,
+\]
+and a tighter version, based on the Chernoff bound, is $\RD(h)\leq\klup\big(\widehat R_T(h),\frac{\ln(1/\delta)}{n}\big)$,
+where $\klup(q,\varepsilon)=\sup\{p\in[q,1]:\kl(q\|p)\leq\varepsilon\}$ and $\kl(q\|p)=q\ln\frac qp+(1-q)\ln\frac{1-q}{1-p}$
+(\code{kl\_inv\_upper} in \code{common/tptools.py}). We take $\delta=0.05$.
+
+\begin{enumerate}
+\item Prove the Hoeffding bound from $\P\big(\RD(h)-\widehat R_T(h)\geq\varepsilon\big)\leq e^{-2n\varepsilon^2}$.
+\item Compute both bounds for the SVM selected in Part~\ref{p1:protocol} (seed $0$) on the three datasets.\\
+      Interpret them.\\
+      How many test examples would be needed for a Hoeffding term of $0.01$?
+\item On the synthetic problem, fix the SVM with $\gamma=3$ learned on $200$ examples, draw $1000$ test sets of size
+      $n\in\{50,200,1000\}$ and check that both bounds hold in at least $95\%$ of the cases.
+\item \textbf{Selection.} Why can the bound not be applied to the best cross-validation score of Part~\ref{p1:protocol}?\\
+      Simulate $K$ useless classifiers (true risk $\frac12$) whose errors on a common validation set of $n=100$ examples
+      are independent $\mathcal B(n,\frac12)/n$, select the best one, and compute how often the Hoeffding bound holds for
+      it, for $K\in\{1,25,1000\}$.\\
+      Show that replacing $\delta$ by $\delta/K$ (union bound) repairs it.
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Going further \hard}\label{p1:far}
+
+\begin{enumerate}
+\item Prove that the Bayes classifier $h^\star(x)=\sign(2\eta(x)-1)$ (either label when $\eta(x)=\frac12$), with $\eta(x)=\P(Y=1\mid X=x)$, minimizes the true
+      risk, and that $R^\star=\E[\min(\eta(X),1-\eta(X))]$.
+\item \textbf{Data leakage.} Draw $m=100$ examples with $d=2000$ Gaussian features and labels drawn uniformly in
+      $\{-1,+1\}$, independently of the features.\\
+      (a) Select the $20$ features most correlated with the label on the
+      whole dataset, then estimate the accuracy of a logistic regression on these features by $5$-fold cross-validation.\\
+      (b) Do the same, but perform the selection inside each fold, on the training part only.\\
+      Repeat $10$ times and
+      compare with the true accuracy.
+\end{enumerate}
+
+\end{document}

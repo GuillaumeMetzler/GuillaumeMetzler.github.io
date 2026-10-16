@@ -181,13 +181,14 @@ var PUBLICATIONS = [
 
   // --- Revues internationales ---
   {
-    id: "gptq-tacl-2026", group: "group-revues-intl", year: 2026, month: 10,
-    title: "Debias-SparseGPT: Bias-Aware Pruning for Large Language Models",
-    authors: "I. Proskurina, G. Metzler, A. Gourru, J. Velcin",
-    authorIds: ["iproskurina", "gmetzler", "agourru", "jvelcin"],
-    venue: "The 2026 Conference on Empirical Methods in Natural Language Processing (EMNLP), Budapest, Hungary, octobre 2026",
-    badges: [{ text: "CORE A*", color: "amber" }],
+    id: "fairgptq-tacl-2026", group: "group-revues-intl", year: 2026, month: 10,
+    title: "Fair-GPTQ: Bias-Aware Quantization for Large Language Models",
+    authors: "I. Proskurina, G. Metzler, J. Velcin",
+    authorIds: ["iproskurina", "gmetzler", "jvelcin"],
+    venue: "Transactions of the Association for Computational Linguistics (TACL)",
+    badges: [{ text: "Q1", color: "blue" }],
     links: [
+      { label: "Préprint (arXiv)", href: "https://arxiv.org/abs/2509.15206v2", external: true }
     ]
   },
   {
@@ -415,16 +416,6 @@ var PUBLICATIONS = [
     venue: "arXiv:2602.11722, 2026",
     links: [
       { label: "Préprint (arXiv)", href: "https://arxiv.org/abs/2602.11722", external: true }
-    ]
-  },
-  {
-    id: "fairgptq-2025", group: "group-preprints", year: 2025, month: 9,
-    title: "Fair-GPTQ: Bias-Aware Quantization for Large Language Models",
-    authors: "I. Proskurina, G. Metzler, J. Velcin",
-    authorIds: ["iproskurina", "gmetzler", "jvelcin"],
-    venue: "arXiv:2509.15206, 2025",
-    links: [
-      { label: "Préprint (arXiv)", href: "https://arxiv.org/abs/2509.15206v2", external: true }
     ]
   },
   {

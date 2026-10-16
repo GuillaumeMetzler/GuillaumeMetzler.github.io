@@ -1,0 +1,234 @@
+\documentclass[a4paper,11pt]{article}
+%% Compiles both from this folder (pdflatex tp4.tex) and from the root of the project
+%% (Overleaf: Menu > Main document = tp4_pacbayes_intro/tp4.tex).
+\makeatletter
+\IfFileExists{tp4_pacbayes_intro/tp4.tex}{\gdef\tpdir{tp4_pacbayes_intro/}\gdef\tpcommon{common/}}{\gdef\tpdir{}\gdef\tpcommon{../common/}}
+\edef\input@path{{\tpdir}{\tpcommon}}
+\makeatother
+\input{tpsetup}
+\renewcommand{\polytitle}{Statistical Supervised Machine Learning -- TP 4}
+\graphicspath{{figures/}{tp4_pacbayes_intro/figures/}{../common/logos/}{common/logos/}}
+
+\begin{document}
+\sloppy
+\sheethead{TP 4 -- From an error on a sample to a PAC-Bayesian guarantee}{%
+Fourth of five practical sessions (1: protocol, 2: bagging, 3: boosting, 4 and 5: PAC-Bayes). This session follows
+Sections~13 and~14 of the lecture notes, step by step. On a toy problem in which every true risk is known exactly, so that
+we can draw thousands of samples and \emph{count} how often a bound fails, we (1) certify one classifier fixed in advance
+with Hoeffding's inequality and with the sharper kl bound, (2) see what goes wrong when the classifier is chosen with the
+sample and repair it with the union bound, (3) spread the confidence over the classifiers with a \emph{prior} (Occam's
+bound), and then move from one classifier to a \emph{distribution} over classifiers: (4) the KL divergence, (5) the first
+PAC-Bayesian bound of the notes, with its parameter $\lambda$, and the bounds of McAllester and Seeger used in practice,
+(6) the Gibbs posterior, and (7) a check that all these bounds hold. Majority votes are the subject of TP~5. The session
+lasts \textbf{three hours}; Part~\ref{p4:far} contains the difficult questions.}
+
+\begin{sessionbox}[About this session -- TP 4: From an error on a sample to a PAC-Bayesian guarantee]
+\textbf{Goal.} By the end of the session you should be able to compute the test-set and kl bounds of a fixed classifier,
+explain why a selected classifier needs a union bound and how a prior spreads the confidence, compute the Gibbs risk and
+the KL divergence of a posterior, compute the PAC-Bayesian bound with parameter $\lambda$ and the bounds of McAllester and
+Seeger, explain the trade-off made by the Gibbs posterior, and check by simulation that the bounds hold.\par
+\textbf{To reread before the session.} Section~13 (from an error on a sample to a guarantee: Corollary~13.3,
+Theorem~13.5, Algorithm~12, Theorems~13.7 and~13.8) and Section~14 (the PAC-Bayesian bound: Definition~14.1,
+Theorems~14.4 and~14.5, Proposition~14.6) of the lecture notes. The exercises of Sections~13 and~14 of the exercise
+booklet are a good preparation.\par
+\textbf{Timing (3 hours).}\quad
+\begin{tabular}[t]{ll}Setting up and Part~1 & 35 min\\
+Part~2 & 15 min\\
+Part~3 & 20 min\\
+Part~4 & 20 min\\
+Part~5 & 35 min\\
+Part~6 & 30 min\\
+Part~7 & 25 min\\
+Part~8 \hard & at home\end{tabular}\par
+\textbf{To hand in.} Your notebook with the tables of Parts~1 to~7, the figures of Parts~1, 5 and~6, and your proofs.\par
+\textbf{Tools.} \code{numpy} and \code{matplotlib} (and the helpers of \code{common/tptools.py}).
+\end{sessionbox}
+
+\medskip
+\noindent\textbf{The toy problem.} The input $X$ is uniform on $[0,1]$. The clean label is $\sign(X-\theta^\star)$ with
+$\theta^\star=0.37$, and it is flipped with probability $\eta=0.15$. The class $\Hcal$ contains the $K=102$ threshold
+classifiers $h_{t,s}(x)=s\cdot\sign(x-t)$, $t\in\{0,0.02,\dots,1\}$, $s\in\{-1,+1\}$. Unless stated otherwise,
+$\delta=0.05$.
+
+\begin{enumerate}
+\item Show that $\RD(h_{t,+1})=\eta+(1-2\eta)|t-\theta^\star|$ and $\RD(h_{t,-1})=1-\RD(h_{t,+1})$.\\
+      What is the best classifier of $\Hcal$?
+\item Write \code{sample(m, rng)} and a \emph{vectorized} function \code{emp\_risks(x, y)} returning the $102$
+      empirical risks (build the $102\times m$ matrix of predictions).
+\end{enumerate}
+
+%% =====================================================================
+\tppart{One classifier fixed in advance: Hoeffding and kl bounds (Sections 13.1--13.4)}\label{p4:fixed}
+
+Fix $h=h_{0.6,+1}$, whose risk is $p=\RD(h)=0.311$. For a sample of size $m$, $m\RS(h)\sim\mathcal B(m,p)$: you can
+simulate $\RS(h)$ directly with \code{rng.binomial}.
+
+\begin{enumerate}
+\item \textbf{Test-set bound.} From Hoeffding's inequality (Theorem~13.2),
+      $\P\big(\RD(h)-\RS(h)\geq\varepsilon\big)\leq e^{-2m\varepsilon^2}$, prove Corollary~13.3: with probability at least
+      $1-\delta$, $\RD(h)\leq\RS(h)+\sqrt{\ln(1/\delta)/(2m)}$.\\
+      Why must $h$ be fixed before the sample is drawn?
+\item \textbf{kl bound.} Theorem~13.5 gives, with probability at least $1-\delta$,
+      $\RD(h)\leq\klup\big(\RS(h),\ln(1/\delta)/m\big)$, where
+      $\klup(q,\varepsilon)=\max\{p\in[q,1]:\kl(q\|p)\leq\varepsilon\}$ and $\kl(q\|p)=q\ln\frac qp+(1-q)\ln\frac{1-q}{1-p}$
+      (Definition~13.4).\\
+      Implement $\klup$ by bisection (Algorithm~12), for whole arrays of $q$ at once, and check it against
+      \code{kl\_inv\_upper} of \code{common/tptools.py}; check that $\klup(0.1,0.05)\approx0.220$ (example of
+      Section~13.4).\\
+      Using Pinsker's inequality $\kl(q\|p)\geq2(q-p)^2$, show that the kl bound is never worse than the test-set bound.
+\item For $m\in\{50,100,500,2000\}$, draw $10\,000$ samples and compute the mean of each bound and its \emph{coverage}
+      (the proportion of samples for which $\RD(h)$ is below the bound).\\
+      Comment.
+\item For $m=100$, plot the width ``bound $-\RS(h)$'' of both bounds as a function of the observed error
+      $\RS(h)\in[0,0.5]$.\\
+      When is the kl bound much better?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{What goes wrong when we choose: the union bound (Section 13.5)}\label{p4:union}
+
+\begin{enumerate}
+\item Using the union bound (Lemma~13.6), prove Theorem~13.7: with probability at least $1-\delta$, \emph{for all}
+      $k\leq K$ simultaneously, $\RD(h_k)\leq\RS(h_k)+\sqrt{\ln(K/\delta)/(2m)}$; give its kl version
+      $\RD(h_k)\leq\klup\big(\RS(h_k),\ln(K/\delta)/m\big)$.\\
+      Why does it hold for a classifier \emph{selected} on the sample, whatever the selection rule?
+\item For $m\in\{50,100,400\}$ and $5000$ samples, select the empirical risk minimizer (ERM)
+      $\hat h$ among the $102$ thresholds.\\
+      Compute the mean of $\RD(\hat h)-\RS(\hat h)$, and the coverage of (a) the
+      test-set bound with $\delta$ (as if $\hat h$ were fixed), (b) the union bound for $\hat h$, (c) the union bound for
+      \emph{all} the classifiers at once.\\
+      Comment.
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Occam's bound: spreading the confidence with a prior (Section 13.6)}\label{p4:occam}
+
+Let $P$ be a probability distribution on $\Hcal$ (the \emph{prior}), chosen \emph{before} seeing the data. The kl version
+of Occam's bound (Theorem~13.8) states that, with probability at least $1-\delta$,
+\[
+\forall h\in\Hcal,\qquad \RD(h)\leq\klup\Big(\RS(h),\ \frac{\ln\frac1{P(h)}+\ln\frac1\delta}{m}\Big).
+\]
+
+\begin{enumerate}
+\item Prove it, by applying the kl bound of Part~\ref{p4:fixed} to each $h$ with the confidence $\delta P(h)$ and the union
+      bound.\\
+      What do you recover with the uniform prior?
+\item On the toy problem ($m=100$, $2000$ samples), compare three priors: uniform; ``informative'', with weights
+      proportional to $e^{-(t-0.4)^2/(2\times0.1^2)}$ on the threshold and $90\%$ of the mass on $s=+1$; ``misleading'',
+      the same centred on $0.9$.\\
+      For each prior, report the mean bound and the mean true risk of the ERM and of the classifier that minimizes the
+      \emph{bound}, and the coverage for all $h$ at once.
+\item Can you choose the prior after looking at the data?\\
+      What happens if the prior is bad?
+\end{enumerate}
+
+%% =====================================================================
+\medskip
+\noindent\textbf{From one classifier to a distribution over classifiers.} We keep the toy problem and its class $\Hcal$ of
+$K=102$ thresholds; the prior $P$ is now uniform on $\Hcal$. A \emph{posterior} is any distribution $Q$ on $\Hcal$,
+possibly chosen using the sample $S$ of size $m$. We recall (Sections~12 and~14 of the lecture notes):
+\begin{itemize}
+\item the \textbf{Gibbs classifier} $\GQ$ draws $h\sim Q$ and predicts $h(x)$; its risks are $\RD(\GQ)=\sum_hQ(h)\RD(h)$ and
+      $\RS(\GQ)=\sum_hQ(h)\RS(h)$ (Definition~12.1); the \textbf{majority vote} $\BQ$ is the subject of TP~5;
+\item the \textbf{KL divergence} $\KL(Q\|P)=\sum_hQ(h)\ln\frac{Q(h)}{P(h)}$, with $0\ln0=0$ (Definition~14.1);
+\item the \textbf{PAC-Bayesian bound} of Theorem~14.4: for $\lambda>0$ \emph{fixed before seeing $S$}, with probability at
+      least $1-\delta$, for all $Q$ simultaneously,
+      \[
+      \RD(\GQ)\leq\RS(\GQ)+\frac{\KL(Q\|P)+\ln\frac1\delta}{\lambda}+\frac{\lambda}{8m};
+      \]
+\item the bounds of \textbf{McAllester} and \textbf{Seeger} (Theorem~14.5): for $m\geq8$, with probability at least
+      $1-\delta$, for all $Q$ simultaneously,
+      \begin{gather*}
+      \text{(McAllester)}\quad\RD(\GQ)\leq\RS(\GQ)+\sqrt{\frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{2m}},\\
+      \text{(Seeger)}\quad\RD(\GQ)\leq\klup\Big(\RS(\GQ),\ \frac{\KL(Q\|P)+\ln\frac{2\sqrt m}{\delta}}{m}\Big).
+      \end{gather*}
+\end{itemize}
+
+\begin{tip}
+Work with \emph{vectors}: a posterior is an array of $102$ nonnegative numbers summing to $1$, so that
+$\RS(\GQ)$ is \code{Q @ r} and $\RD(\GQ)$ is \code{Q @ R}. To compute $\KL(Q\|P)$, sum only over the $h$ with $Q(h)>0$.
+To compute weights $\propto e^{a_h}$ for large $a_h$, subtract $\max_ha_h$ before taking the exponential.
+\end{tip}
+
+%% =====================================================================
+\tppart{Posteriors, Gibbs risk and KL divergence (Sections 12.2 and 14.1)}\label{p4:post}
+
+\begin{enumerate}
+\item Show that, for the uniform prior, $\KL(Q\|P)=\ln K-H(Q)$ with $H(Q)=-\sum_hQ(h)\ln Q(h)\geq0$, so that
+      $0\leq\KL(Q\|P)\leq\ln K$.\\
+      What is the KL of the uniform distribution on $k$ of the $K$ classifiers (Example~14.1)? Of a Dirac mass?
+\item Draw one sample of size $m=100$.\\
+      For the following posteriors, compute $\RS(\GQ)$, $\KL(Q\|P)$ and the true Gibbs risk $\RD(\GQ)$:
+      (a) the Dirac mass on the ERM $\hat h=h_{\hat t,\hat s}$; (b) the prior itself; (c) the uniform distribution on the $5$
+      classifiers with the smallest empirical risks; (d) the uniform distribution on the $h_{t,+1}$ with $|t-\hat t|\leq0.1$.\\
+      Which posterior would you like to certify? What makes it ``complex''?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{The PAC-Bayesian bounds (Sections 14.3--14.5)}\label{p4:bounds}
+
+\begin{enumerate}
+\item On the sample of Part~\ref{p4:post}, compute the bound of Theorem~14.4 for the four posteriors and
+      $\lambda\in\{10,30,100,300\}$.\\
+      Plot it as a function of $\lambda\in[1,10^4]$ for the posteriors (a) and (d).\\
+      Which term dominates for a small $\lambda$, for a large $\lambda$?
+\item For a fixed $Q$, show that the value of $\lambda$ that minimizes the bound is
+      $\lambda^\star=\sqrt{8m\big(\KL(Q\|P)+\ln\frac1\delta\big)}$, and that the minimum is
+      $\RS(\GQ)+\sqrt{\big(\KL(Q\|P)+\ln\frac1\delta\big)/(2m)}$.\\
+      Why can we \emph{not} use $\lambda^\star$, computed from the data, in Theorem~14.4?\\
+      Show that choosing $\lambda$ in a grid of $k$ values fixed in advance is allowed if $\ln\frac1\delta$ is replaced by
+      $\ln\frac k\delta$, and compute this certificate for the four posteriors with the grid $\{10,30,100,300\}$.
+\item Compute McAllester's and Seeger's bounds for the four posteriors, and compare all the certificates.\\
+      Compare the certificate of the Dirac mass with Occam's bound for $\hat h$ (Part~\ref{p4:occam}).\\
+      Why is the PAC-Bayesian bound a little looser here?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{The Gibbs posterior (Section 14.6)}\label{p4:gibbs}
+
+For $\lambda>0$, the \emph{Gibbs posterior} is $Q_\lambda(h)=\frac{P(h)\,e^{-\lambda\RS(h)}}{Z_\lambda}$
+(Proposition~14.6): it minimizes $\RS(\GQ)+\frac{\KL(Q\|P)}{\lambda}$, hence the bound of Theorem~14.4 for this $\lambda$.
+
+\begin{enumerate}
+\item What is $Q_\lambda$ for $\lambda=0$ (where the formula still makes sense), and what is the limit of $Q_\lambda$ when $\lambda\to\infty$?
+\item On the sample of Part~\ref{p4:post}, for $\lambda\in\{0\}\cup[1,10^4]$ (logarithmic grid of $41$ values), plot
+      $\RS(G_{Q_\lambda})$, $\KL(Q_\lambda\|P)/m$, Seeger's bound and $\RD(G_{Q_\lambda})$ against $\lambda$.\\
+      Plot $Q_\lambda$ for a few values of $\lambda$.
+\item Select $\lambda$ by minimizing Seeger's bound.\\
+      Why is Seeger's bound still valid for the selected posterior, without any union bound over the grid (compare with
+      Part~\ref{p4:union} and with question~2 of Part~\ref{p4:bounds})?
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Do the bounds hold?}\label{p4:check}
+
+\begin{enumerate}
+\item For $m\in\{50,100,400\}$, draw $2000$ samples.\\
+      On each, select $\lambda$ by minimizing Seeger's bound over the grid of Part~\ref{p4:gibbs}, and record
+      $\RS(G_{Q_\lambda})$, $\RD(G_{Q_\lambda})$, Seeger's bound and whether it holds; record also the bound of
+      Theorem~14.4 for the same posterior, with the union bound over the $41$ positive values of the grid.\\
+      Compare with Occam's bound for the ERM and its true risk.
+\item Comment on the coverage, on the tightness of the bounds, and on the comparison with the ERM.
+\end{enumerate}
+
+%% =====================================================================
+\tppart{Going further \hard}\label{p4:far}
+
+\begin{enumerate}
+\item \textbf{The KL divergence is nonnegative.} Using Jensen's inequality for the concave function $\ln$, prove that
+      $\KL(Q\|P)\geq0$, with equality if and only if $Q=P$ (Proposition~14.2).
+\item \textbf{The Gibbs posterior is optimal.} Show that, for $\lambda>0$,
+      $\lambda\RS(\GQ)+\KL(Q\|P)=\KL(Q\|Q_\lambda)-\ln Z_\lambda$, where
+      $Z_\lambda=\sum_hP(h)e^{-\lambda\RS(h)}$.\\
+      Deduce Proposition~14.6.
+\item \textbf{Proof of Theorem~14.4.} Let $\Delta(h)=\RD(h)-\RS(h)$.\\
+      (a) Using Hoeffding's lemma, $\E_S\big[e^{\lambda\Delta(h)}\big]\leq e^{\lambda^2/(8m)}$ for each fixed $h$, show that
+      $\E_S\E_{h\sim P}\big[e^{\lambda\Delta(h)}\big]\leq e^{\lambda^2/(8m)}$.\\
+      (b) Deduce with Markov's inequality (Lemma~13.1) that, with probability at least $1-\delta$,
+      $\E_{h\sim P}\big[e^{\lambda\Delta(h)}\big]\leq\frac1\delta e^{\lambda^2/(8m)}$.\\
+      (c) Conclude with the change of measure (Lemma~14.3),
+      $\E_{h\sim Q}[\phi(h)]\leq\KL(Q\|P)+\ln\E_{h\sim P}\big[e^{\phi(h)}\big]$, applied to $\phi=\lambda\Delta$.\\
+      Why does the result hold for all $Q$ simultaneously, and why must $\lambda$ be fixed in advance?
+\end{enumerate}
+
+\end{document}
