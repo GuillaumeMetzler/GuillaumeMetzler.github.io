@@ -397,7 +397,16 @@ var PUBLICATIONS = [
   },
 
   // --- Préprints ---
-
+  {
+    id: "online-conformal-2026", group: "group-preprints", year: 2026, month: 10,
+    title: "Practical advantages of Online Conformal Prediction for data streams",
+    authors: "S. Chrétien, M. Hoseini-Behbahani, G. Metzler",
+    authorIds: ["schretien","mhoseini","gmetzler"],
+    venue: "arXiv, 2026",
+    links: [
+      { label: "Préprint (HAL)", href: "", external: true }
+    ]
+  },
   {
     id: "pacbayes-disintegration-2026", group: "group-preprints", year: 2026, month: 9,
     title: "On the Disintegration of the Stochastic Majority Vote: from PAC-Bayesian Bounds to a Self-Bounding Algorithm",
