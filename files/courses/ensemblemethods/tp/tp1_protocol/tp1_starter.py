@@ -1,4 +1,4 @@
-# TP 1 -- An experimental protocol for supervised learning. 
+# TP 1 - An experimental protocol for supervised learning. 
 
 import os, sys
 import numpy as np

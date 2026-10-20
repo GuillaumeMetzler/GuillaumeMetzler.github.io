@@ -306,3 +306,24 @@ def certificate_and_grad(theta, pi, n, delta, kind, L=None, Lt=None):
     dq, de = kl_inv_grads(q, eps, p)
     g_rho = fac * (dq * g_q + de * g_eps)
     return fac * p, rho * (g_rho - rho @ g_rho)
+
+
+# ---------------------------------------------------------------------------
+# Algorithm 13 of the notes (Section 17): learning the weights of a vote with the tandem bound
+# ---------------------------------------------------------------------------
+
+def tandem_fixed_point(P, E, lam, alpha=0.1, n_iter=3000, tol=1e-9):
+    """Damped fixed-point iterations Q <- (1 - alpha) Q + alpha T(Q), where
+    T(Q)(h) is proportional to P(h) exp(-lam * sum_h' Q(h') E[h, h']) (Proposition 17.2).
+    E is the symmetric matrix of the empirical joint errors of the pairs of voters.
+    Returns the posterior Q and the number of iterations."""
+    Q = P.copy()
+    for t in range(n_iter):
+        s = E @ Q
+        T = P * np.exp(-lam * (s - s.min()))
+        T /= T.sum()
+        Q_new = (1 - alpha) * Q + alpha * T
+        if np.abs(Q_new - Q).max() < tol:
+            return Q_new, t + 1
+        Q = Q_new
+    return Q, n_iter

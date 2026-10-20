@@ -1,4 +1,13 @@
-"""Small toolbox shared by the five practical sessions of"""
+"""Small toolbox shared by the five practical sessions of
+"Statistical Supervised Machine Learning" (Master MIASHS & MALIA).
+
+    load(name)              datasets of the course, labels in {-1,+1}
+    split3(X, y, seed)      stratified train / validation / test split
+    kl(q, p)                binary kl divergence (vectorized)
+    kl_inv_upper(q, eps)    sup{p >= q : kl(q||p) <= eps} (vectorized bisection)
+    hoeffding_width(n, d)   sqrt(ln(1/delta) / (2n))
+    show_table(rows, hdr)   display a table in a notebook (used by the solution notebooks)
+"""
 import os
 import sys
 import numpy as np
@@ -51,3 +60,68 @@ def kl_inv_upper(q, eps, n_iter=60):
 
 def hoeffding_width(n, delta):
     return np.sqrt(np.log(1 / delta) / (2 * n))
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Display helper of the solution notebooks: a table given as rows 'a & b & c' (math between $) is shown as a
+# markdown table (rendered by Jupyter, MathJax for the formulas).
+# ----------------------------------------------------------------------------------------------------------------------
+import re as _re
+
+_MACROS = [(r"\RD", r"R_{\mathcal{D}}"), (r"\RS", r"\widehat{R}_S"), (r"\GQ", r"G_Q"), (r"\BQ", r"B_Q"),
+           (r"\KL", r"\operatorname{KL}"), (r"\klup", r"\overline{\operatorname{kl}}^{-1}"), (r"\kl", r"\operatorname{kl}"),
+           (r"\Hcal", r"\mathcal{H}"), (r"\E", r"\mathbb{E}"), (r"\P", r"\mathbb{P}"), (r"\D", r"\mathcal{D}"),
+           (r"\R", r"\mathbb{R}"), (r"\ind", r"\mathbb{1}")]
+
+
+def _math(m):
+    s = m.group(1)
+    for a, b in _MACROS:
+        s = _re.sub(_re.escape(a) + r"(?![a-zA-Z])", lambda _: b, s)
+    s = s.replace(r"\|", r"\Vert ").replace("|", r"\vert ")
+    return "$" + s + "$"
+
+
+def latex_to_md(cell):
+    """Convert one cell of a LaTeX table into markdown (math kept for MathJax)."""
+    s = cell.strip()
+    s = _re.sub(r"\\code\{([^}]*)\}", r"`\1`", s)
+    s = _re.sub(r"\\textbf\{([^}]*)\}", r"**\1**", s)
+    s = _re.sub(r"\\emph\{([^}]*)\}", r"*\1*", s)
+    s = _re.sub(r"\$([^$]*)\$", _math, s)
+    s = s.replace(r"\ ", " ").replace("--", "–").replace("~", " ")
+    return s
+
+
+def _split_row(row):
+    row = row.strip()
+    if row.endswith(r"\\"):
+        row = row[:-2]
+    cells = []
+    for c in row.split("&"):
+        m = _re.match(r"\s*\\multicolumn\{(\d+)\}\{[^}]*\}\{(.*)\}\s*$", c)
+        if m:
+            cells += [m.group(2)] + [""] * (int(m.group(1)) - 1)
+        else:
+            cells.append(c)
+    return [latex_to_md(c) for c in cells]
+
+
+def show_table(rows, header=None):
+    """Display LaTeX table rows (list of 'a & b & c \\\\') as a markdown table in the notebook."""
+    from IPython.display import display, Markdown
+    body = []
+    for r in rows:
+        r = r.strip()
+        for sep in (r"\midrule", "---"):
+            if r.startswith(sep):
+                r = r[len(sep):].strip()
+        if not r:
+            continue
+        body.append(_split_row(r))
+    ncol = max(len(b) for b in body)
+    if header is None or len(header) != ncol:
+        header = [""] * ncol
+    lines = ["| " + " | ".join(header) + " |", "|" + "|".join([":---:"] * ncol) + "|"]
+    lines += ["| " + " | ".join(b + [""] * (ncol - len(b))) + " |" for b in body]
+    display(Markdown("\n".join(lines)))
