@@ -402,9 +402,9 @@ var PUBLICATIONS = [
     title: "Practical advantages of Online Conformal Prediction for data streams",
     authors: "S. Chrétien, M. Hoseini-Behbahani, G. Metzler",
     authorIds: ["schretien","mhoseini","gmetzler"],
-    venue: "arXiv, 2026",
+    venue: "arXiv:2610.27740, 2026",
     links: [
-      { label: "Préprint (HAL)", href: "", external: true }
+      { label: "Préprint (arXiv)", href: "https://arxiv.org/abs/2610.27740", external: true }
     ]
   },
   {
