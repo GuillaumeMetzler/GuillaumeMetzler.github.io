@@ -12,6 +12,31 @@
    ========================================================= */
 (function () {
 
+  /* Textes de l'interface : francais par defaut ; une page peut definir
+     window.EXERCISES_I18N (avant le chargement de ce script) pour les remplacer. */
+  var I18N_DEFAULT = {
+    enterValue: "Merci de saisir une valeur avant de vérifier.",
+    notNumber: "Réponse non reconnue : saisissez un nombre.",
+    selectAnswer: "Sélectionnez une réponse avant de vérifier.",
+    correct: "Correct !",
+    wrong: "Ce n'est pas la bonne réponse. Réponse attendue : ",
+    figAlt: "Graphique associé à l'exercice",
+    exercise: "Exercice",
+    question: "Question",
+    placeholder: "Votre réponse",
+    check: "Vérifier",
+    retry: "Réessayer",
+    chooseTheme: "Choisir un thème",
+    resetTheme: "Réinitialiser ce thème",
+    ficheTitle: "Fiche de révision — ",
+    scoreSuffix: " réussies dans ce thème"
+  };
+  var I18N = {};
+  (function () {
+    var over = window.EXERCISES_I18N || {};
+    for (var k in I18N_DEFAULT) { I18N[k] = Object.prototype.hasOwnProperty.call(over, k) ? over[k] : I18N_DEFAULT[k]; }
+  })();
+
   function renderMath(el) {
     if (window.renderMathInElement && el) {
       window.renderMathInElement(el, {
@@ -45,12 +70,12 @@
       if (numInput) {
         var raw = numInput.value.trim().replace(',', '.');
         if (raw === '') {
-          setFeedback("Merci de saisir une valeur avant de vérifier.", 'warn');
+          setFeedback(I18N.enterValue, 'warn');
           return;
         }
         var val = parseFloat(raw);
         if (isNaN(val)) {
-          setFeedback("Réponse non reconnue : saisissez un nombre.", 'warn');
+          setFeedback(I18N.notNumber, 'warn');
           return;
         }
         var target = parseFloat(card.dataset.answer);
@@ -59,7 +84,7 @@
       } else {
         var checked = card.querySelector('input[type="radio"]:checked');
         if (!checked) {
-          setFeedback("Sélectionnez une réponse avant de vérifier.", 'warn');
+          setFeedback(I18N.selectAnswer, 'warn');
           return;
         }
         isCorrect = checked.value === card.dataset.answer;
@@ -67,11 +92,11 @@
 
       if (isCorrect) {
         card.dataset.state = 'correct';
-        setFeedback("Correct !", 'ok');
+        setFeedback(I18N.correct, 'ok');
       } else {
         card.dataset.state = 'incorrect';
         var answerText = card.dataset.answerText || card.dataset.answer;
-        setFeedback("Ce n'est pas la bonne réponse. Réponse attendue : " + answerText, 'bad');
+        setFeedback(I18N.wrong + answerText, 'bad');
       }
 
       card.querySelectorAll('input').forEach(function (i) { i.disabled = true; });
@@ -108,7 +133,7 @@
 
     var numEl = document.createElement('p');
     numEl.className = 'exo-num';
-    numEl.textContent = (labelPrefix || 'Exercice') + ' ' + numeroDansCategorie;
+    numEl.textContent = (labelPrefix || I18N.exercise) + ' ' + numeroDansCategorie;
     card.appendChild(numEl);
 
     var qEl = document.createElement('p');
@@ -116,12 +141,17 @@
     qEl.innerHTML = q.q;
     card.appendChild(qEl);
 
-    if (q.img) {
+    if (q.svg) {
+      var svgWrap = document.createElement('div');
+      svgWrap.className = 'exo-fig';
+      svgWrap.innerHTML = q.svg;
+      card.appendChild(svgWrap);
+    } else if (q.img) {
       var figWrap = document.createElement('div');
       figWrap.className = 'exo-fig';
       var img = document.createElement('img');
       img.src = q.img;
-      img.alt = q.imgAlt || 'Graphique associé à l\'exercice';
+      img.alt = q.imgAlt || I18N.figAlt;
       img.loading = 'lazy';
       figWrap.appendChild(img);
       card.appendChild(figWrap);
@@ -150,7 +180,7 @@
       input2.type = 'text';
       input2.inputMode = 'decimal';
       input2.className = 'exo-input';
-      input2.placeholder = 'Votre réponse';
+      input2.placeholder = I18N.placeholder;
       wrap.appendChild(input2);
       card.appendChild(wrap);
     }
@@ -160,11 +190,11 @@
     var checkBtn = document.createElement('button');
     checkBtn.type = 'button';
     checkBtn.className = 'exo-check';
-    checkBtn.textContent = 'Vérifier';
+    checkBtn.textContent = I18N.check;
     var resetBtn = document.createElement('button');
     resetBtn.type = 'button';
     resetBtn.className = 'exo-reset';
-    resetBtn.textContent = 'Réessayer';
+    resetBtn.textContent = I18N.retry;
     resetBtn.hidden = true;
     actions.appendChild(checkBtn);
     actions.appendChild(resetBtn);
@@ -191,7 +221,7 @@
     tabsWrap.className = 'exo-tabs-wrap';
     var tabsLabel = document.createElement('p');
     tabsLabel.className = 'exo-tabs-label';
-    tabsLabel.textContent = 'Choisir un thème';
+    tabsLabel.textContent = I18N.chooseTheme;
     tabsWrap.appendChild(tabsLabel);
     var tabsBar = document.createElement('div');
     tabsBar.className = 'exo-tabs';
@@ -204,7 +234,7 @@
       '<span class="exo-cat-title"></span>' +
       '<span class="exo-cat-meta">' +
       '<span class="exo-cat-score"></span>' +
-      '<button type="button" class="exo-cat-reset">Réinitialiser ce thème</button>' +
+      '<button type="button" class="exo-cat-reset">' + I18N.resetTheme + '</button>' +
       '</span>';
     app.appendChild(catHeading);
 
@@ -242,7 +272,7 @@
           pbWrap.appendChild(pbHead);
           var qs = grouped[pb.id] || [];
           qs.forEach(function (q, idx) {
-            var card = buildCardFromData(q, idx + 1, 'Question');
+            var card = buildCardFromData(q, idx + 1, I18N.question);
             attachCardBehavior(card, updateScoreDisplay);
             pbWrap.appendChild(card);
             allCards.push(card);
@@ -294,7 +324,7 @@
         var slug = activeBtn.dataset.cat;
         var n = scoreForCat(slug);
         catHeading.querySelector('.exo-cat-score').innerHTML =
-          '<span class="' + (n === countByCat[slug] ? 'done' : '') + '">' + n + '</span> / ' + countByCat[slug] + ' réussies dans ce thème';
+          '<span class="' + (n === countByCat[slug] ? 'done' : '') + '">' + n + '</span> / ' + countByCat[slug] + I18N.scoreSuffix;
       }
     }
 
@@ -308,7 +338,7 @@
       if (cat && cat.fiche) {
         ficheWrap.innerHTML =
           '<details class="exo-fiche-details" open>' +
-          '<summary>Fiche de révision — ' + cat.label + '</summary>' +
+          '<summary>' + I18N.ficheTitle + cat.label + '</summary>' +
           '<div class="exo-fiche-body">' + cat.fiche + '</div>' +
           '</details>';
         ficheWrap.hidden = false;
