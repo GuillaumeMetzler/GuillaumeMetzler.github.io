@@ -180,13 +180,24 @@ var PUBLICATIONS = [
   },
 
   // --- Revues internationales ---
+    {
+    id: "pacbayes-disintegration-2026", group: "group-preprints", year: 2026, month: 11,
+    title: "On the Disintegration of the Stochastic Majority Vote: from PAC-Bayesian Bounds to a Self-Bounding Algorithm",
+    authors: "J. Bastian, B. Leblanc, P. Germain, A. Habrard, G. Metzler, E. Morvant, P. Viallard",
+    authorIds: ["jbastian", "bleblanc", "pgermain", "ahabrard",  "gmetzler", "emorvant", "pviallard"],
+    venue: "Transactions on Machine Learning Research (TMLR), Novembre 2026",
+    badges: [{ text: "Q2", color: "blue" }],
+    links: [
+      { label: "Préprint (HAL)", href: "https://hal.science/hal-05734573", external: true }
+    ]
+  },
   {
     id: "fairgptq-tacl-2026", group: "group-revues-intl", year: 2026, month: 10,
     title: "Fair-GPTQ: Bias-Aware Quantization for Large Language Models",
     authors: "I. Proskurina, G. Metzler, J. Velcin",
     authorIds: ["iproskurina", "gmetzler", "jvelcin"],
     venue: "Transactions of the Association for Computational Linguistics (TACL)",
-    badges: [{ text: "Q1", color: "blue" }],
+    badges: [{ text: "Q1", color: "amber" }],
     links: [
       { label: "Préprint (arXiv)", href: "https://arxiv.org/abs/2509.15206v2", external: true }
     ]
@@ -405,16 +416,6 @@ var PUBLICATIONS = [
     venue: "arXiv:2610.27740, 2026",
     links: [
       { label: "Préprint (arXiv)", href: "https://arxiv.org/abs/2610.27740", external: true }
-    ]
-  },
-  {
-    id: "pacbayes-disintegration-2026", group: "group-preprints", year: 2026, month: 9,
-    title: "On the Disintegration of the Stochastic Majority Vote: from PAC-Bayesian Bounds to a Self-Bounding Algorithm",
-    authors: "J. Bastian, B. Leblanc, P. Germain, A. Habrard, G. Metzler, E. Morvant, P. Viallard",
-    authorIds: ["jbastian", "bleblanc", "pgermain", "ahabrard",  "gmetzler", "emorvant", "pviallard"],
-    venue: "hal-05734573, 2026",
-    links: [
-      { label: "Préprint (HAL)", href: "https://hal.science/hal-05734573", external: true }
     ]
   },
   {
